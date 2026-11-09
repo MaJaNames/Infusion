@@ -1,0 +1,97 @@
+[
+ {
+  "tag": "[E]",
+  "limit": 1,
+  "group": "implant"
+ },
+ {
+  "tag": "[H]",
+  "limit": 4,
+  "group": "implant"
+ },
+ {
+  "tag": "[IS]",
+  "limit": 2,
+  "group": "implant"
+ },
+ {
+  "tag": "[BS]",
+  "limit": 4,
+  "group": "implant"
+ },
+ {
+  "tag": "[NS]",
+  "limit": 3,
+  "group": "implant"
+ },
+ {
+  "tag": "[S]",
+  "limit": 3,
+  "group": "implant"
+ },
+ {
+  "tag": "[OS]",
+  "limit": 1,
+  "group": "implant"
+ },
+ {
+  "tag": "[Sk]",
+  "limit": 3,
+  "group": "implant"
+ },
+ {
+  "tag": "[A]",
+  "limit": 1,
+  "group": "implant"
+ },
+ {
+  "tag": "[W]",
+  "limit": 1,
+  "group": "implant"
+ },
+ {
+  "tag": "[L]",
+  "limit": 2,
+  "group": "implant"
+ },
+ {
+  "tag": "[We]",
+  "limit": 1,
+  "group": "gear"
+ },
+ {
+  "tag": "[Cl]",
+  "limit": 1,
+  "group": "gear"
+ },
+ {
+  "tag": "[Armor]",
+  "limit": 1,
+  "group": "gear"
+ },
+ {
+  "tag": "[Helm]",
+  "limit": 1,
+  "group": "gear"
+ },
+ {
+  "tag": "[Exo]",
+  "limit": 1,
+  "group": "gear"
+ },
+ {
+  "tag": "[Synth]",
+  "limit": 1,
+  "group": "gear"
+ },
+ {
+  "tag": "[Acs]",
+  "limit": 9,
+  "group": "gear"
+ },
+ {
+  "tag": "[Tr]",
+  "limit": 1,
+  "group": "gear"
+ }
+]

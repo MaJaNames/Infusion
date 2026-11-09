@@ -1,0 +1,98 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "Предметы",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "required": [
+   "id",
+   "name",
+   "cost",
+   "category",
+   "rarity"
+  ],
+  "additionalProperties": false,
+  "properties": {
+   "id": {
+    "type": "string",
+    "pattern": "^[a-z0-9-]+$",
+    "description": "Постоянный идентификатор. Не менять: на него ссылаются персонажи."
+   },
+   "tag": {
+    "type": "string",
+    "description": "Тег без скобок: Cn, Tr Mod, Acs, Me…"
+   },
+   "name": {
+    "type": "string"
+   },
+   "description": {
+    "type": "string"
+   },
+   "cost": {
+    "type": "integer",
+    "minimum": 0
+   },
+   "category": {
+    "type": "string",
+    "enum": [
+     "Аксессуар",
+     "Артефакт",
+     "Граната",
+     "Имплант",
+     "Контейнер",
+     "Кочевник",
+     "Недвижимость",
+     "Обвес",
+     "Одежда",
+     "Оружие",
+     "Особое",
+     "Расходник",
+     "Рокер",
+     "Скрипт",
+     "Техник",
+     "Транспорт",
+     "Экзо-Синты"
+    ]
+   },
+   "rarity": {
+    "type": "string",
+    "enum": [
+     "Обычный",
+     "Необычный",
+     "Редкий",
+     "Эпический",
+     "Легендарный",
+     "Культовый",
+     "ГРА"
+    ]
+   },
+   "iconic": {
+    "type": "boolean",
+    "description": "Культовый"
+   },
+   "organization": {
+    "type": "string",
+    "enum": [
+     "Ацуши",
+     "ГРА",
+     "Гончие",
+     "Икс-Экшен",
+     "Именной",
+     "Неизвестно",
+     "Общедоступно",
+     "Синопсис",
+     "Создание",
+     "Хиллз",
+     "Чёрный Рынок"
+    ]
+   },
+   "sellPrice": {
+    "type": "integer",
+    "description": "Ручная цена продажи. Если нет — 5% от cost."
+   },
+   "issue": {
+    "description": "Пометка об ошибке оформления"
+   }
+  }
+ }
+}

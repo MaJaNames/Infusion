@@ -1,0 +1,836 @@
+{
+ "schema": "infusion-character/1",
+ "identity": {
+  "name": "Такане Аки",
+  "player": "",
+  "gender": "Женщина",
+  "age": null,
+  "height": null,
+  "weight": null,
+  "religion": "",
+  "eyes": "",
+  "skin": "",
+  "notes": ""
+ },
+ "trait": "trait-ohotnik-za-golovami",
+ "rank": "rank-nona",
+ "class": "Соло",
+ "essence": null,
+ "stats": {
+  "strength": 5,
+  "dexterity": 9,
+  "intelligence": 7,
+  "will": 7,
+  "charisma": 3,
+  "perception": 9,
+  "technique": 6,
+  "luck": 7,
+  "constitution": 5
+ },
+ "overrides": {
+  "freePoints": null,
+  "hpMax": null,
+  "kronosMax": null,
+  "sellPrice": {},
+  "skillShards": {}
+ },
+ "skills": [
+  {
+   "skill": "skill-vladenie-blizhnim-oruzhiem",
+   "level": 5
+  },
+  {
+   "skill": "skill-brosok",
+   "level": 5
+  },
+  {
+   "skill": "skill-vladenie-drobovikami",
+   "level": 5
+  },
+  {
+   "skill": "skill-vladenie-snayperskimi-vintovkami",
+   "level": 5
+  },
+  {
+   "skill": "skill-akrobatika",
+   "level": 5
+  },
+  {
+   "skill": "skill-mehanicheskiy-vzlom",
+   "level": 5
+  },
+  {
+   "skill": "skill-skrytnost",
+   "level": 5
+  },
+  {
+   "skill": "skill-shalnaya-pulya",
+   "level": 5
+  },
+  {
+   "skill": "skill-strelba-iz-mashiny",
+   "level": 5
+  },
+  {
+   "skill": "skill-bystroe-ukrytie",
+   "level": 5
+  },
+  {
+   "skill": "skill-vnezapnyy-skorohod",
+   "level": 5
+  },
+  {
+   "skill": "skill-vnimatelnost",
+   "level": 5
+  },
+  {
+   "skill": "skill-chuyka-cennostey",
+   "level": 5
+  },
+  {
+   "skill": "skill-obostrenie-chuvstv",
+   "level": 5
+  },
+  {
+   "skill": "skill-rybnaya-lovlya",
+   "level": 5
+  },
+  {
+   "skill": "skill-poisk-lovushek",
+   "level": 5
+  },
+  {
+   "skill": "skill-slezhka",
+   "level": 5
+  },
+  {
+   "skill": "skill-ohotnik",
+   "level": 5
+  },
+  {
+   "skill": "skill-psihologicheskiy-portret",
+   "level": 5
+  },
+  {
+   "skill": "skill-chuvstvo-opasnosti",
+   "level": 5
+  },
+  {
+   "skill": "skill-obnaruzhenie-vragov",
+   "level": 5
+  },
+  {
+   "skill": "skill-shestoe-chuvstvo",
+   "level": 5
+  },
+  {
+   "skill": "skill-ohotnik-na-ubiyc",
+   "level": 5
+  },
+  {
+   "skill": "skill-vozhdenie-grazhdanskiy-transport",
+   "level": 5
+  },
+  {
+   "skill": "skill-vladenie-tehnologicheskim-oruzhiem",
+   "level": 5
+  },
+  {
+   "skill": "skill-znanie-implantov",
+   "level": 5
+  },
+  {
+   "skill": "skill-obnaruzhenie-geytbreykera",
+   "level": 5
+  },
+  {
+   "skill": "skill-gotovka",
+   "level": 5
+  },
+  {
+   "skill": "skill-ponimanie-zhivotnyh",
+   "level": 5
+  },
+  {
+   "skill": "skill-ispolzovanie-terminalov",
+   "level": 5
+  },
+  {
+   "skill": "skill-poisk-informacii-v-omninete",
+   "level": 5
+  },
+  {
+   "skill": "skill-vzlom-elektronnyh-zamkov",
+   "level": 5
+  },
+  {
+   "skill": "skill-ogon-na-podavlenie",
+   "level": 5
+  },
+  {
+   "skill": "skill-vladenie-umnym-oruzhiem",
+   "level": 5
+  }
+ ],
+ "abilities": [
+  {
+   "slot": 1,
+   "ref": "mutation-krylya"
+  },
+  {
+   "slot": 2,
+   "ref": "mutation-teplovizionnoe-zrenie"
+  },
+  {
+   "slot": 3,
+   "ref": "mutation-neutomimost"
+  },
+  {
+   "slot": 4,
+   "ref": "mutation-gravitacionnye-uzly"
+  },
+  {
+   "slot": 5,
+   "ref": "ability-preimuschestvo-vysoty"
+  },
+  {
+   "slot": 6,
+   "ref": "ability-ya-osobennyy"
+  },
+  {
+   "slot": 7,
+   "ref": "ability-osobyy-manevr"
+  },
+  {
+   "slot": 8,
+   "ref": "ability-ispolzovanie-okruzheniya"
+  }
+ ],
+ "implantCapacity": {
+  "base": 0,
+  "bonus": 1
+ },
+ "equipment": [
+  {
+   "item": "cl-kostyum-taktik-iks-ekshn-lazar-l"
+  },
+  {
+   "item": "armor-bronezhilet-linch-r"
+  },
+  {
+   "item": "helm-kiberbaykerskiy-shlem-e"
+  },
+  {
+   "item": "exo-ekzoskelet-acushi-l"
+  },
+  {
+   "item": "acs-magnitnyy-krepezh-r"
+  },
+  {
+   "item": "acs-oruzheynyy-remen-u"
+  },
+  {
+   "item": "acs-ryukzak-c"
+  },
+  {
+   "item": "acs-imitator-signatur-spektr-e"
+  },
+  {
+   "item": "acs-para-naruchnikov-c",
+   "note": "В таблице персонажа была редкость [Р], в каталоге сейчас Обычный."
+  },
+  {
+   "item": "acs-dopolnitelnye-nozhny-u"
+  },
+  {
+   "item": "acs-smartfon-nexus-07-c"
+  },
+  {
+   "item": "acs-ballisticheskaya-sistema-vydachi-vooruzheniya-l"
+  },
+  {
+   "item": "acs-acushi-usilitel-uroven-2-l"
+  },
+  {
+   "item": "tr-elizium-selestiya-l"
+  }
+ ],
+ "implants": [
+  {
+   "item": "e-acushi-opticheskiy-usilitel-l"
+  },
+  {
+   "item": "h-kuromos-neyroaktivator-r"
+  },
+  {
+   "item": "bs-krono-dempfernyy-uzel-e"
+  },
+  {
+   "item": "s-balisticheskie-podsistemy-c"
+  },
+  {
+   "item": "os-acushi-neyrobuster-l"
+  },
+  {
+   "item": "a-bionicheskie-kronoruki-iks-ekshen-l"
+  },
+  {
+   "item": "w-smart-link-r"
+  },
+  {
+   "item": "l-skrytaya-kobura-u"
+  }
+ ],
+ "pockets": [
+  {
+   "item": "cn-proezd-na-taksi-c",
+   "qty": 4
+  },
+  {
+   "item": "tr-mod-napravlyayuschie-eliada-mk-4-e",
+   "qty": 1
+  },
+  {
+   "item": "cn-bilet-na-telehab-c",
+   "qty": 3
+  },
+  {
+   "item": "cn-k-kondensator-c",
+   "qty": 4
+  },
+  {
+   "item": "cn-schepka-obucheniya-c",
+   "qty": 454
+  },
+  {
+   "item": "acs-acushi-usilitel-uroven-1-e",
+   "qty": 1
+  },
+  {
+   "item": "acs-acushi-usilitel-uroven-2-l",
+   "qty": 1
+  },
+  {
+   "item": "k-hranilische-ver-2-u",
+   "qty": 1
+  },
+  {
+   "item": "k-hranilische-ver-4-e",
+   "qty": 2
+  },
+  {
+   "item": "cn-komplekt-plazmy-c",
+   "qty": 1
+  },
+  {
+   "item": "cn-komplekt-koncentrirovannoy-plazmy-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-tehnovolosy-c",
+   "qty": 6
+  },
+  {
+   "item": "acs-kryuk-koshka-u",
+   "qty": 1
+  },
+  {
+   "item": "l-skrytaya-kobura-u",
+   "qty": 1
+  },
+  {
+   "item": "s-frid-horton-emili-m91-r",
+   "qty": 1
+  },
+  {
+   "item": "s-vi-6-elektronik-r",
+   "qty": 1
+  },
+  {
+   "item": "he-pt-6-slon-r",
+   "qty": 1
+  },
+  {
+   "item": "sg-energoizluchatel-iskra-r",
+   "qty": 1
+  },
+  {
+   "item": "s-mezhkostevoy-fiksator-r",
+   "qty": 1
+  },
+  {
+   "item": "h-nimbos-kriticheskiy-nakopitel-pamyati-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-para-naruchnikov-c",
+   "qty": 2,
+   "note": "В таблице персонажа была редкость [Р], в каталоге сейчас Обычный."
+  },
+  {
+   "item": "cl-kombinizon-dzhagernaut-r",
+   "qty": 1
+  },
+  {
+   "item": "cl-hazmat-model-3b-r",
+   "qty": 1
+  },
+  {
+   "item": "h-kuromos-neyroaktivator-r",
+   "qty": 1
+  },
+  {
+   "item": "w-ladoni-vzlomschika-r",
+   "qty": 1
+  },
+  {
+   "item": "s-ukreplennye-kosti-r",
+   "qty": 1
+  },
+  {
+   "item": "a-vibroklinok-heels-e",
+   "qty": 1
+  },
+  {
+   "item": "acs-linzy-c",
+   "qty": 7
+  },
+  {
+   "item": "me-nozh-c",
+   "qty": 2
+  },
+  {
+   "item": "bs-uluchshennye-legkie-u",
+   "qty": 1
+  },
+  {
+   "item": "me-acushi-obelisk-l",
+   "qty": 1
+  },
+  {
+   "item": "sub-acushi-ppu-24-argus-l",
+   "qty": 1
+  },
+  {
+   "item": "exo-ekzoskelet-acushi-l",
+   "qty": 1
+  },
+  {
+   "item": "acs-svarochnyy-apparat-c",
+   "qty": 1
+  },
+  {
+   "item": "cn-afrodiziak-c",
+   "qty": 1
+  },
+  {
+   "item": "cn-yad-u",
+   "qty": 1
+  },
+  {
+   "item": "bs-kuromos-kronosokratitel-r",
+   "qty": 1
+  },
+  {
+   "item": "me-puty-r",
+   "qty": 1
+  },
+  {
+   "item": "cn-krio-lovushka-r",
+   "qty": 1
+  },
+  {
+   "item": "aprt-modul-zhilya-zanaves-r",
+   "qty": 1
+  },
+  {
+   "item": "sk-fatono-otalkivayuschie-pokrytie-r",
+   "qty": 6
+  },
+  {
+   "item": "w-ellektrizator-materii-r",
+   "qty": 2
+  },
+  {
+   "item": "cn-polevoy-stabilizator-u",
+   "qty": 2
+  },
+  {
+   "item": "helm-med-analizator-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-hirurgicheskiy-poyas-u",
+   "qty": 1
+  },
+  {
+   "item": "cn-glaz-r",
+   "qty": 1
+  },
+  {
+   "item": "sc-korotkoe-zamykanie-c",
+   "qty": 1
+  },
+  {
+   "item": "sc-nimbos-pelengaciya-u",
+   "qty": 1
+  },
+  {
+   "item": "sc-nimbos-toksifikaciya-u",
+   "qty": 1
+  },
+  {
+   "item": "sc-zhuchok-r",
+   "qty": 1
+  },
+  {
+   "item": "sc-vzlom-kamer-r",
+   "qty": 1
+  },
+  {
+   "item": "bs-kiber-legkie-r",
+   "qty": 1
+  },
+  {
+   "item": "cn-schepka-randevu-v-dukstone-r",
+   "qty": 1
+  },
+  {
+   "item": "me-elektrodubinka-u",
+   "qty": 1
+  },
+  {
+   "item": "tr-hinten-akonit-l",
+   "qty": 1
+  },
+  {
+   "item": "me-pletka-r",
+   "qty": 1
+  },
+  {
+   "item": "l-kabluchki-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-modul-poleta-e",
+   "qty": 1
+  },
+  {
+   "item": "cl-sinopsis-boec-e",
+   "qty": 1
+  },
+  {
+   "item": "cl-sinopsis-poderzhka-e",
+   "qty": 1
+  },
+  {
+   "item": "acs-nabor-pervoy-pomoschi-c",
+   "qty": 3
+  },
+  {
+   "item": "l-vibropogloschayushie-nogi-shinobi-r",
+   "qty": 1
+  },
+  {
+   "item": "helm-kiberbaykerskiy-shlem-e",
+   "qty": 1
+  },
+  {
+   "item": "helm-maska-talisman-adskaya-gonchaya-e",
+   "qty": 1
+  },
+  {
+   "item": "sg-iks-ekshn-korsar-l",
+   "qty": 2
+  },
+  {
+   "item": "cl-kostyum-taktik-iks-ekshn-lazar-l",
+   "qty": 1
+  },
+  {
+   "item": "aprt-posadochnaya-ploschadka-l",
+   "qty": 1
+  },
+  {
+   "item": "mod-sistema-dlitelnogo-peredvizheniya-e",
+   "qty": 1
+  },
+  {
+   "item": "sat-bmet-kladis-r",
+   "qty": 1
+  },
+  {
+   "item": "sat-bmet-vaer-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-imitator-signatur-spektr-e",
+   "qty": 1
+  },
+  {
+   "item": "ar-prostranstvennyy-iskazitel-e",
+   "qty": 1
+  },
+  {
+   "item": "cn-granata-stazis-kristal-e",
+   "qty": 1
+  },
+  {
+   "item": "armor-bronezhilet-linch-r",
+   "qty": 1
+  },
+  {
+   "item": "cl-prodvinutyy-kri-kostyum-iks-ekshn-loki-l",
+   "qty": 1
+  },
+  {
+   "item": "exo-modulnyy-skelet-epers-l",
+   "qty": 1
+  },
+  {
+   "item": "exo-modulnyy-skelet-barter-l",
+   "qty": 2
+  },
+  {
+   "item": "mod-pryzhkovyy-modul-upm-r",
+   "qty": 1
+  },
+  {
+   "item": "mod-servoprivody-roller-u",
+   "qty": 1
+  },
+  {
+   "item": "mod-impulsnyy-dvigatel-u",
+   "qty": 3
+  },
+  {
+   "item": "mod-ballisticheskiy-kompyuter-u",
+   "qty": 1
+  },
+  {
+   "item": "mod-nozhny-passivnoy-zatochkoy-u",
+   "qty": 2
+  },
+  {
+   "item": "mod-sistema-skovyvanie-boem-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-ryukzak-c",
+   "qty": 2
+  },
+  {
+   "item": "acs-dopolnitelnye-nozhny-u",
+   "qty": 2
+  },
+  {
+   "item": "mod-sistema-podderzhaniya-zhizni-u",
+   "qty": 3
+  },
+  {
+   "item": "sat-prizma-i-c",
+   "qty": 1
+  },
+  {
+   "item": "acs-oruzheynyy-remen-u",
+   "qty": 4
+  },
+  {
+   "item": "acs-magnitnyy-krepezh-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-ballisticheskaya-sistema-vydachi-vooruzheniya-l",
+   "qty": 1
+  },
+  {
+   "item": "cn-broneplastina-pervogo-klassa-u",
+   "qty": 1
+  },
+  {
+   "item": "cn-broneplastina-vtorogo-klassa-u",
+   "qty": 2
+  },
+  {
+   "item": "cn-broneplastina-tretego-klassa-r",
+   "qty": 3
+  },
+  {
+   "item": "cn-broneplastina-chetvertogo-klassa-r",
+   "qty": 6
+  },
+  {
+   "item": "cn-broneplastina-pyatogo-klassa-e",
+   "qty": 1
+  },
+  {
+   "item": "cn-inzhektor-koagulyacii-u",
+   "qty": 4
+  },
+  {
+   "item": "cn-boevoy-stimulyator-rag-tome-r",
+   "qty": 1
+  },
+  {
+   "item": "cn-chernaya-vdova-r",
+   "qty": 1
+  },
+  {
+   "item": "cn-oskolochnaya-granata-he-42-u",
+   "qty": 1
+  },
+  {
+   "item": "cn-dymovaya-granata-u",
+   "qty": 3
+  },
+  {
+   "item": "cn-termalnyy-pokrov-e",
+   "qty": 2
+  },
+  {
+   "item": "cn-svetoshumovaya-granata-u",
+   "qty": 2
+  },
+  {
+   "item": "cn-metatelnyy-emi-zaryad-r",
+   "qty": 2
+  },
+  {
+   "item": "cn-kristall-suschnosti-elektro-r",
+   "qty": 3
+  },
+  {
+   "item": "mu-motiv-pleer-c",
+   "qty": 1
+  },
+  {
+   "item": "tr-q-bisu-el-teh-c",
+   "qty": 2
+  },
+  {
+   "item": "tr-falkenherz-morgen-liht-2-c",
+   "qty": 3
+  },
+  {
+   "item": "tr-elizium-selestiya-l",
+   "qty": 2
+  },
+  {
+   "item": "mu-motiv-voodushevlennosti-c",
+   "qty": 4
+  },
+  {
+   "item": "mu-motiv-uyuta-u",
+   "qty": 1
+  },
+  {
+   "item": "mu-motiv-optimizma-u",
+   "qty": 3
+  },
+  {
+   "item": "mu-motiv-melanholii-r",
+   "qty": 2
+  },
+  {
+   "item": "tr-ironhawk-b-2-c",
+   "qty": 8
+  },
+  {
+   "item": "tr-elan-lumer-c",
+   "qty": 1
+  },
+  {
+   "item": "tr-hinten-fosforus-30-l",
+   "qty": 1
+  },
+  {
+   "item": "tr-d-p-l-buyvol-26m-e",
+   "qty": 1
+  },
+  {
+   "item": "tr-shafter-l-hillz-e",
+   "qty": 1
+  },
+  {
+   "item": "ar-har-1-hlyst-r",
+   "qty": 1
+  },
+  {
+   "item": "spc-fonarik-oruzheynyy-yasnyy-37uf-r",
+   "qty": 4
+  },
+  {
+   "item": "tr-hinten-himera-e",
+   "qty": 1
+  },
+  {
+   "item": "ar-hronoticheskaya-luchevaya-ustanovka-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-baykerskiy-prikid-r",
+   "qty": 1
+  },
+  {
+   "item": "s-farmmetro-destabilizator-gx-1241-r",
+   "qty": 1
+  },
+  {
+   "item": "acs-smartfon-nexus-07-c",
+   "qty": 4
+  },
+  {
+   "item": "w-mod-ukorochennyy-stvol-u",
+   "qty": 1
+  },
+  {
+   "item": "ar-auk-f-i-l-i-n-first-year-l",
+   "qty": 1
+  },
+  {
+   "item": "cn-granata-hvatka-e",
+   "qty": 2
+  },
+  {
+   "item": "cl-scenicheskiy-obraz-r",
+   "qty": 1
+  },
+  {
+   "item": "sc-knopka-vyklyucheniya-l",
+   "qty": 1
+  },
+  {
+   "item": "cn-chertezh-yadra-3-r",
+   "qty": 1
+  },
+  {
+   "item": "tr-mod-kochevnicheskiy-kuzov-niks-mk-2-u",
+   "qty": 1
+  },
+  {
+   "item": "cn-k-kondensator-u",
+   "qty": 1
+  },
+  {
+   "item": "housing-kvartira-v-vestalike-r",
+   "qty": 1
+  },
+  {
+   "item": "tr-mod-avtopushka-askalon-mk-1-c",
+   "qty": 1
+  },
+  {
+   "item": "me-bita-c",
+   "qty": 1
+  },
+  {
+   "item": "tr-mod-ulichnoe-koleso-mk-1-c",
+   "qty": 1
+  },
+  {
+   "item": "tr-mod-razryadnyy-izluchatel-shango-mk-1-c",
+   "qty": 1
+  }
+ ],
+ "repository": []
+}

@@ -1,0 +1,72 @@
+[
+ {
+  "id": "rank-neo",
+  "name": "Нео",
+  "level": 1,
+  "hpBase": 20,
+  "kronosMax": 60
+ },
+ {
+  "id": "rank-bi-va",
+  "name": "Би-ва",
+  "level": 2,
+  "hpBase": 40,
+  "kronosMax": 90
+ },
+ {
+  "id": "rank-tritus",
+  "name": "Тритус",
+  "level": 3,
+  "hpBase": 60,
+  "kronosMax": 150
+ },
+ {
+  "id": "rank-kvartikum",
+  "name": "Квартикум",
+  "level": 4,
+  "hpBase": 80,
+  "kronosMax": 220
+ },
+ {
+  "id": "rank-penta",
+  "name": "Пента",
+  "level": 5,
+  "hpBase": 100,
+  "kronosMax": 350
+ },
+ {
+  "id": "rank-geksidios",
+  "name": "Гексидиос",
+  "level": 6,
+  "hpBase": 120,
+  "kronosMax": 700
+ },
+ {
+  "id": "rank-geptakul",
+  "name": "Гептакул",
+  "level": 7,
+  "hpBase": 140,
+  "kronosMax": 1000
+ },
+ {
+  "id": "rank-oktavios",
+  "name": "Октавиос",
+  "level": 8,
+  "hpBase": 160,
+  "kronosMax": 1500
+ },
+ {
+  "id": "rank-nona",
+  "name": "Нона",
+  "level": 9,
+  "hpBase": 180,
+  "kronosMax": 2000
+ },
+ {
+  "id": "rank-dekaturios",
+  "name": "Декатуриос",
+  "level": 10,
+  "hpBase": 200,
+  "kronosMax": 2500
+ }
+]

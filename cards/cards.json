@@ -1,0 +1,7863 @@
+[
+ {
+  "id": "tr-vektor-c",
+  "tag": "TR",
+  "name": "Вектор",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "КШ 10",
+  "damageType": "Кронотический",
+  "range": "0-8",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы модулируете снаряд кронотической энергии. Целью может быть только живое существо или конструкт использующий кроно-технологии",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 40,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-amplidin-c",
+  "tag": "TR",
+  "name": "Амплидин",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "5 АТК d5 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -20,
+  "priceTali": 30,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-amplidin-u",
+  "tag": "TR",
+  "name": "Амплидин",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "10 АТК d10 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 50,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-amplidin-r",
+  "tag": "TR",
+  "name": "Амплидин",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "20 АТК d20 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -80,
+  "priceTali": 100,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-amplidin-e",
+  "tag": "TR",
+  "name": "Амплидин",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "40 АТК d40 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -160,
+  "priceTali": 200,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-amplidin-l",
+  "tag": "TR",
+  "name": "Амплидин",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "75 АТК d75 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -250,
+  "priceTali": 250,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-multiplikator-c",
+  "tag": "TR",
+  "name": "Мультипликатор",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "1 АВХ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -30,
+  "priceTali": 30,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-multiplikator-u",
+  "tag": "TR",
+  "name": "Мультипликатор",
+  "rarity": "Необычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "2 АВХ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 50,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-multiplikator-r",
+  "tag": "TR",
+  "name": "Мультипликатор",
+  "rarity": "Редкий",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "3 АВХ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 100,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-multiplikator-e",
+  "tag": "TR",
+  "name": "Мультипликатор",
+  "rarity": "Эпический",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "4 АВХ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -190,
+  "priceTali": 200,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-multiplikator-l",
+  "tag": "TR",
+  "name": "Мультипликатор",
+  "rarity": "Легендарный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "5 АВХ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -300,
+  "priceTali": 250,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "tr-antigravi-r",
+  "tag": "TR",
+  "name": "Антиграви",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Дает вам: Полет - высота 3 ОП на время действия карты и мгновенно поднимает вас на 1 ОП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 800,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-silovoe-pole-u",
+  "tag": "TR",
+  "name": "Силовое поле",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 80 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -35,
+  "priceTali": 300,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-carskaya-vodka-c",
+  "tag": "TR",
+  "name": "Царская водка",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кеми",
+  "params": "",
+  "damageType": "Химический",
+  "range": "1-9",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Небольшой сгусток смеси кислот.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "in-kronoknut-c",
+  "tag": "IN",
+  "name": "Кронокнут",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Инкарнация",
+  "essence": "Физик",
+  "params": "",
+  "damageType": "Кинетический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": null,
+  "mechanics": "",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-sozdat-obraz-c",
+  "tag": "TR",
+  "name": "Создать образ",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Вы создаете вымышленную движущуюся проекцию небольшого (отн. человека) размера. Не обладает физической оболочкой.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-elem-infuziya-i-c",
+  "tag": "AV",
+  "name": "Элем-Инфузия I",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Наделяет ваше [Me] выбранным элементальным типом урона. Возможно использование с любыми [Мe], без статуса артефакта.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -10,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-ognennaya-kaplya-c",
+  "tag": "TR",
+  "name": "Огненная капля",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Термо",
+  "params": "2 КЦ; 5 АТК",
+  "damageType": "Термический",
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Создает огненную каплю размером с ладонь.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-krio-kasanie-c",
+  "tag": "TR",
+  "name": "Крио-касание",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Крио",
+  "params": "Оцепенение ВЕР 20",
+  "damageType": "Криотический",
+  "range": "0",
+  "trigger": [],
+  "effects": [
+   "Статусный"
+  ],
+  "test": null,
+  "mechanics": "Объект которого вы касаетесь пронизывает леденящий холод.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-proekciya-animy-c",
+  "tag": "TR",
+  "name": "Проекция анимы",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Пси",
+  "params": "5 АКТ",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Создает невидимого [Sat] с ОП 1, способного взаимодействовать с предметами размером не больше маленький",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-amplifikaciya-neyrokorteksa-c",
+  "tag": "NE",
+  "name": "Амплификация нейрокортекса",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "1 КЦ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Цель получает бафф к любому не боевому броску 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-izi-fiks-c",
+  "tag": "ME",
+  "name": "Изи-фикс",
+  "rarity": "Обычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы можете восстановить сломанный неорганический предмет размером не больше среднего.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-snezhinka-u",
+  "tag": "TR",
+  "name": "Снежинка",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Крио",
+  "params": "10 АТК; Кровотечение 10",
+  "damageType": "Криотический",
+  "range": "0-7",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Статусный"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете остроконечную фигуру изо льда",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-oblako-toksinov-u",
+  "tag": "TR",
+  "name": "Облако токсинов",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кеми",
+  "params": "2 АКТ; Отравление 2 АКТ; Взрывчатое 3",
+  "damageType": "Химический",
+  "range": "0-9",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Статусный"
+  ],
+  "test": "ТЕЛ 70",
+  "mechanics": "Вы модулируете токсичное облако в пределах дальности.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-pylnaya-burya-u",
+  "tag": "TR",
+  "name": "Пыльная буря",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "3 АКТ; Слепота, Взрывчатое 3",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Статусный",
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вокруг выбранной вами цели поднимается пылевая буря ослепляющая всех кто оказывается внутри и мешающая атакам проходящим через область ее действия",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-fotonnyy-kapkan-u",
+  "tag": "TR",
+  "name": "Фотонный капкан",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Радио",
+  "params": "1 КЦ; Обездвижен 2 АКТ",
+  "damageType": "Радиоактивный",
+  "range": "0-10",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": "Сила 70",
+  "mechanics": "Вы ставите ловушку на выбранной от вас, обнаружение ловушки восприятие 80",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-azotno-kislaya-strela-u",
+  "tag": "TR",
+  "name": "Азотно-кислая стрела",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кеми",
+  "params": "10 АТК",
+  "damageType": "Химический",
+  "range": "0-7",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "Ловкость 70",
+  "mechanics": "Вы модулируете конц. азотную кислоту в виде стрелы; При провале испытания теряете 10 деф (п) на 2 АКТ",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-gruntovoe-ukreplenie-u",
+  "tag": "TR",
+  "name": "Грунтовое укрепление",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "1",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете защитную стену из грунта перед собой на 3 выбранных вами ОП. Стену можно использовать как укрытие и она является Сложной Местностью 1. У каждой клетки стены 150 ОЗ и 40 ДЕФ П.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-potoki-ognya-u",
+  "tag": "TR",
+  "name": "Потоки огня",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Термо",
+  "params": "3 КЦ",
+  "damageType": "Термический",
+  "range": "0-6",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы модулируете 3 ламинарных огненных потока.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-malyy-telikinez-u",
+  "tag": "TR",
+  "name": "Малый теликинез",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0-3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый",
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Позволяет поднять небольшой объект на расстоянии не выше 1 ОП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-inmodulyaciya-u",
+  "tag": "TR",
+  "name": "Инмодуляция",
+  "rarity": "Необычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "",
+  "damageType": null,
+  "range": "15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ИНТ vs ИНТ",
+  "mechanics": "Если вы видите модуляцию меткризны аналогичной или ниже редкости, вы можете рассеять ее.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-gazofikaciya-u",
+  "tag": "TR",
+  "name": "Газофикация",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кеми",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый",
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы становитесь газообразной массой, которая свободно может переместиться в свободное видимое пространство.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-kinteticheskiy-tolchok-u",
+  "tag": "TR",
+  "name": "Кинтетический толчок",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Пси",
+  "params": "Взрывчатое 2",
+  "damageType": "Псионический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "Тело 70",
+  "mechanics": "Вы создаете волну кинетической энергии которая отталкивает все цели вплотную от вас на 2 ОП",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-ognennaya-kometa-r",
+  "tag": "TR",
+  "name": "Огненная комета",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Термо",
+  "params": "20 АТК; Взрывчатое 1",
+  "damageType": "Термический",
+  "range": "3-10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы модулируете большую огненную комету и направляете ее в желаемую цель",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-vodyanaya-tyurma-r",
+  "tag": "TR",
+  "name": "Водяная тюрьма",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Аква",
+  "params": "1 КЦ 2КД; Обездвижен, Мокрый.",
+  "damageType": "Гидравлический",
+  "range": "1-6",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "Сила 85",
+  "mechanics": "выберете одну цель вы создаете вокруг нее сферу воды, вбирающую в себя. Пока цель не пройдет испытание, она не может покинуть ее. После 1 хода, цель внутри сферы начинают терять по 30 ХП/ОЗ. наносит урон от метакризны в момент модуляции",
+  "amplify": [
+   "АВХ",
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-intoksikaciya-r",
+  "tag": "TR",
+  "name": "Интоксикация",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кеми",
+  "params": "20 АТК; Отравление 1",
+  "damageType": "Химический",
+  "range": "0-3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "Тело 85",
+  "mechanics": "Вы прускаете внутрь цели ядовитые токсины и отравляете ее.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-avangard-pryzhok-r",
+  "tag": "AV",
+  "name": "Авангард-прыжок",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Физик",
+  "params": "1 КД",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы мгновенно перемещаетесь на 2 ОП по горизонтали.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-telekinez-i-r",
+  "tag": "TR",
+  "name": "Телекинез I",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 КЦ 2 АКТ; Обездвижен. Пьезо-откат 20 ВЕР",
+  "damageType": "Кинетический",
+  "range": "0-5",
+  "trigger": [
+   "Сосредоточение",
+   "Длительно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "Инт VS СИЛА (в случае перемещения живого объекта)",
+  "mechanics": "Вы можете переместить объект не более Среднего размера на не более чем на 2 ОП по горизонтали и/или вертикали. Можно использовать как атаку, урон идет от базиса, и как способ транспортировки объекта. В 2 случае урон не учитывается. Живая цель проходит испытание каждый ход. Урона от базиса повторяется каждый ход, пока действует. Урон аналогичен изначальному. Эффект обездвижен от базиса снять нельзя, пока действует базис. Первичный урон проходит без необходимости в испытании.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-zvezdnoe-izluchenie-r",
+  "tag": "TR",
+  "name": "Звездное излучение",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Радио",
+  "params": "3 АКТ; Взрывчатое 1",
+  "damageType": "Радиоактивный",
+  "range": "3-10",
+  "trigger": [],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы модулируете фотонную сферу в пределах дальности. Все цели, кто находится внутри нее на момент ее установки и на начале каждого своего хода получают d75 чистого урона каждый ход, пока активна сфера. Сфера имеет 200 ОЗ",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-ledyanye-kolya-r",
+  "tag": "TR",
+  "name": "Ледяные колья",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Крио",
+  "params": "20 АТК; Взрывчатое 2, Сложная местность",
+  "damageType": "Криотический",
+  "range": "1-4",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы создаете перед собой множество остроконечных объектов изо льда",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-kolco-ognya-r",
+  "tag": "TR",
+  "name": "Кольцо огня",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Термо",
+  "params": "20 АТК; Ожог",
+  "damageType": "Термический",
+  "range": "1-4",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы создаете кольцо огня шириной в 2 и радиусом выбранным вами в пределах дальности карты, что наносит урон всем кто находиться в ней в начале каждого своего хода. Эфир модулятор является центром этого кольца.",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-katushka-tesla-r",
+  "tag": "TR",
+  "name": "Катушка Тесла",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Электро",
+  "params": "2 АКТ",
+  "damageType": "Электрический",
+  "range": "0-6",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы создаете [sat], который раз в раунд наносит Урон от метакризны до конца своего действия Параметры Катушки: Дальность 0-4 КЦ 2. ОП 0",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-vspyshka-ekzariona-e",
+  "tag": "TR",
+  "name": "Вспышка Экзариона",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Радио",
+  "params": "30 АТК; Ослеплен 1 АКТ, Взрывчатое 2",
+  "damageType": "Радиоактивный",
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "ВОС 90",
+  "mechanics": "Вы создаете вспышку света вокруг себя, накладывая эффект всем целям непрошедшим испытание вокруг вас в радиусе 3",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-razryad-molnii-e",
+  "tag": "TR",
+  "name": "Разряд молнии",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Электро",
+  "params": "50 АТК; Шок, Взрывчатое 2",
+  "damageType": "Электрический",
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 80",
+  "mechanics": "Вы модулируете мощный разряд молнии в цель, если на цели есть эффект МОКРЫЙ то атака получает бонус 1 взрывчатое или 25 атк на выбор пользователя",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-meteorit-e",
+  "tag": "TR",
+  "name": "Метеорит",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "40 АТК; Ожог, Взрывчатое 2",
+  "damageType": "Кинетический",
+  "range": "10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы притягиваете метеорит с орбиты и обрушиваете его на выбранную цель, создавая сложную местность в зоне своего поражения",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-energokupol-e",
+  "tag": "ME",
+  "name": "Энергокупол",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Кроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы генерируете вокруг себя непроницаемый экранирующий энергокупол. Сквозь него не может пройти никакая атака или метакризна. Можно взять всех, кто стоит к вам на ближней дистанции. Снять купол, можно только в начале своего хода",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-ognennaya-metel-e",
+  "tag": "TR",
+  "name": "Огненная метель",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Термо",
+  "params": "30 АТК; Ожог",
+  "damageType": "Термический",
+  "range": "0-2",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы создаете стену огня Шириной в 4 ОП перед вами, в начале вашего хода она перемещается на 2 ОП в сторону которую вы выберете, Стена огня ограничеивает видимость, все цели что начинают свой ход в ее зоне действия или впервые в раунд входят в нее получают термо урон равный показателю атаки метакризны, с игнором активной защиты. Действует пока эфир модулятор не снимет сосредоточение",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-magneticheskaya-lovushka-e",
+  "tag": "TR",
+  "name": "Магнетическая ловушка",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "30 АТК; Сложная местность 4 АКТ 1; Взрывчатое 2",
+  "damageType": "Кинетический",
+  "range": "10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ/СИЛ 90",
+  "mechanics": "Вы модулируете на выбранной ОП магнитосферу. Все, кто не прошел испытание, находящиеся в радиусе действия - притягиваются к центру",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-ledyanye-alebardy-e",
+  "tag": "TR",
+  "name": "Ледяные алебарды",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Крио",
+  "params": "30 АТК; Взрывчатое 2, Сложная местность 2",
+  "damageType": "Криотический",
+  "range": "1-7",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы создаете множество ледянных сталагмитов в пределах выбранной дистанции",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-tenevye-grani-e",
+  "tag": "NE",
+  "name": "Теневые грани",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 АКТ 3 КД; Невидимость",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы окутываете себя пеленой теней и вступаете в экстрамерность, при этом, вы гарантировано уклоняетесь от всех атак. В течении раунда, вас нельзя обнаружить, а также вы можете переместиться на любое расстояние в пределах видимости, до 4 . Невозможно использовать действия такие как: дальняя/ближняя атака, метакризну, взаимодействовать с окружением, находясь в экстрамерности. Таким образом нельзя выйти из боя.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-geliopotok-l",
+  "tag": "TR",
+  "name": "Гелиопоток",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Термо",
+  "params": "80 АТК",
+  "damageType": "Термический",
+  "range": "8",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "В модулируете луч термоядерной реакции с гелием. Он проходит 8 ОП ОП дистанции. Все, кто находятся на них, получают урон. Не суммируется. \n\nУникальный эффект: Земля пораженная метакризной становиться расплавленной массой которая наносит 40 чистого урона всем кто находиться на ней АКТ 2.",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-lednikovyy-period-l",
+  "tag": "TR",
+  "name": "Ледниковый период",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Крио",
+  "params": "50 АТК; Обездвижен, Обезоружен, Игнор деф(а) 50",
+  "damageType": "Криотический",
+  "range": "2",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "СИЛ-ТЕЛ 115",
+  "mechanics": "Вы модулируете ледяную корку радиусом 3 ОП, которая покрывает все объекты и поверхности. Каждый ход, зона поражения увеличивается на 2 ОП, пока вы сосредоточены на базисе. Замороженные получают урон от базиса. При сбросе концентрации все окружение оттаивает со снятием эффектов",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-kronoticheskaya-zvezda-l",
+  "tag": "TR",
+  "name": "Кронотическая звезда",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "75 АТК; Ослепление 2 АКТ; Взрывчатое 3",
+  "damageType": "Кронотический",
+  "range": "0-6",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы модулируете сферу К-Энергии, она распадается на множество лучей, поражая цели в переделах дистанции. Уникальный эффект: Пораженные цели начинают наносить окружающим 20 ЧИСТОГО урона в ход АКТ 3 тем с кем стоят на одном ОП в конце своего хода. Не суммируется при повторном применении кронотической звезды",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-100-mpa-l",
+  "tag": "TR",
+  "name": "100 МПа",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "50 АТК; Дезориентация 2 АКТ, Обездвижен 2 АКТ",
+  "damageType": "Кинетический",
+  "range": "4-12",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 110",
+  "mechanics": "Вы увеличиваете атмосферное давление, прижимая все цели в зоне поражения к поверхностям. Те цели, что не проходят испытание, получают все указанные эффекты.",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-million-volt-l",
+  "tag": "TR",
+  "name": "Миллион вольт",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Электро",
+  "params": "80 АТК 1 КЦ; Оцепенение 2 АКТ",
+  "damageType": "Электрический",
+  "range": "0-10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 90",
+  "mechanics": "Вы модулируете очень мощный разряд электричеством. Уникальный эффект: Пораженные цели должны пройти испытание телосложения 90, при провале цель получает ШОК в начале каждого своего хода в течении АКТ 3.",
+  "amplify": [
+   "АТК",
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-fotonnaya-zona-porazheniya-l",
+  "tag": "TR",
+  "name": "Фотонная зона поражения",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Радио",
+  "params": "90 АТК; Ослеплен 3 АКТ; Взрывчатое 1",
+  "damageType": "Радиоактивный",
+  "range": "5-15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Фотонный взрыв, поражающий все объекты в радиусе поражения, гарантированно ослепляя любую цель.",
+  "amplify": [
+   "АТК",
+   "Каскад"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-ignibirovanie-bioritmov-l",
+  "tag": "ME",
+  "name": "Игнибирование Биоритмов",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "1 КЦ КД 1 АКТ 2; Замедление 2 АКТ",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ТЕЛ 110",
+  "mechanics": "Выбранная цель страдает от хроно замедления",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-antigravi-u",
+  "tag": "TR",
+  "name": "Антиграви",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Дает вам: Полет - высота 1 ОП на время действия карты",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-antigravi-e",
+  "tag": "TR",
+  "name": "Антиграви",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Дает вам: Полет - высота 3 ОП на время действия карты и мгновенно поднимает вас на 1",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-antigravi-l",
+  "tag": "TR",
+  "name": "Антиграви",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Дает вам: Полет - высота 4 ОП на время действия карты и мгновенно поднимает вас на 2",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -100,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-silovoe-pole-r",
+  "tag": "TR",
+  "name": "Силовое поле",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 150 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 750,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-silovoe-pole-e",
+  "tag": "TR",
+  "name": "Силовое поле",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 240 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -120,
+  "priceTali": 1500,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-silovoe-pole-l",
+  "tag": "TR",
+  "name": "Силовое поле",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 340 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -240,
+  "priceTali": 6000,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-akseleraciya-u",
+  "tag": "TR",
+  "name": "Акселерация",
+  "rarity": "Необычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы получаете ОД",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-akseleraciya-l",
+  "tag": "TR",
+  "name": "Акселерация",
+  "rarity": "Легендарный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы получаете 2 ОД",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -400,
+  "priceTali": 12960,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-regeneraciya-kronosekreta-c",
+  "tag": "TR",
+  "name": "Регенерация кроносекрета",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы восстанавливаете 40 ЗК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 40,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-regeneraciya-kronosekreta-u",
+  "tag": "TR",
+  "name": "Регенерация кроносекрета",
+  "rarity": "Необычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы восстанавливаете 80 ЗК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 40,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-regeneraciya-kronosekreta-r",
+  "tag": "TR",
+  "name": "Регенерация кроносекрета",
+  "rarity": "Редкий",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы восстанавливаете 150 ЗК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 80,
+  "priceTali": 300,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-regeneraciya-kronosekreta-e",
+  "tag": "TR",
+  "name": "Регенерация кроносекрета",
+  "rarity": "Эпический",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы восстанавливаете 350 ЗК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 150,
+  "priceTali": 750,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-regeneraciya-kronosekreta-l",
+  "tag": "TR",
+  "name": "Регенерация кроносекрета",
+  "rarity": "Легендарный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы восстанавливаете 750 ЗК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 350,
+  "priceTali": 1500,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-k-sensorika-c",
+  "tag": "TR",
+  "name": "К-Сенсорика",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы чувствуете потоки К-энергии вокруг себя, и можете обнаружить противников. Получите бонус к броску обнаружения (ВОСПР) в размере АТК этого базиса. Раз в ход.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prizma-nyutona-c",
+  "tag": "TR",
+  "name": "Призма Ньютона",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 АВХ",
+  "damageType": null,
+  "range": "6",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Ловкость 40",
+  "mechanics": "Снимает невидимость и непроницаемость цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prizma-nyutona-u",
+  "tag": "TR",
+  "name": "Призма Ньютона",
+  "rarity": "Необычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 АВХ",
+  "damageType": null,
+  "range": "8",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Ловкость 50",
+  "mechanics": "Снимает невидимость и непроницаемость цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -30,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prizma-nyutona-r",
+  "tag": "TR",
+  "name": "Призма Ньютона",
+  "rarity": "Редкий",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 АВХ",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Ловкость 70",
+  "mechanics": "Снимает невидимость и непроницаемость цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -50,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prizma-nyutona-e",
+  "tag": "TR",
+  "name": "Призма Ньютона",
+  "rarity": "Эпический",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 АВХ",
+  "damageType": null,
+  "range": "12",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Ловкость 85",
+  "mechanics": "Снимает невидимость и непроницаемость цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -75,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prizma-nyutona-l",
+  "tag": "TR",
+  "name": "Призма Ньютона",
+  "rarity": "Легендарный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 АВХ",
+  "damageType": null,
+  "range": "14",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Ловкость 100",
+  "mechanics": "Снимает невидимость и непроницаемость цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -100,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-elem-infuziya-ii-u",
+  "tag": "AV",
+  "name": "Элем-Инфузия II",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Наделяет ваше [Me] выбранным элементальным типом урона. На оружие применяется лишь 1 такой базис. Возможно использование с любыми [Мe], без статуса артефакта.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -15,
+  "priceTali": 25,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-elem-infuziya-iii-r",
+  "tag": "AV",
+  "name": "Элем-Инфузия III",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "3 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Наделяет ваше [Me] выбранным элементальным типом урона. На оружие применяется лишь 1 такой базис. Возможно использование с любыми [Мe], без статуса артефакта.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -20,
+  "priceTali": 30,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-elem-infuziya-iv-e",
+  "tag": "AV",
+  "name": "Элем-Инфузия IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "3 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Наделяет ваше [Me] выбранными двумя элементальными типами урона. Применяются эффекты от обоих. На оружие применяется лишь 1 такой базис. Возможно использование с любыми [Мe], без статуса артефакта.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -25,
+  "priceTali": 45,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-elem-infuziya-v-l",
+  "tag": "AV",
+  "name": "Элем-Инфузия V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "5 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Наделяет ваше [Me] выбранными двумя элементальными типами урона. Применяются эффекты от обоих дважды. На оружие применяется лишь 1 такой базис. Возможно использование с любыми [Мe], без статуса артефакта.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-usileniya-epidermisa-i-c",
+  "tag": "AV",
+  "name": "Усиления эпидермиса I",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Ваше тело получает СР к ФИЗИК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-usileniya-epidermisa-ii-u",
+  "tag": "AV",
+  "name": "Усиления эпидермиса II",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Ваше тело получает СР к ФИЗИК и еще 1 элементальному типу урона.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-usileniya-epidermisa-iii-r",
+  "tag": "AV",
+  "name": "Усиления эпидермиса III",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Ваше тело получает СР к ФИЗИК и еще 2 элементальным типам урона.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-usileniya-epidermisa-iv-e",
+  "tag": "AV",
+  "name": "Усиления эпидермиса IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Ваше тело получает СОПР к ФИЗИК, 2 элементальным, и 1 любому, типам урона.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-usileniya-epidermisa-v-l",
+  "tag": "AV",
+  "name": "Усиления эпидермиса V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Ваше тело получает СОПР к ФИЗИК и еще 3 любым типам урона.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uplotnenie-kostnoy-tkani-i-c",
+  "tag": "AV",
+  "name": "Уплотнение костной ткани I",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "5 АКТ 5 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 5 ДЕФ (П)",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uplotnenie-kostnoy-tkani-ii-u",
+  "tag": "AV",
+  "name": "Уплотнение костной ткани II",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "5 АКТ 5 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 10 ДЕФ (П)",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uplotnenie-kostnoy-tkani-iii-r",
+  "tag": "AV",
+  "name": "Уплотнение костной ткани III",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "5 АКТ 5 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 15 ДЕФ (П).",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uplotnenie-kostnoy-tkani-iv-e",
+  "tag": "AV",
+  "name": "Уплотнение костной ткани IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "5 АКТ 5 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 20 ДЕФ (П).",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uplotnenie-kostnoy-tkani-v-l",
+  "tag": "AV",
+  "name": "Уплотнение костной ткани V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "5 АКТ 5 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 30 ДЕФ (П).",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uskorennyy-mitoz-i-c",
+  "tag": "AV",
+  "name": "Ускоренный митоз I",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me].Вы получаете 50 доп ОЗ. После окончания боя они сбрасываются.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uskorennyy-mitoz-ii-u",
+  "tag": "AV",
+  "name": "Ускоренный митоз II",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "3 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 100 доп ОЗ. После окончания боя они сбрасываются.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uskorennyy-mitoz-iii-r",
+  "tag": "AV",
+  "name": "Ускоренный митоз III",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "3 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 200 доп ОЗ. После окончания боя они сбрасываются.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uskorennyy-mitoz-iv-e",
+  "tag": "AV",
+  "name": "Ускоренный митоз IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "4 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 300 доп ОЗ. После окончания боя они сбрасываются.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-uskorennyy-mitoz-v-l",
+  "tag": "AV",
+  "name": "Ускоренный митоз V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "4 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы получаете 450 доп ОЗ. После окончания боя они сбрасываются.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-myshechnoe-usilenie-i-c",
+  "tag": "AV",
+  "name": "Мышечное усиление I",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 1",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], Вы можете обменять свои накопленные Доп ХП на бонус АТК. Каждые потраченные 5 доп хп = 1 АТК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-myshechnoe-usilenie-ii-u",
+  "tag": "AV",
+  "name": "Мышечное усиление II",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 2",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], Вы можете обменять свои накопленные Доп ХП на бонус АТК. Каждые потраченные 5 доп хп = 1 АТК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-myshechnoe-usilenie-iii-r",
+  "tag": "AV",
+  "name": "Мышечное усиление III",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 1",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], Вы можете обменять свои накопленные Доп ХП на бонус АТК. Каждые потраченные 4 доп хп = 1 АТК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-myshechnoe-usilenie-iv-e",
+  "tag": "AV",
+  "name": "Мышечное усиление IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 2",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], Вы можете обменять свои накопленные Доп ХП на бонус АТК. Каждые потраченные 4 доп хп = 1 АТК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-myshechnoe-usilenie-v-l",
+  "tag": "AV",
+  "name": "Мышечное усиление V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 3",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], Вы можете обменять свои накопленные Доп ХП на бонус АТК. Каждые потраченные 4 доп хп = 1 АТК.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-avangard-pryzhok-ii-e",
+  "tag": "AV",
+  "name": "Авангард-прыжок II",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Физик",
+  "params": "1 КД",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы мгновенно перемещаетесь на 3 ОП по горизонтали.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-avangard-pryzhok-iii-l",
+  "tag": "AV",
+  "name": "Авангард-прыжок III",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Физик",
+  "params": "1 КД",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me]. Вы мгновенно перемещаетесь на 4 ОП по горизонтали. Если вы оказываетесь рядом с врагом после конца действия карты и производите его атаку то ваша атака получает игнор 20 Деф(п)",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-naraschivanie-tkaney-i-c",
+  "tag": "AV",
+  "name": "Наращивание тканей I",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], при блокировании, получите бонус к ДЕФ(А) в размере: бросок этого базиса/5",
+  "amplify": [
+   "АТК",
+   "Резонирование"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-naraschivanie-tkaney-ii-u",
+  "tag": "AV",
+  "name": "Наращивание тканей II",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "=+10 к броску",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], при блокировании, получите бонус к ДЕФ(А) в размере: бросок этого базиса/4",
+  "amplify": [
+   "АТК",
+   "Резонирование"
+  ],
+  "consumable": true,
+  "kronos": -20,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-naraschivanie-tkaney-iii-r",
+  "tag": "AV",
+  "name": "Наращивание тканей III",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "=+15 к броску",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], при блокировании, получите бонус к ДЕФ(А) в размере: бросок этого базиса/3",
+  "amplify": [
+   "АТК",
+   "Резонирование"
+  ],
+  "consumable": true,
+  "kronos": -30,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-naraschivanie-tkaney-iv-e",
+  "tag": "AV",
+  "name": "Наращивание тканей IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "=+25 к броску",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], при блокировании, получите бонус к ДЕФ(А) в размере: бросок этого базиса/2",
+  "amplify": [
+   "АТК",
+   "Резонирование"
+  ],
+  "consumable": true,
+  "kronos": -50,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-naraschivanie-tkaney-v-l",
+  "tag": "AV",
+  "name": "Наращивание тканей V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "=+35 к броску",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me], при блокировании, получите бонус к ДЕФ(А) в размере: бросок этого базиса",
+  "amplify": [
+   "АТК",
+   "Резонирование"
+  ],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-reversiya-i-c",
+  "tag": "NE",
+  "name": "Реверсия I",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": "ЛВК vs ЛВК",
+  "mechanics": "Если вы были атакованы внезапно, выполните испытание. Если вы его проходите, то успешно увернулись от данной атаки.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-reversiya-ii-u",
+  "tag": "NE",
+  "name": "Реверсия II",
+  "rarity": "Необычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": "ЛВК vs ЛВК",
+  "mechanics": "Если вы были атакованы внезапно, выполните испытание. Если вы его проходите, то успешно увернулись от данной атаки. Получите бонус к испытанию в размере: Бросок данного базиса/6",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-reversiya-iii-r",
+  "tag": "NE",
+  "name": "Реверсия III",
+  "rarity": "Редкий",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": "ЛВК vs ЛВК",
+  "mechanics": "Если вы были атакованы внезапно, выполните испытание. Если вы его проходите, то успешно увернулись от данной атаки. Получите бонус к испытанию в размере: Бросок данного базиса/5",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-reversiya-iv-e",
+  "tag": "NE",
+  "name": "Реверсия IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": "ЛВК vs ЛВК",
+  "mechanics": "Если вы были атакованы внезапно, выполните испытание. Если вы его проходите, то успешно увернулись от данной атаки. Получите бонус к испытанию в размере: Бросок данного базиса/4",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -100,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-reversiya-v-l",
+  "tag": "NE",
+  "name": "Реверсия V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": "ЛВК vs ЛВК",
+  "mechanics": "Если вы были атакованы внезапно, выполните испытание. Если вы его проходите, то успешно увернулись от данной атаки. Получите бонус к испытанию в размере: Бросок данного базиса/3",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -200,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-elektro-vspyshka-c",
+  "tag": "AV",
+  "name": "Электро-вспышка",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Электро",
+  "params": "1 КЦ",
+  "damageType": "Электрический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель пронзает электрический импульс. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-progrev-c",
+  "tag": "AV",
+  "name": "Прогрев",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Термо",
+  "params": "1 КЦ",
+  "damageType": "Термический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает термический удар. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-vodyanoy-rezak-c",
+  "tag": "AV",
+  "name": "Водяной резак",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Аква",
+  "params": "1 КЦ",
+  "damageType": "Гидравлический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает гидравлический разрез. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-ledyanoe-lezvie-c",
+  "tag": "AV",
+  "name": "Ледяное лезвие",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Крио",
+  "params": "1 КЦ",
+  "damageType": "Криотический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает обморожение тканей. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-gromovoy-ryk-u",
+  "tag": "AV",
+  "name": "Громовой рык",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Электро",
+  "params": "1 КЦ; Шок 2",
+  "damageType": "Электрический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель пронзает электрический импульс. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-ognennaya-tryaska-u",
+  "tag": "AV",
+  "name": "Огненная тряска",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Термо",
+  "params": "1 КЦ; Взрывчатое 1",
+  "damageType": "Термический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает термический удар. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-branzdboyd-u",
+  "tag": "AV",
+  "name": "Бранздбойд",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Аква",
+  "params": "1 КЦ; Перелом 1 АКТ",
+  "damageType": "Гидравлический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает гидравлический разрез. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-holodec-u",
+  "tag": "AV",
+  "name": "Холодец",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Крио",
+  "params": "1 КЦ; Обездвижен 1 АКТ",
+  "damageType": "Криотический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает обморожение тканей. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-amper-impakt-r",
+  "tag": "AV",
+  "name": "Ампер-импакт",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Электро",
+  "params": "1 КЦ 10 АТК; Шок 2",
+  "damageType": "Электрический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель пронзает электрический импульс. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-kipyatilnik-r",
+  "tag": "AV",
+  "name": "Кипятильник",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Термо",
+  "params": "1 КЦ 10 АТК; Взрывчатое 1",
+  "damageType": "Термический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает термический удар. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-gidrorazryv-r",
+  "tag": "AV",
+  "name": "Гидроразрыв",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Аква",
+  "params": "1 КЦ 10 АТК; Перелом 1 АКТ",
+  "damageType": "Гидравлический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает гидравлический разрез. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-zamorozka-r",
+  "tag": "AV",
+  "name": "Заморозка",
+  "rarity": "Редкий",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Крио",
+  "params": "1 КЦ 10 АТК; Обездвижен 1 АКТ",
+  "damageType": "Криотический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает обморожение тканей. Можно использовать лишь 1 такой базис в ход.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-molnienosnyy-tigr-e",
+  "tag": "AV",
+  "name": "Молниеносный тигр",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Электро",
+  "params": "1 КЦ 20 АТК; Шок 3",
+  "damageType": "Электрический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": "ТЕЛ 70",
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель пронзает электрический импульс. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Оцепенение 1.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-ognennyy-bychara-e",
+  "tag": "AV",
+  "name": "Огненный бычара",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Термо",
+  "params": "1 КЦ 30 АТК; Взрывчатое 3",
+  "damageType": "Термический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": "ТЕЛ 120",
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает термический удар. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Дезориентация 2 АКТ.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-ukus-kasatki-e",
+  "tag": "AV",
+  "name": "Укус касатки",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Аква",
+  "params": "1 КЦ 20 АТК; Перелом 1 АКТ",
+  "damageType": "Гидравлический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": "ТЕЛ 100",
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает гидравлический разрез. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Увядание 30 1 АКТ.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-lapa-medvedycha-e",
+  "tag": "AV",
+  "name": "Лапа медведыча",
+  "rarity": "Эпический",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Крио",
+  "params": "1 КЦ 20 АТК; Обездвижен 1 АКТ",
+  "damageType": "Криотический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает обморожение тканей. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Кровотечение 20 2 АКТ.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -100,
+  "priceTali": 150,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-groza-l",
+  "tag": "AV",
+  "name": "Гроза",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Электро",
+  "params": "1 КЦ 30 АТК; Шок 4",
+  "damageType": "Электрический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": "ТЕЛ 90",
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель пронзает электрический импульс. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Оцепенение 2.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-solncepek-l",
+  "tag": "AV",
+  "name": "Солнцепек",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Термо",
+  "params": "1 КЦ 30 АТК; Взрывчатое 3",
+  "damageType": "Термический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": "ТЕЛ 120",
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает термический удар. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Дезориентация 2 АКТ.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-grad-l",
+  "tag": "AV",
+  "name": "Град",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Аква",
+  "params": "1 КЦ 30 АТК; Перелом 2 АКТ",
+  "damageType": "Гидравлический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": "ТЕЛ 120",
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает гидравлический разрез. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Увядание 40 2 АКТ.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-stuzha-l",
+  "tag": "AV",
+  "name": "Стужа",
+  "rarity": "Легендарный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": "Крио",
+  "params": "1 КЦ 30 АТК; Обездвижен 2 АКТ",
+  "damageType": "Криотический",
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "При активной инфузии [Me] данного типа урона. Если вы успешно атаковали, используйте этот базис. Цель получает обморожение тканей. Можно использовать лишь 1 такой базис в ход. При провале испытания, цель получает Кровотечение 30 3 АКТ.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -200,
+  "priceTali": 310,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-krovetvorenie-i-c",
+  "tag": "ME",
+  "name": "Кроветворение I",
+  "rarity": "Обычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": null,
+  "params": "30 ОЗ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Доступность: Медикус",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 20,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "me-krovetvorenie-ii-u",
+  "tag": "ME",
+  "name": "Кроветворение II",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": null,
+  "params": "50 ОЗ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Доступность: Медикус",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 60,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "me-krovetvorenie-iii-r",
+  "tag": "ME",
+  "name": "Кроветворение III",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": null,
+  "params": "100 ОЗ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Доступность: Медикус",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -60,
+  "priceTali": 100,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "me-krovetvorenie-iv-e",
+  "tag": "ME",
+  "name": "Кроветворение IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": null,
+  "params": "150 ОЗ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Доступность: Медикус",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -150,
+  "priceTali": 150,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "me-krovetvorenie-v-l",
+  "tag": "ME",
+  "name": "Кроветворение V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": null,
+  "params": "200 ОЗ",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Доступность: Медикус",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -300,
+  "priceTali": 200,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "me-izlechivayuschaya-retrospektiva-i-c",
+  "tag": "ME",
+  "name": "Излечивающая ретроспектива I",
+  "rarity": "Обычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель излечивается на n/3 (n= Атк базиса)",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-izlechivayuschaya-retrospektiva-ii-u",
+  "tag": "ME",
+  "name": "Излечивающая ретроспектива II",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель излечивается на n/2 (n= Атк базиса)",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-izlechivayuschaya-retrospektiva-iii-r",
+  "tag": "ME",
+  "name": "Излечивающая ретроспектива III",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель излечивается на n (n= Атк базиса)",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-izlechivayuschaya-retrospektiva-iv-e",
+  "tag": "ME",
+  "name": "Излечивающая ретроспектива IV",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель излечивается на n+45 (n= Атк базиса)",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-izlechivayuschaya-retrospektiva-v-l",
+  "tag": "ME",
+  "name": "Излечивающая ретроспектива V",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "14",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель излечивается на n*2+45 (n= Атк базиса)",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-usilivayuschiy-potok-c",
+  "tag": "ME",
+  "name": "Усиливающий поток",
+  "rarity": "Обычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Кроно",
+  "params": "1 КЦ 1КД",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Выбранная цель добавляет до конца боя D10 АТК.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-podstavlennoe-plecho-u",
+  "tag": "ME",
+  "name": "\"Подставленное плечо\"",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Кроно",
+  "params": "1 КЦ",
+  "damageType": null,
+  "range": "0-3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Выбранная цель проходит следующее испытание с преимуществом. До конца боя.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-ukreplyayuschee-izluchenie-r",
+  "tag": "ME",
+  "name": "Укрепляющее излучение",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цели, на 3ех ОП от вас получают д хп d50 на время действия базиса и ИГНОР: Отравление.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-imun-kasanie-i-u",
+  "tag": "ME",
+  "name": "Имун-касание I",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "1 КЦ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы снимаете качественно 1 эффект с выбранной цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-imun-kasanie-ii-r",
+  "tag": "ME",
+  "name": "Имун-касание II",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "1 КЦ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы снимаете качественно 2 эффекта с выбранной цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-imun-kasanie-iii-e",
+  "tag": "ME",
+  "name": "Имун-касание III",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "1 КЦ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы снимаете качественно 3 эффекта с выбранной цели.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-ochischenie-substancii-u",
+  "tag": "ME",
+  "name": "Очищение субстанции",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы снимаете все негативные эффекты с газа/жидкости в пределах 1 дистанции.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-regeneracii-r",
+  "tag": "ME",
+  "name": "Столб Регенерации",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, восстанавливающий всех на выбранной клетке и в радиусе 1 ОП дистанции на d20 каждый ход. ОЗ Столба - 10",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-massovoe-lechenie-i-r",
+  "tag": "ME",
+  "name": "Массовое лечение I",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Все дружественные цели, в пределах смежных двух выбранных ОП дистанции, восстанавливают d25 ОЗ/ХП. Бросок медикуса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-massovoe-lechenie-ii-e",
+  "tag": "ME",
+  "name": "Массовое лечение II",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "КД 1",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Все дружественные цели, в пределах выбранных смежных трех выбранных ОП дистанций, восстанавливают d60 ОЗ/ХП. Бросок медикуса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-massovoe-lechenie-iii-l",
+  "tag": "ME",
+  "name": "Массовое лечение III",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Все дружественные цели, в пределах выбранных смежных четырех ОП дистанций, восстанавливают d100 ОЗ/ХП в начале каждого своего хода. Бросок медикуса.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-immunizaciya-i-e",
+  "tag": "ME",
+  "name": "Иммунизация I",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 КД",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ТЕЛ 90",
+  "mechanics": "Все дружественные цели в пределах указанной дальности, прошедшие испытание, снимают качественно 1 негативный эффект.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-immunizaciya-ii-l",
+  "tag": "ME",
+  "name": "Иммунизация II",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 КД",
+  "damageType": null,
+  "range": "14",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ТЕЛ 70",
+  "mechanics": "Все дружественные цели в пределах указанной дальности, прошедшие испытание, снимают качественно 2 негативных эффекта.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-pervaya-pomosch-r",
+  "tag": "ME",
+  "name": "Первая помощь",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "КД 1",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "При наложении базиса производиться два броска, ИНТ медикуса и ТЕЛ цели За каждые 70 от суммы двух бросков цель получает успех в предсмертном состоянии. Не заменяет собой следующий бросок на смерть",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-nekroreversiya-i-e",
+  "tag": "ME",
+  "name": "Некрореверсия I",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "За каждые 35 единиц в броске этого базиса цель получает успех в предсмертном состоянии, заменяя свой следующий бросок количеством успехов",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-nekroreversiya-ii-l",
+  "tag": "ME",
+  "name": "Некрореверсия II",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "За каждые 25 единиц в броске этого базиса цель получает успех в предсмертном состоянии, заменяя свой следующий бросок количеством успехов",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-rezerakt-l",
+  "tag": "ME",
+  "name": "Резеракт",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Раз в день, вы можете вернуть к жизни павшего. Смерть должна была наступить не позднее 1 часа ранее. цель навсегда теряет 100 ОЗ. Карта Расходуется при этом",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": true,
+  "kronos": -1500,
+  "priceTali": 10000,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-srotivleniya-r",
+  "tag": "ME",
+  "name": "Столб Сротивления",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, дающий СР к выбранному типу урона на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-ekranirovaniya-r",
+  "tag": "ME",
+  "name": "Столб Экранирования",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, дающий экранирование на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-voodushevleniya-r",
+  "tag": "ME",
+  "name": "Столб Воодушевления",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, снимающий усталость на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-yarosti-r",
+  "tag": "ME",
+  "name": "Столб Ярости",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, добавляющий 5 КШ на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-gneva-r",
+  "tag": "ME",
+  "name": "Столб Гнева",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, добавляющий 10 АТК на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-tochnosti-r",
+  "tag": "ME",
+  "name": "Столб Точности",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, добавляющий 10 ТЧН на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-ukloneniya-r",
+  "tag": "ME",
+  "name": "Столб Уклонения",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, добавляющий 10 УКЛ на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-stolb-zaschity-r",
+  "tag": "ME",
+  "name": "Столб Защиты",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, добавляющий 10 ДЕФ (п.) на выбранной клетке и в радиусе 1 ОП дистанции. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-otkat-i-u",
+  "tag": "ME",
+  "name": "Откат I",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 КД",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель снимает 1 КД на имплант/базис. Не может быть наложено на себя и на этот базис.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-otkat-ii-e",
+  "tag": "ME",
+  "name": "Откат II",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 КД",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель снимает 2 КД на имплант/базис. Не может быть наложено на себя и на этот базис.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-otkat-iii-l",
+  "tag": "ME",
+  "name": "Откат III",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 КД",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Цель снимает 3 КД на имплант/базис. Не может быть наложено на себя и на этот базис.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-korroziya-i-r",
+  "tag": "ME",
+  "name": "Коррозия I",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 АКТ 1 КД; Увядание 40",
+  "damageType": "Хронотопический",
+  "range": "5",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 60",
+  "mechanics": "Вы запускаете процесс разложения тела противника. Урон проходит только в случае провала испытания",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-korroziya-ii-e",
+  "tag": "ME",
+  "name": "Коррозия II",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 АКТ 1 КД; Увядание 40",
+  "damageType": "Хронотопический",
+  "range": "7",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 60",
+  "mechanics": "Вы запускаете процесс разложения тела противника накладывая эффект при провале испытания целью.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-korroziya-iii-l",
+  "tag": "ME",
+  "name": "Коррозия III",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "3 АКТ 1 КД; Увядание 50",
+  "damageType": "Хронотопический",
+  "range": "10",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 70",
+  "mechanics": "Вы запускаете процесс разложения тела противника накладывая эффект при провале испытания целью.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-inmodulyaciya-ii-r",
+  "tag": "TR",
+  "name": "Инмодуляция II",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор",
+   "Медикус"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "",
+  "damageType": null,
+  "range": "15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ИНТvsИНТ",
+  "mechanics": "Если вы видите модуляцию меткризны аналогичной или ниже редкости, вы можете рассеять ее. Бонус к испытанию + 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-inmodulyaciya-iii-e",
+  "tag": "TR",
+  "name": "Инмодуляция III",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор",
+   "Медикус"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "",
+  "damageType": null,
+  "range": "15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ИНТvsИНТ",
+  "mechanics": "Если вы видите модуляцию меткризны аналогичной или ниже редкости, вы можете рассеять ее. Бонус к испытанию + 25",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-inmodulyaciya-iv-l",
+  "tag": "TR",
+  "name": "Инмодуляция IV",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор",
+   "Медикус"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "",
+  "damageType": null,
+  "range": "15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ИНТvsИНТ",
+  "mechanics": "Если вы видите модуляцию меткризны аналогичной или ниже редкости, вы можете рассеять ее. Бонус к испытанию + 45",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -350,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-psionicheskaya-strela-c",
+  "tag": "NE",
+  "name": "Псионическая стрела",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ",
+  "damageType": "Псионический",
+  "range": "0-9",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Направленный луч сущности пси в объект, который наносит физические повреждения",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-mentalnaya-stimulyaciya-c",
+  "tag": "NE",
+  "name": "Ментальная стимуляция",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "5",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Согласные цели получают бафф 1d20 к следующей проверке Харизмы.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-somniya-c",
+  "tag": "NE",
+  "name": "Сомния",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ; Слепота, Дезориентация",
+  "damageType": null,
+  "range": "0-7",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "ТЕЛ 50 или ВОЛЯ 50",
+  "mechanics": "В случае провала испытания, цели в выбранном радиусе 2 , впадают в сонливое состояние, получая эффекты базиса. Каждый ход цели снова проходят испытание на снятие эффектов.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-melkie-illyuzii-c",
+  "tag": "TR",
+  "name": "Мелкие иллюзии",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "9",
+  "trigger": [],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ВОСПР 50",
+  "mechanics": "Вы можете создать иллюзию изменения цвета или формы маленького предмета в зоне видимости. Создать образ любого маленького предмета в зоне видимости. Создать несуществующий запах. Создать громкий звук. Только в пределах видимости.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-saymin-c",
+  "tag": "NE",
+  "name": "Саймин",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы совершаете следующую проверку Харизмы в разговоре с целью с преимуществом. В конце разговора, цель понимает, что ее сознание было изменено.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-umirotvorenie-zverya-c",
+  "tag": "NE",
+  "name": "Умиротворение зверя",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "5",
+  "trigger": [],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Воля 60",
+  "mechanics": "Вы можете снять враждебность 1 К-существа/животного, если его ИНТ 3 или меньше. Вы должны видеть существо и оно вас. В случае получения урона, эффект снимается.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-raskrytie-nachinki-c",
+  "tag": "NE",
+  "name": "Раскрытие \"начинки\"",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "0-3",
+  "trigger": [],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы узнаете все установленные импланты цели. Цель не ощущает этого.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-raskrytie-kart-c",
+  "tag": "NE",
+  "name": "Раскрытие карт",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "0-3",
+  "trigger": [],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы узнаете все активные карты сотворения цели. Цель не ощущает этого.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-metka-neyromanta-c",
+  "tag": "NE",
+  "name": "Метка нейроманта",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы касанием ставите видимую или невидимую метку на цель. Не более 10 символов. Невидимую метку можно обнаружить испытанием ВОСПР 120+. Испытание на обнаружение метки кидается раз в сутки. К-Сенсорика обнаруживает метку (аналогичный порог). Метка пропадает через 1 день. Не более 1 метки Если ставится 2-я метка, то прошлая будет стёрта. Снять метку можно Инмодуляцией.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-temnoe-nastavlenie-u",
+  "tag": "NE",
+  "name": "Темное наставление",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 КД",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Следующая атака (все АВХ) выбранной цели будет совершена с преимуществом. Только в бою",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-izmenenie-vneshnosti-u",
+  "tag": "NE",
+  "name": "Изменение внешности",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ИНТ",
+  "mechanics": "Вы изменяете свой облик на любую другую гуманоидную внешность не превышающую большой размер и имеющую разницу в росте +-20 см. Вы не получаете никаких прибавок. Если вас заподозрят, то следует испытание на раскрытие облика. Если вы провалили испытание, то подозревающий знает , что это не тот кем представляется . Личина спадает за 6 часов. Не более одной попытки на раскрытие в день.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-predvidenie-riskov-u",
+  "tag": "NE",
+  "name": "Предвидение рисков",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы совершаете следующую проверку инициативы в бою с преимуществом. Раз в 6 часов.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-prinuditelnoe-ubezhdenie-u",
+  "tag": "NE",
+  "name": "Принудительное убеждение",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "0-3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ИНТ либо ХАР VS ВОЛЯ",
+  "mechanics": "Вне боя, вы можете убедить цель, провалившую испытание, сделать односложное, рациональное действие. Действие не должно критически противоречить характеру цели, причинять вред себе или другим. Действие не должно быть длительным процессом. Иначе базис отменяется. Пример: \"Выпей стакан воды\", \"Открой дверь\", \"Нажми на кнопку\". Цель осознает, что ее заставили.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-oblast-teney-u",
+  "tag": "NE",
+  "name": "Область теней",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 1КД; Слепота",
+  "damageType": null,
+  "range": "0-10",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ВОСПР 70",
+  "mechanics": "Вы создаете темную зону в пределах трех ОП дистанции. Все внутри зоны получают эффект Слепота.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-mentalnoe-davlenie-u",
+  "tag": "NE",
+  "name": "Ментальное давление",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ; Подавлен",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ИНТ/ВОЛЯ",
+  "mechanics": "Вы подавляете своей пси-сущностью выбранную цель.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -10,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-kognitivnyy-dissonans-u",
+  "tag": "NE",
+  "name": "Когнитивный диссонанс",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "КД 2",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Цель получает d20 штраф к следующему испытанию. Не суммируется",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-raspolozhit-k-sebe-u",
+  "tag": "NE",
+  "name": "Расположить к себе",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ВОЛЯ 70",
+  "mechanics": "Ваш поток ментальной энергии располагает 1 гуманоидное существо, с ИНТ 3 и выше. Цель перестает быть к вам враждебной, если вы не проявляете агрессию первым. Вне боя действует 1 час.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-chtenie-mysley-u",
+  "tag": "NE",
+  "name": "Чтение мыслей",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0-10",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ИНТ",
+  "mechanics": "Вы можете узнать мысли цели в течении 2 АКТ. Цель не ощущает этого.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-razoruzhenie-u",
+  "tag": "NE",
+  "name": "Разоружение",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ; Обезоружен",
+  "damageType": null,
+  "range": "0-10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ВОЛЯ",
+  "mechanics": "Накладывает эффект обезоружен.",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-panika-r",
+  "tag": "NE",
+  "name": "Паника",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ИНТ/ВОЛ 60",
+  "mechanics": "В пределах Трех смежных ОП дистанции, вы совершаете псионическую атаку. Провалившие испытание ИНТ/ВОЛ, бросают d100. Их поведение на 1 АКТ определяется результатом броска d100. 01-25 Действует нормально; 26-50 Ничего не делает, только бубнит себе что-то под нос; 51-75 Наносит себе d100 урона; 76-100 Набрасывается на ближайшее существо по выбору. Минимум 1 АВХ.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-psi-vzryv-r",
+  "tag": "NE",
+  "name": "Пси-взрыв",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 10 АТК; Взрывчатое 1",
+  "damageType": "Псионический",
+  "range": "1-15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы собираете поток псионической к-энергии у объекта, а затем резко освобождаете ее.",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-pole-podavleniya-r",
+  "tag": "NE",
+  "name": "Поле подавления",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 4 КД",
+  "damageType": "Психический",
+  "range": "2-10",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы сосредотачиваетесь, формируя зону повышенного псионического фона. Цели внутри зоны получают урон в количество броска базиса психического урона. 3 смежных ОП (горизонталь)",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-tenevoy-kapkan-r",
+  "tag": "NE",
+  "name": "Теневой капкан",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 3 АКТ; Обездвижен, Обезоружен",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Сила 90",
+  "mechanics": "Вы связываете ментальными путами цель. Пока не закончится действие базиса или цель не пройдет испытание, к ней применяются оба эффекта. Эффект снимается только в случае отмены базиса/прохождении испытания",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-lomka-psihiki-r",
+  "tag": "NE",
+  "name": "Ломка психики",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "5 АКТ 2 КД 1 КЦ; Обездвижен, Дезориентация, Пьезо-откат, ВЕР 5n",
+  "damageType": "Психический",
+  "range": "10",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "ХАР VS ВОЛЯ или ХАР VS ИНТ",
+  "mechanics": "Вы сосредотачиваетесь, накладывая два первых эффекта на цель. Находя слабые места психики цели,вы перегружаете ее. Каждый ход цель и вы проходите испытание. В случае провала целью, она получает d80 психического урона, а эффекты продляются на след. ход.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-zaimstvovannoe-vospriyatie-r",
+  "tag": "NE",
+  "name": "Заимствованное восприятие",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "5 АКТ",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "ВОСПР 90",
+  "mechanics": "Вы видите глазами и слышите ушами выбранной цели. В случае успешного испытания, цель осознает, что ее сознание подверглось вторжению.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-preduprezhdayuschiy-barer-r",
+  "tag": "NE",
+  "name": "Предупреждающий барьер",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": "ВОСПР VS ЛОВК",
+  "mechanics": "Вы окружаете себя псионическим полем, которое реагирует на атаки невидимой цели. При прохождении испытания вы можете защититься от этих атак без помехи.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 60,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-psionicheskaya-proslushka-r",
+  "tag": "NE",
+  "name": "Псионическая прослушка",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 1 КЦ",
+  "damageType": null,
+  "range": "0-10",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Находясь на одной локации с целью, в пределах дальней дистанции, вы можете слышать ее разговор. Цель не осознает, что ее подслушивают.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-tenevoy-pobeg-r",
+  "tag": "NE",
+  "name": "Теневой побег",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ 1 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы сливаетесь с тенями, в попытке бегства. Вы становитесь невосприимчивы к урону в том числе тому что вы должны были получить. Невозможно выполнять действия или использовать метакризну. Вы автоматически выходите из теней в конце следующего хода",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-uzhasnoe-tenevoe-voploschenie-r",
+  "tag": "NE",
+  "name": "Ужасное теневое воплощение",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "Страх 2 АКТ, Подавлен 2 АКТ",
+  "damageType": "Психический",
+  "range": "0-9",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "Воля 90",
+  "mechanics": "Вы создаете ужасную копию себя. Она полностью подчиняется вам и может разговаривать. Каждый, кто ее видит, должен пройти испытание. В случае провала, применяются все эффекты данного базиса. При получении любого урона копия исчезает. За каждый АКТ, вы отдаете 50 ЗК на поддержание копии.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-tenevoy-koridor-e",
+  "tag": "NE",
+  "name": "Теневой коридор",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "4 КЦ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы и все, кого вы касаетесь, перемещаетесь на границу граней Конструкциона, получая возможность перемещаться сквозь пространство вашего мира. Чтобы добраться до желаемого места, там должна быть установлена Метка Нейроманта. Иначе, вы можете вернуться лишь в место открытия коридора. Если метка испарилась, вы более не можете переместиться в это место. 2 АКТ на открытие коридора. Перемещать можно лишь согласные цели. После перемещения открывается коридор, который можно будет обнаружить с помощью к-сенсорики в течении 2 часов. при пороге броска выше 120.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-stat-inkognito-e",
+  "tag": "NE",
+  "name": "Стать инкогнито",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ИНТ",
+  "mechanics": "Прикоснувшись вы стираете все знания о вас у цели, оставляя лишь те, что сами хотите. Вне боя.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-telekinez-ii-e",
+  "tag": "TR",
+  "name": "Телекинез II",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "2 КЦ 2 АКТ; Обездвижен, Пьезо-откат 30 ВЕР",
+  "damageType": "Кинетический",
+  "range": "0-6",
+  "trigger": [
+   "Сосредоточение",
+   "Длительно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "ИНТ VS СИЛА (в случае перемещения живого объекта)",
+  "mechanics": "Вы можете переместить объект не более большого размера на не более чем на 3 ОП в раунд по горизонтали и/или вертикали. Можно использовать как атаку, урон идет от базиса, и как способ транспортировки объекта. В 2 случае урон не учитывается. Живая цель проходит испытание каждый ход. Урона от базиса повторяется каждый ход, пока действует. Урон аналогичен изначальному. Эффект обездвижен от базиса снять нельзя, пока действует базис. Первичный урон проходит без необходимости в испытании.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-telekinez-iii-l",
+  "tag": "TR",
+  "name": "Телекинез III",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "3 КЦ 2 АКТ; Обездвижен, Пьезо-откат 40 ВЕР",
+  "damageType": "Кинетический",
+  "range": "0-10",
+  "trigger": [
+   "Сосредоточение",
+   "Длительно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "ИНТ VS СИЛА (в случае перемещения живого объекта)",
+  "mechanics": "Вы можете переместить объект не более огромного размера на не более чем на 4 ОП в раунд дистанции по горизонтали и/или вертикали. Можно использовать как атаку, урон идет от базиса, и как способ транспортировки объекта. В 2 случае урон не учитывается. Живая цель проходит испытание каждый ход. Урона от базиса повторяется каждый ход, пока действует. Урон аналогичен изначальному. Эффект обездвижен от базиса снять нельзя, пока действует базис. Первичный урон проходит без необходимости в испытании.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-vnushit-strah-u",
+  "tag": "NE",
+  "name": "Внушить страх",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ 1 КЦ; Страх",
+  "damageType": null,
+  "range": "0-8",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР vs ВОЛЯ",
+  "mechanics": "Вы пугаете цель, вселяя страх в нее",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-master-snov-e",
+  "tag": "NE",
+  "name": "Мастер Снов",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 5 АКТ",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Ваше сознание проникает в сон спящей цели. Цель может уснуть добровольно или принудительно. Вы видите начало сна цели, которое она обязана вам предоставить (не менее 20 слов). Находясь внутри сна, вы можете взаимодействовать с целью внутри него, принимая любые обличия. Цель знает, что это вы. Находясь во сне, вы можете пользоваться только базисами с пометкой \"внутри сна.\" Вы не можете знать, что происходит с вашим телом в реальности. Вы не можете нанести физический ущерб цели. Цель может покинуть сон по истечении базиса, либо по соглашению с нейромантом.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-navedennyy-son-e",
+  "tag": "NE",
+  "name": "Наведенный сон",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 2 АКТ 1 КД",
+  "damageType": null,
+  "range": "7",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ВОЛЯ",
+  "mechanics": "Вводит цель в особое состояние \"Сон\".",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-formaciya-sna-radost-r",
+  "tag": "NE",
+  "name": "Формация сна: Радость",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Внутри сна. Используйте этот базис, чтобы сделать сон цели счастливым. Цель получает Вдохновение.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-formaciya-sna-koshmar-r",
+  "tag": "NE",
+  "name": "Формация сна: Кошмар",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Внутри сна. Используйте этот базис, чтобы сделать сон цели кошмарным. Цель получает неснимаемую Усталость на 1 день, либо до конца следующего боя с участием цели.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-formaciya-sna-eros-r",
+  "tag": "NE",
+  "name": "Формация сна: Эрос",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Внутри сна. Используйте этот базис, чтобы сделать сон цели эротическим. Цель получает преимущества в проверках харизмы на 1 день. Не более 3-хх проверок харизмы.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-formaciya-sna-predvestnik-r",
+  "tag": "NE",
+  "name": "Формация сна: Предвестник",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Внутри сна. Используйте этот базис, чтобы сделать сон цели вещим. Цель получает преимущества в проверках инициативы на 1 день. Не более 3-хх проверок инициативы.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-formaciya-sna-izlechenie-r",
+  "tag": "NE",
+  "name": "Формация сна: Излечение",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ",
+  "damageType": null,
+  "range": null,
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Внутри сна. Используйте этот базис, чтобы сделать сон цели оздоровительным. Цель полностью восстанавливает здоровье и снимает все негативные эффекты.Только вне боя",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-psionicheskiy-skorpion-e",
+  "tag": "NE",
+  "name": "Псионический скорпион",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 30 АТК; Шок 2, Дезориентация 1 АКТ, Кровотечение 50, Пьезо-откат, ВЕР 5n",
+  "damageType": "Псионический",
+  "range": "0-10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Направленный луч сущности пси в объект, который наносит физические повреждения",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-kapkan-uzhasov-e",
+  "tag": "NE",
+  "name": "Капкан ужасов",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 2 КД; Страх, Подавлен, Обездвижен",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы ставите невидимую метку на двух любых дистанциях по вашему выбору. Они активируются в конце раунда. На всех, кто стоит на этих дистанциях, накладываются эффекты базиса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-anti-kronoticheskoe-pole-teney-e",
+  "tag": "NE",
+  "name": "Анти-кронотическое поле теней",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 2 КД; Слепота, Сложная местность 2",
+  "damageType": "Психический",
+  "range": "0-9",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы располагаете зону теней на выбранных координатах в двух смежных ОП. Цели внутри не могут использовать активные импланты и карты сотворения. Цели внутри зоны получают d50 психического урона.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-zastavit-podchinitsya-e",
+  "tag": "NE",
+  "name": "Заставить подчиниться",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 5 АКТ 2 КД",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ИНТ либо ХАР VS ВОЛЯ",
+  "mechanics": "Вы можете заставить цель, провалившую испытание, сделать желаемое действие. Цель проходит испытание каждый ход. Вы должны быть сосредоточены на цели. Пример: \"Атакуй его\", \"Расскажи секрет\", \"Открой сейф\". \"Атакуй себя\" Цель осознает, что ее заставили. В случае приказа атаковать, цель должна атаковать себя или указанный объект максимально сильной атакой. В случае получение урона эффект сбрасывается. Требуемые эффекты на цели (один из): Страх/Подавлен/Обездвижен/Оцепенение/Дезориентация/Слепота",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-psionicheskaya-ballista-l",
+  "tag": "NE",
+  "name": "Псионическая баллиста",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 50 АТК; Шок 3, Дезориентация 2 АКТ, Кровотечение 70, Пьезо-откат, ВЕР 10n",
+  "damageType": "Псионический",
+  "range": "0-15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Направленный луч сущности пси в объект, который наносит физические повреждения",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-massovyy-paralich-l",
+  "tag": "NE",
+  "name": "Массовый паралич",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ 3 КД; Сложная местность 3, Обездвижен, Оцепенение, Обезоружен",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Воля 110",
+  "mechanics": "Все противники до дальней дистанции получают указанные эффекты при провале испытания.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-mementos-somniya-l",
+  "tag": "NE",
+  "name": "Мементос сомния",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 2 КД",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ВОЛЯ",
+  "mechanics": "Все на средней дистанции погружаются в \"Сон\".",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-vykachivanie-pamyati-l",
+  "tag": "NE",
+  "name": "Выкачивание памяти",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 2 КД; Усталость",
+  "damageType": null,
+  "range": "0",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР vs ВОЛЯ",
+  "mechanics": "Вы устанавливаете физический контакт с целью и проникаете в ее сознание. При этом, вы трижды проходите испытания. Если цель имеет эффект страх, то она бросается все три испытания с помехой. В случае провала целью испытания: 1 - Цель подсознательно отвечает на любые 5 вопросов и не имеет права соврать или отвечать уклончиво. 2 - Вы узнаете все за последний год жизни цели. 3 - Вы узнаете все о жизни цели в мельчайших деталях с момента рождения. За каждый провал цель получает 1 АКТ Усталости.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-stiranie-pamyati-l",
+  "tag": "NE",
+  "name": "Стирание памяти",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "Вплотную",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Если цель трижды проваливает Испытание при наложении на нее базиса \"Выкачивание памяти\". Вы можете стереть часть или всю память цели.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-restrukturizaciya-pamyati-l",
+  "tag": "NE",
+  "name": "Реструктуризация памяти",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "Вплотную",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Внутри сна. Вы можете переписать часть или полностью воспоминания цели. Минимальная длительность процесса - 3 раунда. Для полного удаления памяти - 5 раундов.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-unichtozhenie-soznaniya-l",
+  "tag": "NE",
+  "name": "Уничтожение сознания",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "5 АКТ 6 КД 1 КЦ; Обездвижен, Дезориентация, Пьезо-откат, ВЕР 10n",
+  "damageType": "Психический",
+  "range": "0-15",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "ХАР VS ВОЛЯ",
+  "mechanics": "Вы сосредотачиваетесь, накладывая два первых эффекта на цель. Уничтожая психику цели,вы перегружаете ее. Каждый ход цель и вы проходите испытание. В случае провала целью, она получает d120 психического урона, а эффекты продляются на след. ход. Если на цели был эффект страх, то все испытания она бросает с помехой. Перманентная",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-vopiyuschiy-les-teney-l",
+  "tag": "NE",
+  "name": "Вопиющий лес теней",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 АКТ 4 КД; Страх, Подавлен, Обездвижен, Слепота, Сложная местность 3; Взрывчатое 1",
+  "damageType": "Психический",
+  "range": "0-10",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы создаете леденящее душу пространство.Цели внутри зоны получают d100 психического урона.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-psionicheskiy-osheynik-slugi-l",
+  "tag": "NE",
+  "name": "Псионический ошейник слуги",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ",
+  "damageType": "Психический",
+  "range": "5",
+  "trigger": [
+   "Триггер-условие"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Если цель напугана, подавлена и погружена в состояние \"Сон\", вы можете использовать данный базис. Создает псионический \"ошейник\" на цели. Его нельзя обнаружить. В случае, если цель ослушивается ваших приказов, она получает 3d50 психического нелетального урона. Раз в 6 часов цель может пройти проверку ВОЛЯ>140, чтобы избавиться от ошейника. Чтобы ослушаться приказа, также необходимо пройти проверку ВОЛЯ>120. В случае успеха, цель получает 3d50 психического нелетального урона и может нарушить приказ. Все знания, что получает цель, носящая ошейник, передаются нейроманту. Ошейник спадает, если нейромант оказывается в предсмертном состоянии или коме. Ошейник можно надеть добровольно. Ошейник можно надеть не более чем на 1 цель.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -300,
+  "priceTali": 3000,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-direktoriya-mysley-i-c",
+  "tag": "NE",
+  "name": "Директория мыслей I",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ",
+  "damageType": null,
+  "range": "0-15",
+  "trigger": [],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы можете решать какой имплант цели отключает эффект Шок. При этом [OS] должна быть выключена последней.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-direktoriya-mysley-ii-u",
+  "tag": "NE",
+  "name": "Директория мыслей II",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "4 АКТ",
+  "damageType": null,
+  "range": "0-15",
+  "trigger": [],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы можете решать какой имплант цели отключает эффект Шок. При этом [OS] должна быть выключена последней.",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -40,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-podchinenie-nizshih-e",
+  "tag": "NE",
+  "name": "Подчинение низших",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 АКТ 3 КД",
+  "damageType": null,
+  "range": "10",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Воля 110",
+  "mechanics": "Все цели с ИНТ 4 и ниже, в диапазоне 1 выбранной нейромантом дистанции, проходят Испытание. В случае провала, они подчиняются любым приказам нейроманта весь следующий раунд. Не более 1 приказа каждой цели. Приказ не должен содержать более 1 основного действия в инициативе.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-massovyy-strah-r",
+  "tag": "NE",
+  "name": "Массовый страх",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ; Страх",
+  "damageType": null,
+  "range": "Смежные 3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "Воля 90",
+  "mechanics": "Вы вызываете, в пределах смежных трех ОП дистанции, страх у всех целей, проваливших испытание.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-tenevye-puty-r",
+  "tag": "NE",
+  "name": "Теневые путы",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": "Псионический",
+  "range": "0-15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "Сила 90",
+  "mechanics": "Вы преобразуете свою К-энергию, создавая теневые путы. Ими можно атаковать и/или попробовать обездвижить/обезоружить цель. (Испытание) Попытка обездвижить/обезоружить цель/цели, в случае успеха, обязывает нейроманта сосредоточиться на удержании. Эффект снимается только в случае отмены базиса/прохождении испытания",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-tenevoy-blok-r",
+  "tag": "NE",
+  "name": "Теневой блок",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1АКТ 1КД; Экранирование",
+  "damageType": null,
+  "range": "0-10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Нейромант собирает вокруг себя тени, которые защищают его или выбранную им цель. Добавьте значение АТК этого базиса к ДЕФ(А.) или УКЛ в случае блокирования. Ваше блокирование получает экранирование. Амплидин добавляет значение к конвертируемому АТК. Значение КЦ определяет число защищаемых целей.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-priznak-vody-c",
+  "tag": "TR",
+  "name": "Признак воды",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Аква",
+  "params": "",
+  "damageType": null,
+  "range": "0-2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Создает на выбранной дистанции до 4-ех кубометров воды, Затронутые цели получают статус мокрый",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-glubokaya-chistka-c",
+  "tag": "TR",
+  "name": "Глубокая чистка",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Аква",
+  "params": "",
+  "damageType": null,
+  "range": "Вплотную",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Прикосновение к цели размером не больше чем большая очищает ее полностью от загрязнений и налипших субстанций",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-stolb-skorosti-r",
+  "tag": "TR",
+  "name": "Столб Скорости",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "2 АКТ 3 КД",
+  "damageType": null,
+  "range": "0-9",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Вы модулируете эфемерный столб, добавляющий 1 скороход всем кто начинает ход на дистанции где он расположен. ОЗ Столба - 10",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-myslegrammy-c",
+  "tag": "NE",
+  "name": "Мыслеграммы",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "Нейромант и согласные цели могут поддерживать контакт в пределах одной локации с помощью мыслей.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": 0,
+  "priceTali": 80,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-zaryad-kronosa-c",
+  "tag": "TR",
+  "name": "Заряд кроноса",
+  "rarity": "Обычный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Физик",
+  "params": "",
+  "damageType": "Кинетический",
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Имея легкий или тяжелый арбалет охотника, эфир модулятор может использовать этот базис для подсчета стрельбы из него",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -120,
+  "priceTali": 0,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-slovo-sily-svet-r",
+  "tag": "TR",
+  "name": "Слово силы свет",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Хроно",
+  "params": "",
+  "damageType": null,
+  "range": "Вплотную",
+  "trigger": [
+   "Длительно",
+   "Сосредоточение"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": null,
+  "mechanics": "По истечении 15 минут востанавливает все здоровье. Только вне боя.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-stabilizaciya-organizma-c",
+  "tag": "AV",
+  "name": "Стабилизация организма",
+  "rarity": "Обычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 1; КД 1",
+  "damageType": null,
+  "range": "Вплотную",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы можете тратить свои доп ХП от Ускоренного Митоза для снятия эффектов Весь запас Доп ХП для снятия одного эффекта качественно",
+  "amplify": [],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "av-stabilizaciya-organizma-u",
+  "tag": "AV",
+  "name": "Стабилизация организма",
+  "rarity": "Необычный",
+  "classes": [
+   "Авангард"
+  ],
+  "school": "Авангард",
+  "essence": null,
+  "params": "АКТ 1; КД 1",
+  "damageType": null,
+  "range": "Вплотную",
+  "trigger": [
+   "Длительно"
+  ],
+  "effects": [
+   "Пассивный",
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Вы можете тратить свои доп ХП от Ускоренного Митоза для снятия эффектов Весь запас Доп ХП для снятия двух эффектов качественно",
+  "amplify": [],
+  "consumable": true,
+  "kronos": -20,
+  "priceTali": 20,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-elektro-duga-c",
+  "tag": "TR",
+  "name": "Электро дуга",
+  "rarity": "Обычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Электро",
+  "params": "1 АВХ; Взрывчатое 1",
+  "damageType": "Электрический",
+  "range": "0-3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "С руки эфир модулятора слетает электрический заряд молниеносно настигающий цель. Заряд распространяется по цепи на близлежащие к цели объекты",
+  "amplify": [
+   "АТК"
+  ],
+  "consumable": true,
+  "kronos": 0,
+  "priceTali": 5,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-predatelstvo-e",
+  "tag": "NE",
+  "name": "Предательство",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 1 АКТ 4 КД",
+  "damageType": null,
+  "range": "0-15",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР VS ВОЛЯ",
+  "mechanics": "На 1 АКТ, вы завладеваете разумом жертвы и заставляете ее атаковать максимально сильной атакой из возможных ее союзника на ваш выбор.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "kaskad-l",
+  "tag": "",
+  "name": "Каскад",
+  "rarity": "Легендарный",
+  "classes": [
+   "Общие"
+  ],
+  "school": "Трансгрессия",
+  "essence": null,
+  "params": "",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Наносит урон обходя любые источники доп хп. Такие как силовые щиты, бронепластины и иные источники доп хп.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 250,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "ne-zov-instinkta-e",
+  "tag": "NE",
+  "name": "Зов Инстинкта",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "5 АКТ; Дезориентация",
+  "damageType": null,
+  "range": "6",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "ХАР vs Воля",
+  "mechanics": "Активируйте участки мозга, отвечающие за возбуждение и эмоциональную стимуляцию. Ваша задача — вызвать направленное влечение к объекту, который определит нейромант. Каждый ход цель проходит испытание на попытку противодействия этому базису",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 30,
+  "creation": "Базис",
+  "iconic": true
+ },
+ {
+  "id": "ne-ubiystvennyy-fantazm-e",
+  "tag": "NE",
+  "name": "Убийственный Фантазм",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 АКТ; 2 КД",
+  "damageType": "Психический",
+  "range": "10",
+  "trigger": [
+   "Мгновенно",
+   "Длительно"
+  ],
+  "effects": [],
+  "test": "ХАР vs Воля",
+  "mechanics": "Вы навлекаете на цель её глубочайший кошмар — не одним длинным видением, а серией быстрых, ядовито-ярких иллюзий, каждая из которых как бы надламывает ткань её разума. Видения появляются и исчезают, словно всполохи, постепенно расшатывая внутреннюю опору сознания. Во время сотворения цель должна находиться под действием эффекта Страх. При провале испытания цель получает д50+20 Психического урона. Получает помеху на прохождение всех испытаний до конца раунда Испытание цель обязана проходить во время начала каждого нового раунда в течении АКТ базиса",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 120,
+  "creation": "Базис",
+  "iconic": true
+ },
+ {
+  "id": "ne-telekinez-iii-l",
+  "tag": "NE",
+  "name": "Телекинез III",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "3 КЦ 2 АКТ; Обездвижен, Пьезо-откат 40 ВЕР",
+  "damageType": "Кинетический",
+  "range": "0-10",
+  "trigger": [
+   "Сосредоточение",
+   "Длительно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "ХАР VS СИЛА (живой)",
+  "mechanics": "Вы можете переместить объект не более огромного размера на не более чем на 4 ОП в раунд дистанции по горизонтали и/или вертикали. Можно использовать как атаку, урон идет от базиса, и как способ транспортировки объекта. В 2 случае урон не учитывается. Живая цель проходит испытание каждый ход. Урона от базиса повторяется каждый ход, пока действует. Урон аналогичен изначальному. Эффект обездвижен от базиса снять нельзя, пока действует базис. Первичный урон проходит без необходимости в испытании.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -300,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-telekinez-ii-e",
+  "tag": "NE",
+  "name": "Телекинез II",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "2 КЦ 2 АКТ; Обездвижен, Пьезо-откат 30 ВЕР",
+  "damageType": "Кинетический",
+  "range": "0-6",
+  "trigger": [
+   "Сосредоточение",
+   "Длительно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "ХАР VS СИЛА (живой)",
+  "mechanics": "Вы можете переместить объект не более большого размера на не более чем на 3 ОП в раунд по горизонтали и/или вертикали. Можно использовать как атаку, урон идет от базиса, и как способ транспортировки объекта. В 2 случае урон не учитывается. Живая цель проходит испытание каждый ход. Урона от базиса повторяется каждый ход, пока действует. Урон аналогичен изначальному. Эффект обездвижен от базиса снять нельзя, пока действует базис. Первичный урон проходит без необходимости в испытании.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-telekinez-i-r",
+  "tag": "NE",
+  "name": "Телекинез I",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 КЦ 2 АКТ; Обездвижен, Пьезо-откат 20 ВЕР",
+  "damageType": "Кинетический",
+  "range": "0-5",
+  "trigger": [
+   "Сосредоточение",
+   "Длительно"
+  ],
+  "effects": [
+   "Нелетальный"
+  ],
+  "test": "ХАР VS СИЛА (живой)",
+  "mechanics": "Вы можете переместить объект не более Среднего размера на не более чем на 2 ОП по горизонтали и/или вертикали. Можно использовать как атаку, урон идет от базиса, и как способ транспортировки объекта. В 2 случае урон не учитывается. Живая цель проходит испытание каждый ход. Урона от базиса повторяется каждый ход, пока действует. Урон аналогичен изначальному. Эффект обездвижен от базиса снять нельзя, пока действует базис. Первичный урон проходит без необходимости в испытании.",
+  "amplify": [
+   "Да"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "izgnanie-l",
+  "tag": "",
+  "name": "Изгнание",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 КЦ 3 АКТ 5 КД",
+  "damageType": null,
+  "range": "0-5",
+  "trigger": [
+   "Мгновенно",
+   "Сосредоточение"
+  ],
+  "effects": [],
+  "test": "Тел 100+",
+  "mechanics": "Изгоните цель на другой план бытия. Изгнанная цель не может совершать никакие действия во время действия АКТ. При этом с целью невозможно взаимодействовать, пока она находиться на другом плане бытия.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -120,
+  "priceTali": 0,
+  "creation": "Базис",
+  "iconic": true
+ },
+ {
+  "id": "ne-silovoe-pole-l",
+  "tag": "NE",
+  "name": "Силовое поле",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 340 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -280,
+  "priceTali": 6000,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-silovoe-pole-e",
+  "tag": "NE",
+  "name": "Силовое поле",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 240 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -120,
+  "priceTali": 1500,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-silovoe-pole-r",
+  "tag": "NE",
+  "name": "Силовое поле",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 150 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 750,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-silovoe-pole-u",
+  "tag": "NE",
+  "name": "Силовое поле",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Эфир-модулятор",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 80 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -35,
+  "priceTali": 300,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prostranstvennyy-ryvok-u",
+  "tag": "TR",
+  "name": "Пространственный Рывок",
+  "rarity": "Необычный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "1",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Мгновенно телепортируйтесь в любое видимое физически для вас место в пределах указанной дистанции в параметрах базиса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 240,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prostranstvennyy-ryvok-r",
+  "tag": "TR",
+  "name": "Пространственный Рывок",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "2",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Мгновенно телепортируйтесь в любое видимое физически для вас место в пределах указанной дистанции в параметрах базиса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prostranstvennyy-ryvok-l",
+  "tag": "TR",
+  "name": "Пространственный Рывок",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "5",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Мгновенно телепортируйтесь в любое видимое физически для вас место в пределах указанной дистанции в параметрах базиса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -100,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-prostranstvennyy-ryvok-e",
+  "tag": "TR",
+  "name": "Пространственный Рывок",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "1 КД",
+  "damageType": null,
+  "range": "3",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [
+   "Быстрый"
+  ],
+  "test": null,
+  "mechanics": "Мгновенно телепортируйтесь в любое видимое физически для вас место в пределах указанной дистанции в параметрах базиса.",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-molnienosnoe-prikosnovenie-e",
+  "tag": "TR",
+  "name": "Молниеносное прикосновение",
+  "rarity": "Эпический",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Электро",
+  "params": "40 АТК; Шок ВЕР 40",
+  "damageType": null,
+  "range": "1",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы касаетесь свою цель, выпуская разряд молний с ваших пальцев поражая вашу цель",
+  "amplify": [
+   "АТК",
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -150,
+  "priceTali": 2160,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-kronoticheskiy-luch-l",
+  "tag": "TR",
+  "name": "Кронотический Луч",
+  "rarity": "Легендарный",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "90 АТК; Игнор СОПР, Пьезо откат ВЕР 15",
+  "damageType": null,
+  "range": "1-10",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "Вы извлекаете большее количество ваших сил чем обычно для создания более мощной атаки направленную в одну цель",
+  "amplify": [
+   "АТК",
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -520,
+  "priceTali": 6480,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "tr-vodyanoy-potok-r",
+  "tag": "TR",
+  "name": "Водяной поток",
+  "rarity": "Редкий",
+  "classes": [
+   "Трансгрессор"
+  ],
+  "school": "Трансгрессия",
+  "essence": "Кроно",
+  "params": "20 АТК; Мокрый",
+  "damageType": null,
+  "range": "1-6",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": "Сила 70",
+  "mechanics": "Создав влагу вы придаете ей большое ускорение сформировывая поток воды что обрушивается на вашу цель в пределах дистанции. При провале испытания цель подвержена эффекту сложная местность до конца своего хода",
+  "amplify": [
+   "АТК",
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -60,
+  "priceTali": 720,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-silovoe-pole-u",
+  "tag": "ME",
+  "name": "Силовое поле",
+  "rarity": "Необычный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Физик",
+  "params": "1 АКТ",
+  "damageType": null,
+  "range": "Средняя",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем прочностью 80 ХП",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -35,
+  "priceTali": 300,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-silovoe-pole-r",
+  "tag": "ME",
+  "name": "Силовое поле",
+  "rarity": "Редкий",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Физик",
+  "params": "1 АКТ; 1 КД",
+  "damageType": null,
+  "range": "Средняя",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем Прочностью 150 хп, не суммируется с другим полем",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -50,
+  "priceTali": 750,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-silovoe-pole-e",
+  "tag": "ME",
+  "name": "Силовое поле",
+  "rarity": "Эпический",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Физик",
+  "params": "1 АКТ; 1 КД",
+  "damageType": null,
+  "range": "Средняя",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем Прочностью 240 хп, не суммируется с другим полем",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -120,
+  "priceTali": 1500,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "me-silovoe-pole-l",
+  "tag": "ME",
+  "name": "Силовое поле",
+  "rarity": "Легендарный",
+  "classes": [
+   "Медикус"
+  ],
+  "school": "Медикус",
+  "essence": "Физик",
+  "params": "1 АКТ; 1 КД",
+  "damageType": null,
+  "range": "Средняя",
+  "trigger": [
+   "Мгновенно",
+   "Триггер-условие"
+  ],
+  "effects": [
+   "Быстрый",
+   "Пассивный"
+  ],
+  "test": null,
+  "mechanics": "Окутывает 1 цель силовым непроницаемым, экранирующим полем Прочностью 340 хп, не суммируется с другим полем",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -240,
+  "priceTali": 6000,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-chuvstvo-razuma-r",
+  "tag": "NE",
+  "name": "Чувство разума",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": "Пси",
+  "params": "1 АКТ 3 КД; Взрывчатое 3",
+  "damageType": null,
+  "range": "0-4",
+  "trigger": [],
+  "effects": [
+   "Без Урона"
+  ],
+  "test": "ХАР vs ИНТ",
+  "mechanics": "Вы способны обнаружить местонахождение разумных существ. Не работает на конструкты и тех чей ИНТ равен 1. Попытка обнаружить всех противников в камуфляже от броска Харизмы с бонусом +30. При провале , вы знаете о их наличии, но не о их расположении",
+  "amplify": [
+   "АВХ"
+  ],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 800,
+  "creation": "Базис",
+  "iconic": false
+ },
+ {
+  "id": "ne-amplidin-l",
+  "tag": "NE",
+  "name": "Амплидин",
+  "rarity": "Легендарный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "75 АТК d75 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -250,
+  "priceTali": 250,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "ne-amplidin-e",
+  "tag": "NE",
+  "name": "Амплидин",
+  "rarity": "Эпический",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "40 АТК d40 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -160,
+  "priceTali": 200,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "ne-amplidin-r",
+  "tag": "NE",
+  "name": "Амплидин",
+  "rarity": "Редкий",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "20 АТК d20 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -80,
+  "priceTali": 100,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "ne-amplidin-u",
+  "tag": "NE",
+  "name": "Амплидин",
+  "rarity": "Необычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "10 АТК d10 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -40,
+  "priceTali": 50,
+  "creation": "Модификатор",
+  "iconic": false
+ },
+ {
+  "id": "ne-amplidin-c",
+  "tag": "NE",
+  "name": "Амплидин",
+  "rarity": "Обычный",
+  "classes": [
+   "Нейромант"
+  ],
+  "school": "Нейромантия",
+  "essence": null,
+  "params": "5 АТК d5 АТК",
+  "damageType": null,
+  "range": "Любая",
+  "trigger": [
+   "Мгновенно"
+  ],
+  "effects": [],
+  "test": null,
+  "mechanics": "",
+  "amplify": [],
+  "consumable": false,
+  "kronos": -20,
+  "priceTali": 30,
+  "creation": "Модификатор",
+  "iconic": false
+ }
+]
