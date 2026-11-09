@@ -12,6 +12,5 @@ export const fieldValue = (el) => (el.type === 'number' || el.dataset.n ? (el.va
 const map = (rows, key = 'id') => new Map(rows.map((r) => [r[key], r]));
 export function indexData(d) {
   return { ...d, itemMap: map(d.items), cardMap: map(d.cards), skillMap: map(d.skills), abilityMap: map(d.abilities), traitMap: map(d.traits),
-    essenceMap: map(d.essences), raceMap: map(d.races), rankMap: map(d.ranks, 'level'), statMap: map(d.stats, 'key'),
-    rules: Object.fromEntries(d.formulas.map((f) => [f.key, f.value])) };
+    essenceMap: map(d.essences), raceMap: map(d.races), rankMap: map(d.ranks, 'level'), statMap: map(d.stats, 'key') };
 }

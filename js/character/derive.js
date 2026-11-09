@@ -1,10 +1,15 @@
 // Расчёты Билдостроя. Любое значение можно перекрыть вручную через character.overrides.
+import { RULES, shardCost, skillAvailable } from './rules.js';
+
 const GEAR = ['cl', 'armor', 'helm', 'exo', 'synth', 'acs', 'tr'];
 const norm = (t) => String(t || '').replace(/^\[|\]$/g, '').toLowerCase();
 const flat = (s) => String(s).replace(/\s+/g, '');
 const val = (auto, o) => ({ value: o ?? auto, auto, overridden: o !== null && o !== undefined });
 
-export const sellPrice = (it, c, d) => val(it.sell_price ?? Math.round(it.cost * (d.rules.sellPriceRate ?? 0.05)), c.overrides.sellPrice?.[it.id] ?? null);
+export const sellPrice = (it, c) => val(it.sell_price ?? Math.round(it.cost * RULES.sellPriceRate), c.overrides.sellPrice?.[it.id] ?? null);
+
+// Максимум выбранных навыков: 4 × ранг персонажа (от 4 до 40).
+export const skillLimit = (c, d) => (d.rankMap.get(Number(c.rank))?.level || d.ranks[0]?.level || 1) * RULES.skillLimitPerRank;
 
 function slotUsage(ids, limits, d, gear) {
   const used = new Map(limits.map((s) => [norm(s.tag), 0]));
@@ -24,16 +29,28 @@ function slotUsage(ids, limits, d, gear) {
 }
 
 export function derive(c, d) {
-  const o = c.overrides, f = d.rules, rank = d.rankMap.get(Number(c.rank)) || d.ranks[0];
+  const o = c.overrides, rank = d.rankMap.get(Number(c.rank)) || d.ranks[0], limit = skillLimit(c, d);
   const skills = c.skills.map((s, i) => {
     const sk = d.skillMap.get(s.id);
-    return sk && { i, sk, level: s.level, available: (c.stats[sk.stat] ?? 0) >= sk.tier, shards: val((sk.tier - 4) * s.level, o.shards?.[s.id] ?? null) };
+    if (!sk) return null;
+    const have = c.stats[sk.stat] ?? 0;
+    return { i, sk, level: s.level, have, available: skillAvailable(have, sk.tier), shards: val(shardCost(sk.tier, s.level), o.shards?.[s.id] ?? null) };
   }).filter(Boolean);
+  const statIssues = {};
+  for (const s of skills) {
+    if (s.available) continue;
+    const issue = statIssues[s.sk.stat] || (statIssues[s.sk.stat] = { need: s.sk.tier, have: s.have, skills: [] });
+    issue.need = Math.max(issue.need, s.sk.tier);
+    issue.skills.push(s.sk.name);
+  }
   return {
-    freePoints: val(f.pointsBudget - Object.values(c.stats).reduce((a, b) => a + b, 0), o.freePoints),
-    hpMax: val(rank.hp_base + c.stats.constitution * f.hpPerConstitution, o.hpMax),
+    freePoints: val(RULES.pointsBudget - Object.values(c.stats).reduce((a, b) => a + b, 0), o.freePoints),
+    hpMax: val(rank.hp_base + c.stats.constitution * RULES.hpPerConstitution, o.hpMax),
     kronosMax: val(rank.kronos_max, o.kronosMax),
+    rankLevel: rank.level,
     skills, shardsTotal: skills.reduce((a, s) => a + s.shards.value, 0),
+    skillCount: c.skills.length, skillLimit: limit, skillsOverLimit: c.skills.length > limit,
+    statIssues,
     gearSlots: slotUsage(c.equipment, d.slots.filter((s) => s.grp === 'gear'), d, true),
     implantSlots: slotUsage(c.implants, d.slots.filter((s) => s.grp === 'implant'), d, false),
   };

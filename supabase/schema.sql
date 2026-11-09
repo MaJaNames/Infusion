@@ -48,16 +48,10 @@ create table traits (id text primary key default hex_id('traits_seq'), name text
 create table essences (id text primary key default hex_id('essences_seq'), name text not null, full_name text, description text not null default '');
 create table slots (tag text primary key, grp text not null check (grp in ('gear','implant')), max_count integer not null);
 create table implant_combos (name text primary key, uses jsonb not null, ich numeric not null, note text);
-create table formulas (key text primary key, value jsonb not null);
 
 -- Версия данных: приложение сравнивает её со своим кэшем и скачивает базу, только если она изменилась.
 create table meta (key text primary key, value jsonb not null);
 insert into meta values ('data_version', to_jsonb(now()));
-
--- ===== Администраторы =====
-create table admins (user_id uuid primary key references auth.users(id) on delete cascade);
-create function is_admin() returns boolean language sql stable security definer set search_path = public as
-$$ select exists (select 1 from admins where user_id = auth.uid()) $$;
 
 create function bump_version() returns trigger language plpgsql security definer set search_path = public as
 $$ begin update meta set value = to_jsonb(now()) where key = 'data_version'; return null; end $$;
@@ -66,21 +60,15 @@ $$ begin new.updated_at = now(); return new; end $$;
 create trigger items_touch before update on items for each row execute function touch_updated_at();
 create trigger cards_touch before update on cards for each row execute function touch_updated_at();
 
--- ===== Права: читать может любой, менять — только админ =====
+-- ===== Права: читать может любой; запись — только service_role (GitHub Actions / SQL Editor) =====
 do $$
 declare t text;
 begin
-  foreach t in array array['items','cards','ranks','races','classes','stats','skills','abilities','beasts','traits','essences','slots','implant_combos','formulas','meta'] loop
+  foreach t in array array['items','cards','ranks','races','classes','stats','skills','abilities','beasts','traits','essences','slots','implant_combos','meta'] loop
     execute format('alter table %I enable row level security', t);
     execute format('create policy "read %1$s" on %1$I for select to anon, authenticated using (true)', t);
-    execute format('create policy "admin write %1$s" on %1$I for all to authenticated using (is_admin()) with check (is_admin())', t);
     if t <> 'meta' then
       execute format('create trigger bump_%1$s after insert or update or delete on %1$I for each statement execute function bump_version()', t);
     end if;
   end loop;
 end $$;
-alter table admins enable row level security;
-create policy "see self" on admins for select to authenticated using (user_id = auth.uid());   -- записывать в admins можно только из SQL Editor
-
--- После первого входа на сайте по e-mail сделайте себя админом (SQL Editor):
---   insert into admins select id from auth.users where email = 'ваша@почта';

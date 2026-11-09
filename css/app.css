@@ -52,5 +52,17 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:.2rem 1rem;margin:.5re
 .line .grow{flex:1;min-width:10rem}.line input{width:5.5rem}
 .x{padding:.15rem .5rem;color:var(--bad)}
 .lim{font-size:.8rem;border:1px solid var(--line);border-radius:4px;padding:.1rem .5rem}.lim.o{border-color:var(--u);color:var(--u)}.lim.b{border-color:var(--l);color:var(--l)}.lim.f{color:var(--mute)}.lim.x2{border-color:var(--bad);color:var(--bad)}
+details.line{display:block;padding:0}
+details.line>summary{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;padding:.45rem .7rem;cursor:pointer;list-style:none}
+details.line>summary::-webkit-details-marker{display:none}
+details.line>summary:hover{background:var(--bg)}
+details.line>summary .grow{flex:1;min-width:10rem}
+details.line[open]{border-color:var(--acc)}
+details.line>.body{padding:.4rem .7rem .7rem;border-top:1px dashed var(--line)}
+.line.badline{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+.grid label.stat-bad{color:var(--bad)}
+.grid label.stat-bad input{border-color:var(--bad)}
+.chip.bad{border-color:var(--bad);color:var(--bad)}
+button:disabled,input:disabled{opacity:.55;cursor:not-allowed}
 table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bottom:1px solid var(--line);text-align:left}
 @media(max-width:700px){main{padding:.6rem}.row summary{flex-direction:column;gap:.2rem}.price{text-align:left}}

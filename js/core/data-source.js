@@ -1,14 +1,17 @@
 // Источник данных: Supabase → кэш браузера → data/data.json.
+// Каталог навыков хранится в таблице skills (Supabase) и попадает в снимок data/data.json.
+// Выбранные персонажем навыки лежат в localStorage (infusion.char → skills: [{ id, level }]).
 import config from '../../config.js';
 const CACHE = 'infusion.db';
-const TABLES = ['items', 'cards', 'ranks', 'races', 'classes', 'stats', 'skills', 'abilities', 'beasts', 'traits', 'essences', 'slots', 'implant_combos', 'formulas'];
-const ORDER = { ranks: 'level', classes: 'name', stats: 'key', slots: 'tag', implant_combos: 'name', formulas: 'key' };
+const TABLES = ['items', 'cards', 'ranks', 'races', 'classes', 'stats', 'skills', 'abilities', 'beasts', 'traits', 'essences', 'slots', 'implant_combos'];
+const ORDER = { ranks: 'level', classes: 'name', stats: 'key', slots: 'tag', implant_combos: 'name' };
+const BASE = String(config.SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
 const headers = { apikey: config.SUPABASE_ANON_KEY, Authorization: `Bearer ${config.SUPABASE_ANON_KEY}` };
 
 async function rest(path, pages = false) {
   const rows = [];
   for (let from = 0; ; from += 1000) {
-    const r = await fetch(`${config.SUPABASE_URL}/rest/v1/${path}`, { headers: pages ? { ...headers, 'Range-Unit': 'items', Range: `${from}-${from + 999}` } : headers });
+    const r = await fetch(`${BASE}/rest/v1/${path}`, { headers: pages ? { ...headers, 'Range-Unit': 'items', Range: `${from}-${from + 999}` } : headers });
     if (!r.ok) throw new Error(`${path}: ${r.status}`);
     const part = await r.json();
     if (!pages) return part;
@@ -21,7 +24,7 @@ const writeCache = (d) => { try { localStorage.setItem(CACHE, JSON.stringify(d))
 
 export async function loadData({ force = false } = {}) {
   const cached = readCache();
-  if (config.SUPABASE_URL) {
+  if (BASE) {
     try {
       const version = (await rest('meta?key=eq.data_version&select=value'))[0].value;
       if (!force && cached?.version === version) return { ...cached, source: 'кэш браузера (актуален)' };

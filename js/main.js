@@ -2,7 +2,6 @@ import { loadData } from './core/data-source.js';
 import { indexData } from './core/util.js';
 import { loadChar, saveChar } from './core/storage.js';
 import { applyTheme } from './core/theme.js';
-import { captureLogin } from './core/admin.js';
 import { helpBlock } from './core/help.js';
 import * as databases from './views/databases.js';
 import * as character from './views/character.js';
@@ -25,7 +24,7 @@ function draw(full) {
 }
 
 async function boot() {
-  applyTheme(); captureLogin();
+  applyTheme();
   try { ctx.data = indexData(await loadData()); } catch (e) { $('app').innerHTML = `<div class="empty">Не удалось загрузить базу: ${e.message}</div>`; return; }
   draw(true);
   addEventListener('hashchange', () => draw(true));
