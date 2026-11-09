@@ -1,24 +1,42 @@
-import { esc, num, label, opts, set, fieldValue, RARITIES } from '../core/util.js';
+import { esc, num, label, opts, set, fieldValue, RARITIES, optLabel } from '../core/util.js';
 import { derive, sellPrice, skillLimit } from '../character/derive.js';
+import { RULES, allowedClasses } from '../character/rules.js';
 import { itemRow, cardRow } from './databases.js';
 
-const LIST = { skills: 'skills', pockets: 'items', repository: 'cards', equipment: 'own', implants: 'own' };
 const OPEN = new Set(); // раскрытые описания навыков, чтобы состояние переживало перерисовку
+// Порядок характеристик в интерфейсе не зависит от порядка строк в базе.
+const STAT_ORDER = ['strength', 'dexterity', 'intelligence', 'will', 'charisma', 'perception', 'technique', 'luck', 'constitution'];
+const STORAGE_TAG = 'K';
+// Запасной вариант, если описание предмета не удалось разобрать.
+const STORAGE_BONUS = { 'Хранилище вер. 1': 30, 'Хранилище вер. 2': 60, 'Хранилище вер. 3': 90, 'Хранилище вер. 4': 120, 'Хранилище вер. 5': 150 };
+const storageBonus = (it) => {
+  if (!it) return 0;
+  const text = String(it.description || '');
+  const m = text.match(/свободных мест[^:]*:\s*(\d+)/i) || text.match(/(\d+)\s*$/);
+  return m ? Number(m[1]) : (STORAGE_BONUS[it.name] || 0);
+};
+// [K] можно установить только из предметов, которые уже лежат в хранилище.
+const storageItems = (c, d) => {
+  const found = new Map();
+  for (const e of c.pockets) {
+    const it = d.itemMap.get(e.id);
+    if (it?.tag === STORAGE_TAG && !found.has(it.id)) found.set(it.id, it);
+  }
+  return [...found.values()];
+};
 const ov = (title, path, v) => `<label class="ov${v.overridden ? ' on' : ''}"><span>${title}</span><b class="${v.value < 0 ? 'bad' : ''}">${num(v.value)}</b>
   <input type="number" data-p="${path}" value="${v.overridden ? v.value : ''}" placeholder="авто ${num(v.auto)}"></label>`;
-const datalist = (id, rows) => `<datalist id="dl-${id}">${rows.map(([text, rid]) => `<option value="${esc(text)}" data-id="${rid}">`).join('')}</datalist>`;
-const adder = (kind, hint, disabled = false) => `<div class="add"><input list="dl-${LIST[kind]}" data-in="${kind}" placeholder="${hint}"${disabled ? ' disabled' : ''}><button data-add="${kind}"${disabled ? ' disabled' : ''}>Добавить</button></div>`;
 const del = (kind, i) => `<button class="x" data-del="${kind}.${i}" title="Убрать">✕</button>`;
 const missing = (kind, i, id) => `<div class="line miss">Записи ${esc(id)} больше нет в базе ${del(kind, i)}</div>`;
 const slots = (rows) => `<div class="chips">${rows.map((s) => `<span class="lim ${s.status === 'ОК' ? 'o' : s.status === 'Занято' ? 'b' : s.status === 'Свободно' ? 'f' : 'x2'}">${esc(s.tag)} ${s.used}/${s.limit} · ${s.status}</span>`).join('')}</div>`;
-const optionLabel = (it) => `${label(it)} · ${it.rarity} · ${it.id}`;
+const optionLabel = (it) => optLabel(it);
 
 // Состояние подвкладок и сортировки переживает перерисовку, как и OPEN у навыков.
 const UI = {
   tab: 'pockets',
   sort: {
-    pockets: ['name', 1], equipment: ['name', 1], implants: ['name', 1],
-    repository: ['name', 1], beasts: ['group', 1],
+    pockets: ['id', 1], equipment: ['id', 1], implants: ['id', 1],
+    repository: ['id', 1], beasts: ['id', 1],
   },
 };
 
@@ -27,6 +45,33 @@ const cmpText = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'ru');
 const cmpNum = (a, b) => (Number(a) || 0) - (Number(b) || 0);
 const cmpRarity = (a, b) => (RARITY_RANK.get(a) ?? 99) - (RARITY_RANK.get(b) ?? 99);
 const sdef = (name, get, cmp = cmpText) => ({ name, get, cmp });
+
+function adderRows(kind, c, d) {
+  if (kind === 'skills') return d.skills.map((s) => ({ id: s.id, text: `${s.name} · ${d.statMap.get(s.stat)?.name || s.stat} ${s.tier}`, group: d.statMap.get(s.stat)?.name || 'Навыки' }));
+  if (kind === 'pockets') return d.items.map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
+  if (kind === 'repository') return d.cards.map((x) => ({ id: x.id, text: optLabel(x), group: x.school || 'Без школы' }));
+  return c.pockets.map((e) => d.itemMap.get(e.id)).filter(Boolean).filter((it) => it.tag !== STORAGE_TAG).map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
+}
+
+function groupOptions(rows) {
+  const groups = new Map();
+  for (const r of rows) {
+    const g = r.group || 'Без группы';
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(r);
+  }
+  return [...groups.entries()].sort(([a], [b]) => cmpText(a, b)).map(([g, list]) =>
+    `<optgroup label="${esc(g)}">${list.sort((a, b) => cmpText(a.text, b.text)).map((r) => `<option value="${esc(r.id)}">${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
+}
+
+function adder(kind, hint, c, d, disabled = false) {
+  const rows = adderRows(kind, c, d), empty = !rows.length, off = disabled || empty;
+  const emptyText = kind === 'equipment' || kind === 'implants' ? 'Сначала добавьте предметы в хранилище' : 'Нет доступных вариантов';
+  return `<div class="add" data-addbox="${kind}" data-hint="${esc(hint)}">
+    <input type="search" data-search="${kind}" placeholder="Фильтр…" autocomplete="off"${off ? ' disabled' : ''}>
+    <select data-in="${kind}" aria-label="${esc(hint)}"${off ? ' disabled' : ''}><option value="">${esc(hint)}</option>${empty ? `<option value="" disabled>${esc(emptyText)}</option>` : groupOptions(rows)}</select>
+    <button data-add="${kind}"${off ? ' disabled' : ''}>Добавить</button></div>`;
+}
 
 const itemSortDefs = (withQty, c) => {
   const defs = {
@@ -68,7 +113,7 @@ const beastSortDefs = () => ({
 
 function sortRows(kind, rows, defs) {
   const st = UI.sort[kind] || [];
-  const key = defs[st[0]] ? st[0] : (defs.name ? 'name' : Object.keys(defs)[0]);
+  const key = defs[st[0]] ? st[0] : (defs.id ? 'id' : Object.keys(defs)[0]);
   const d = defs[key];
   const sign = st[1] === -1 ? -1 : 1;
   return rows.sort((a, b) => (a.miss ? 1 : 0) - (b.miss ? 1 : 0) || sign * d.cmp(d.get(a), d.get(b)));
@@ -76,14 +121,14 @@ function sortRows(kind, rows, defs) {
 
 function sortBar(kind, defs) {
   const st = UI.sort[kind] || [];
-  const key = defs[st[0]] ? st[0] : (defs.name ? 'name' : Object.keys(defs)[0]);
+  const key = defs[st[0]] ? st[0] : (defs.id ? 'id' : Object.keys(defs)[0]);
   const dir = st[1] === -1 ? -1 : 1;
   return `<div class="sortbar"><label>Сортировка<select data-sort="${kind}">${Object.entries(defs).map(([k, v]) => `<option value="${k}"${k === key ? ' selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
     <button type="button" class="sortdir" data-dir="${kind}" title="Направление: ${dir > 0 ? 'по возрастанию' : 'по убыванию'}" aria-label="Направление сортировки: ${dir > 0 ? 'по возрастанию' : 'по убыванию'}">${dir > 0 ? '↑' : '↓'}</button></div>`;
 }
 
 function inventorySummary(c, d) {
-  const s = { count: 0, cost: 0, sell: 0, tali: 0, kronos: 0, cards: 0 };
+  const s = { count: 0, cost: 0, sell: 0, tali: 0, kronos: 0, cards: 0, capacity: RULES.pocketLimit, over: false };
   for (const e of c.pockets) {
     const it = d.itemMap.get(e.id);
     if (!it) continue;
@@ -95,10 +140,16 @@ function inventorySummary(c, d) {
   for (const id of [...c.equipment, ...c.implants]) {
     const it = d.itemMap.get(id);
     if (!it) continue;
-    s.count += 1;
     s.cost += it.cost;
     s.sell += sellPrice(it, c).value;
   }
+  const storage = c.storage ? storageItems(c, d).find((it) => it.id === c.storage) : null;
+  if (storage) {
+    s.cost += storage.cost;
+    s.sell += sellPrice(storage, c).value;
+  }
+  s.capacity += storageBonus(storage);
+  s.over = s.count > s.capacity;
   for (const e of c.repository) {
     const cd = d.cardMap.get(e.id);
     if (!cd) continue;
@@ -113,7 +164,7 @@ function inventorySummary(c, d) {
 function inventoryTabs(c, race) {
   const qty = (rows) => rows.reduce((a, e) => a + (Number(e.qty) || 0), 0);
   return [
-    { id: 'pockets', label: 'Карманы', ok: true, count: qty(c.pockets) },
+    { id: 'pockets', label: 'Хранилище', ok: true, count: qty(c.pockets) },
     { id: 'equipment', label: 'Экипировка', ok: true, count: c.equipment.length },
     { id: 'implants', label: 'Импланты', ok: !!race?.implants_allowed, hint: 'только Поляриец и Новуссит', count: c.implants.length },
     { id: 'repository', label: 'Репозиторий', ok: race?.name === 'Новуссит', hint: 'только Новуссит', count: qty(c.repository) },
@@ -154,20 +205,26 @@ function inventoryPanel(c, d, r, race) {
   if (active === 'pockets') {
     const defs = itemSortDefs(true, c);
     const rows = sortRows('pockets', c.pockets.map((e, i) => { const it = d.itemMap.get(e.id); return { e, i, it, miss: !it }; }), defs);
+    const storageList = storageItems(c, d);
+    const storage = c.storage ? storageList.find((it) => it.id === c.storage) : null;
+    const storageSlot = `<div class="storage-slot">
+      <label>[K] Хранилище<select data-p="storage"${storageList.length ? '' : ' disabled'}><option value="">${storageList.length ? '— не установлено —' : 'Сначала добавьте [K] в хранилище'}</option>${opts(storageList, c.storage, (it) => optLabel(it), (it) => it.id)}</select></label>
+      ${storage ? `<span class="chip">Бонус: +${num(storageBonus(storage))} мест</span>` : ''}
+    </div>${storage ? `<p class="desc meta storage-desc">${esc(storage.description)}</p>` : ''}`;
     const pocketRow = ({ e, i, it }) => {
       if (!it) return missing('pockets', i, e.id);
       const sp = sellPrice(it, c);
       return itemRow(it, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="pockets.${i}.qty" value="${e.qty}"></label>
         <label>Цена продажи <input type="number" data-p="overrides.sellPrice.${it.id}" value="${sp.overridden ? sp.value : ''}" placeholder="авто ${num(sp.auto)}"></label>${del('pockets', i)}</div>`);
     };
-    body = `<div class="inv-tools">${adder('pockets', 'Найти предмет…')}${sortBar('pockets', defs)}</div>
-      <div class="list">${rows.map(pocketRow).join('') || '<div class="empty">Карманы пусты. Добавьте первый предмет.</div>'}</div>`;
+    body = `${storageSlot}<div class="inv-tools">${adder('pockets', 'Найти предмет…', c, d)}${sortBar('pockets', defs)}</div>
+      <div class="list">${rows.map(pocketRow).join('') || '<div class="empty">Хранилище пусто. Добавьте первый предмет.</div>'}</div>`;
   } else if (active === 'equipment' || active === 'implants') {
     const defs = itemSortDefs(false, c);
     const ids = active === 'equipment' ? c.equipment : c.implants;
     const rows = sortRows(active, ids.map((id, i) => { const it = d.itemMap.get(id); return { id, i, it, miss: !it }; }), defs);
     const idRow = ({ id, i, it }) => it ? itemRow(it, `<div class="ctl">${del(active, i)}</div>`) : missing(active, i, id);
-    body = `<div class="inv-tools">${adder(active, 'Выбрать из карманов…')}${sortBar(active, defs)}</div>
+    body = `<div class="inv-tools">${adder(active, 'Выбрать из хранилища…', c, d)}${sortBar(active, defs)}</div>
       ${slots(active === 'equipment' ? r.gearSlots : r.implantSlots)}
       <div class="list">${rows.map(idRow).join('') || `<div class="empty">${active === 'equipment' ? 'Экипировка пуста.' : 'Импланты не выбраны.'}</div>`}</div>`;
   } else if (active === 'repository') {
@@ -176,7 +233,7 @@ function inventoryPanel(c, d, r, race) {
     const cardEntry = ({ e, i, cd }) => cd
       ? cardRow(cd, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="repository.${i}.qty" value="${e.qty}"></label>${del('repository', i)}</div>`)
       : missing('repository', i, e.id);
-    body = `<div class="inv-tools">${adder('repository', 'Найти карту…')}${sortBar('repository', defs)}</div>
+    body = `<div class="inv-tools">${adder('repository', 'Найти карту…', c, d)}${sortBar('repository', defs)}</div>
       <div class="list">${rows.map(cardEntry).join('') || '<div class="empty">Репозиторий пуст. Добавьте первую карту.</div>'}</div>`;
   } else {
     const chosen = new Set(Array.isArray(c.beasts) ? c.beasts : []);
@@ -191,13 +248,14 @@ function inventoryPanel(c, d, r, race) {
   return `<section class="panel inventory">
     <div class="inv-head"><h2>Инвентарь</h2>
       <div class="chips inv-summary">
-        <span class="chip" title="Суммарное количество предметов и карт">Позиций: ${num(sum.count)}</span>
+        <span class="chip${sum.over ? ' bad' : ''}" title="Занято мест в хранилище / всего мест (базовые ${RULES.pocketLimit} + бонус [K])">Позиций: ${num(sum.count)} / ${num(sum.capacity)}</span>
         <span class="chip total" title="Суммарная стоимость предметов по номиналу">Сумма: ${num(sum.cost)}</span>
         <span class="chip" title="Сколько получится при продаже всего по правилам (5% или ручная цена)">Продажа: ${num(sum.sell)}</span>
         ${sum.cards ? `<span class="chip" title="Стоимость карт в тали и Кроносе">Карты: ${num(sum.tali)} тали · ${num(sum.kronos)} Кронос</span>` : ''}
       </div>
     </div>
     <div class="subtabs" role="tablist">${available.map((t) => `<button type="button" role="tab" data-itab="${t.id}" class="${active === t.id ? 'on' : ''}" aria-selected="${active === t.id}">${esc(t.label)}${t.count ? ` <span class="tabcount">${t.count}</span>` : ''}${t.wip ? ' <span class="wip">WIP</span>' : ''}</button>`).join('')}</div>
+    <select class="subtabs-select" data-itab-select="1" aria-label="Раздел инвентаря">${available.map((t) => `<option value="${t.id}"${active === t.id ? ' selected' : ''}>${esc(t.label)}${t.count ? ` (${t.count})` : ''}${t.wip ? ' — WIP' : ''}</option>`).join('')}</select>
     ${hidden.length ? `<p class="meta inv-note">Скрыты разделы: ${hidden.map((t) => `<span title="${esc(t.hint)}">${esc(t.label)}</span>`).join(', ')}. Доступность зависит от расы и класса.</p>` : ''}
     ${body}
   </section>`;
@@ -206,10 +264,14 @@ function inventoryPanel(c, d, r, race) {
 export function render(ctx) {
   const c = ctx.char, d = ctx.data, r = derive(c, d);
   const race = d.raceMap.get(c.race), trait = d.traitMap.get(c.trait);
-  const own = c.pockets.map((e) => d.itemMap.get(e.id)).filter(Boolean).sort((a, b) => label(a).localeCompare(label(b), 'ru'));
+  const isNovus = race?.name === 'Новуссит';
+  if (!isNovus && c.essence) c.essence = null;
+  const classes = allowedClasses(c.race, d.classes);
+  if (!classes.some((x) => x.name === c.class)) c.class = classes[0]?.name || '';
+  const stats = [...d.stats].sort((a, b) => STAT_ORDER.indexOf(a.key) - STAT_ORDER.indexOf(b.key));
   const stat = (s) => {
     const issue = r.statIssues[s.key];
-    return `<label class="${issue ? 'stat-bad' : ''}"${issue ? ` title="Не хватает для навыков: ${esc(issue.skills.join(', '))}"` : ''}>${esc(s.name)}${issue ? ` <span class="bad">нужно ${issue.need}</span>` : ''}<input type="number" min="0" max="${s.max}" data-p="stats.${s.key}" value="${c.stats[s.key]}"${issue ? ' class="err"' : ''}></label>`;
+    return `<label class="${issue ? 'stat-bad' : ''}"${issue ? ` title="Не хватает для навыков: ${esc(issue.skills.join(', '))}"` : ''}>${esc(s.name)}${issue ? ` <span class="bad">нужно ${issue.need}</span>` : ''}<input type="number" min="1" max="${s.max}" step="1" data-p="stats.${s.key}" value="${c.stats[s.key]}"${issue ? ' class="err"' : ''}></label>`;
   };
   const ab = Array.from({ length: 9 }, (_, i) => c.abilities[i] || null);
   const rankText = (x) => `${x.level} · ${x.name}`;
@@ -222,17 +284,17 @@ export function render(ctx) {
         <label>Имя<input data-p="name" value="${esc(c.name)}"></label><label>Игрок<input data-p="player" value="${esc(c.player)}"></label>
         <label>Раса<select data-p="race">${opts(d.races, c.race)}</select></label>
         <label>Ранг<select data-p="rank" data-n="1">${opts(d.ranks, c.rank, rankText, (x) => x.level)}</select></label>
-        <label>Класс<select data-p="class">${opts(d.classes, c.class, (x) => x.name, (x) => x.name)}</select></label>
+        <label>Класс<select data-p="class">${opts(classes, c.class, (x) => x.name, (x) => x.name)}</select></label>
         <label>Черта<select data-p="trait"><option value="">—</option>${opts(d.traits, c.trait)}</select></label>
-        <label>Сущность<select data-p="essence"><option value="">—</option>${opts(d.essences, c.essence)}</select></label></div>
+        ${isNovus ? `<label>Сущность<select data-p="essence"><option value="">—</option>${opts(d.essences, c.essence)}</select></label>` : ''}</div>
         ${race && !race.has_kronos ? `<p class="meta">${esc(race.name)}: Кроноса нет (справочно, расчёт не блокируется).</p>` : ''}
         ${trait ? `<p class="desc meta">${esc(trait.description)}</p>` : ''}</section>
       <section class="panel"><div class="grid">${ov('Свободные очки', 'overrides.freePoints', r.freePoints)}${ov('Макс. ОЗ', 'overrides.hpMax', r.hpMax)}${ov('Макс. Кронос', 'overrides.kronosMax', r.kronosMax)}</div></section>
-      <section class="panel"><h2>Характеристики</h2><div class="grid">${d.stats.map(stat).join('')}</div></section>
+      <section class="panel"><h2>Характеристики</h2><div class="grid">${stats.map(stat).join('')}</div></section>
       <section class="panel"><h2>Навыки</h2>
         <div class="chips"><span class="chip ${r.skillsOverLimit ? 'bad' : ''}">Навыки: ${r.skillCount} / ${r.skillLimit}</span><span class="chip">Щепки: ${num(r.shardsTotal)}</span><span class="chip">Лимит: 4 × ранг ${r.rankLevel}</span></div>
         ${issues.length ? `<p class="bad">Не хватает характеристик: ${issues.map(([k, v]) => `${esc(d.statMap.get(k)?.name || k)} (нужно ${v.need}, есть ${v.have})`).join('; ')}</p>` : ''}
-        ${adder('skills', full ? `Лимит навыков: ${r.skillLimit}` : 'Найти навык…', full)}
+        ${adder('skills', full ? `Лимит навыков: ${r.skillLimit}` : 'Найти навык…', c, d, full)}
         ${full ? `<p class="meta bad">Лимит навыков: ${r.skillLimit} (4 × ранг ${r.rankLevel}).</p>` : ''}
         ${r.skills.map((s) => skillRow(s, d)).join('') || '<p class="meta">Навыки не выбраны.</p>'}</section>
       <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => `<div class="line"><select class="grow" data-p="abilities.${i}"><option value="">Слот ${i + 1}: пусто</option>${opts(d.abilities, id, (a) => `${a.kind === 'mutation' ? 'Мутация' : 'Способность'}: ${a.name}${a.class_requirement ? ' (' + a.class_requirement + ')' : ''}`)}</select></div>
@@ -242,15 +304,37 @@ export function render(ctx) {
       ${inventoryPanel(c, d, r, race)}
       <section class="panel"><h2>Заметки</h2><textarea data-p="notes" rows="4" style="width:100%">${esc(c.notes)}</textarea></section>
     </div>
-  </div>
-  ${datalist('items', d.items.map((it) => [optionLabel(it), it.id]))}${datalist('cards', d.cards.map((x) => [`${label(x)} · ${x.rarity} · ${x.id}`, x.id]))}
-  ${datalist('skills', d.skills.map((s) => [`${s.name} · ${d.statMap.get(s.stat)?.name} ${s.tier}`, s.id]))}${datalist('own', own.map((it) => [optionLabel(it), it.id]))}`;
+  </div>`;
 }
 
 export function bind(root, ctx) {
   const c = ctx.char, done = () => { ctx.save(); ctx.rerender(); };
+  root.oninput = (e) => {
+    const kind = e.target.dataset.search;
+    if (!kind) return;
+    const box = e.target.closest('[data-addbox]'), select = box?.querySelector(`[data-in="${kind}"]`);
+    if (!select) return;
+    const q = e.target.value.trim().toLowerCase();
+    const rows = adderRows(kind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group}`.toLowerCase().includes(q));
+    const hint = box.dataset.hint || 'Выберите…';
+    select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
+  };
   root.onchange = (e) => {
-    if (e.target.dataset.p) { set(c, e.target.dataset.p, fieldValue(e.target)); done(); return; }
+    if (e.target.dataset.p) {
+      const path = e.target.dataset.p;
+      set(c, path, fieldValue(e.target));
+      if (path.startsWith('stats.')) {
+        const key = path.slice(6), max = ctx.data.statMap.get(key)?.max || 10;
+        c.stats[key] = Math.min(max, Math.max(1, Math.round(Number(c.stats[key]) || 1)));
+      }
+      if (path === 'race') {
+        const allowed = allowedClasses(c.race, ctx.data.classes);
+        if (!allowed.some((x) => x.name === c.class)) c.class = allowed[0]?.name || '';
+        if (ctx.data.raceMap.get(c.race)?.name !== 'Новуссит') c.essence = null;
+      }
+      done(); return;
+    }
+    if (e.target.dataset.itabSelect !== undefined) { UI.tab = e.target.value; ctx.rerender(); return; }
     if (e.target.dataset.sort) {
       const kind = e.target.dataset.sort, prev = UI.sort[kind] || ['name', 1];
       UI.sort[kind] = [e.target.value, prev[1] === -1 ? -1 : 1];
@@ -274,12 +358,11 @@ export function bind(root, ctx) {
       ctx.rerender(); return;
     }
     const add = e.target.closest('[data-add]'), rm = e.target.closest('[data-del]');
-    if (rm) { const [kind, i] = rm.dataset.del.split('.'); c[kind].splice(Number(i), 1); done(); }
+    if (rm) { const [kind, i] = rm.dataset.del.split('.'); c[kind].splice(Number(i), 1); if (c.storage && !c.pockets.some((x) => x.id === c.storage)) c.storage = null; done(); }
     if (!add) return;
     const kind = add.dataset.add, input = root.querySelector(`[data-in="${kind}"]`);
-    const o = root.querySelector(`#dl-${LIST[kind]} option[value="${CSS.escape(input.value)}"]`);
-    if (!o) { input.classList.add('err'); return; }
-    const id = o.dataset.id;
+    const id = input?.value;
+    if (!id) { input?.classList.add('err'); return; }
     if (kind === 'skills') {
       if (c.skills.length >= skillLimit(c, ctx.data)) { input.classList.add('err'); return; }
       c.skills.push({ id, level: 5 });

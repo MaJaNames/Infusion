@@ -8,12 +8,18 @@ const SOON = {
 };
 
 export function render(ctx) {
-  return `<div class="tabs">${TABS.map(([id, t]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${t}</button>`).join('')}</div>
+  return `<div class="tabs util-tabs">${TABS.map(([id, t]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <select class="tabs-select" data-tab-select="1" aria-label="Раздел утилит">${TABS.map(([id, t]) => `<option value="${id}"${S.tab === id ? ' selected' : ''}>${t}</option>`).join('')}</select>
     ${S.tab === 'shop' ? shop.render(ctx) : `<section class="panel">${SOON[S.tab]}</section>`}`;
 }
 
 export function bind(root, ctx) {
   if (S.tab === 'shop') shop.bind(root, ctx);
+  const innerChange = root.onchange;
+  root.onchange = (e) => {
+    if (e.target.dataset.tabSelect !== undefined) { S.tab = e.target.value; ctx.rerender(); return; }
+    innerChange?.(e);
+  };
   const inner = root.onclick;
   root.onclick = (e) => {
     const t = e.target.closest('[data-tab]');

@@ -14,6 +14,7 @@ const ctx = { data: null, char: loadChar(), save: () => saveChar(ctx.char), rere
 
 function draw(full) {
   const id = location.hash.slice(1) || 'db', tab = TABS.find((t) => t[0] === id) || TABS[0], y = scrollY;
+  document.body.classList.remove('drawer-open');
   $('nav').innerHTML = TABS.map(([k, t]) => `<a href="#${k}" class="${k === tab[0] ? 'on' : ''}">${t}</a>`).join('');
   if (full) $('help').innerHTML = helpBlock(tab[0]);
   $('app').innerHTML = tab[2].render(ctx);

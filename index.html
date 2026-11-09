@@ -2,8 +2,22 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Инфузия</title>
+<script>
+// Режим интерфейса до первой отрисовки: узкий экран или сенсорное устройство (в т.ч. телефон в ландшафте).
+(() => {
+  const root = document.documentElement, coarse = matchMedia('(pointer: coarse)');
+  const update = () => {
+    const touch = (navigator.maxTouchPoints || 0) > 0 || coarse.matches;
+    root.dataset.ui = innerWidth <= 700 || (touch && innerWidth <= 1024) ? 'mobile' : 'desktop';
+  };
+  update();
+  addEventListener('resize', update, { passive: true });
+  addEventListener('orientationchange', update);
+  coarse.addEventListener?.('change', update);
+})();
+</script>
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>

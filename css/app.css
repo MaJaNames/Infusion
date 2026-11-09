@@ -13,12 +13,16 @@ nav a,.tabs button{padding:.4rem .85rem;border-radius:6px;color:var(--mute);text
 nav a.on,.tabs button.on{background:var(--acc);color:var(--accfg)}
 main{max-width:1400px;margin:0 auto;padding:1rem}
 .tabs{display:flex;gap:.2rem;flex-wrap:wrap;margin-bottom:.8rem}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1rem;margin-bottom:1rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1rem;margin-bottom:1rem;min-width:0}
 .panel h2{margin:.1rem 0 .7rem;font-size:1.05rem}
 .help{background:var(--panel);border:1px dashed var(--line);border-radius:8px;padding:.5rem .9rem;margin-bottom:1rem;color:var(--mute)}
 .help summary{cursor:pointer}.help p{margin:.5rem 0}
+.help ul{margin:.4rem 0 .6rem;padding-left:1.15rem}
+.help li{margin:.25rem 0}
+.help li::marker{color:var(--acc)}
+.help b{color:var(--ink);font-weight:600}
 .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem}
-input,select,textarea{padding:.45rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-width:0}
+input,select,textarea{padding:.45rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-width:0;max-width:100%}
 input[type=search]{flex:1;min-width:12rem}
 input.err{border-color:var(--bad)}
 button,.btn{padding:.45rem .9rem;border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer;display:inline-block}
@@ -43,11 +47,14 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:.2rem 1rem;margin:.5re
 .more{display:block;margin:1rem auto}
 .empty,.miss{padding:1.2rem;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:8px}
 .c{--rc:var(--c)}.u{--rc:var(--u)}.r{--rc:var(--r)}.e{--rc:var(--e)}.l{--rc:var(--l)}.k{--rc:var(--k)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem}
-.grid label,.ov{display:grid;gap:.2rem;font-size:.85rem;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:.6rem}
+.grid>*{min-width:0}
+.grid label,.ov{display:grid;gap:.2rem;font-size:.85rem;color:var(--mute);min-width:0}
+.grid input,.grid select{width:100%}
 .ov b{font-size:1.4rem;font-weight:600;color:var(--ink)}.ov.on b{color:var(--l)}
 .bad{color:var(--bad)!important}
-.add{display:flex;gap:.5rem;margin:.6rem 0}.add input{flex:1}
+.add{display:grid;grid-template-columns:minmax(7rem,12rem) minmax(0,1fr) auto;gap:.5rem;margin:.6rem 0;align-items:center;min-width:0}
+.add input{min-width:0}.add input[type=search]{width:100%}.add select{width:100%;min-width:0;max-width:32rem}
 .line{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;padding:.45rem .7rem;background:var(--panel);border:1px solid var(--line);border-radius:6px;margin-bottom:.35rem}
 .line .grow{flex:1;min-width:10rem}.line input{width:5.5rem}
 .x{padding:.15rem .5rem;color:var(--bad)}
@@ -65,8 +72,6 @@ details.line>.body{padding:.4rem .7rem .7rem;border-top:1px dashed var(--line)}
 .chip.bad{border-color:var(--bad);color:var(--bad)}
 button:disabled,input:disabled{opacity:.55;cursor:not-allowed}
 table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bottom:1px solid var(--line);text-align:left}
-@media(max-width:700px){main{padding:.6rem}.row summary{flex-direction:column;gap:.2rem}.price{text-align:left}}
-
 /* ===== Персонаж: широкий адаптивный макет и инвентарь ===== */
 .char-layout{display:grid;gap:1rem;grid-template-columns:minmax(0,1fr);align-items:start}
 .char-col{display:grid;gap:1rem;align-content:start;min-width:0}
@@ -77,6 +82,11 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .inv-head h2{margin:.1rem 0 .4rem}
 .inv-summary{margin:.15rem 0 .45rem}
 .inv-summary .chip.total{border-color:var(--acc);color:var(--acc);font-weight:600}
+.storage-slot{display:flex;align-items:flex-end;gap:.6rem;flex-wrap:wrap;margin:.5rem 0 .2rem;padding:.5rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.storage-slot label{display:grid;gap:.2rem;font-size:.8rem;color:var(--mute);min-width:0;flex:1 1 16rem}
+.storage-slot select{width:100%;min-width:0}
+.storage-slot .chip{white-space:nowrap}
+.storage-desc{margin:.15rem 0 .55rem}
 .inv-note{margin:.1rem 0 .5rem}
 .inv-note span{border-bottom:1px dotted var(--line);cursor:help}
 
@@ -86,9 +96,20 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .subtabs button.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
 .subtabs .tabcount{font-size:.72rem;opacity:.75;margin-left:.1rem}
 .subtabs .wip{font-size:.62rem;letter-spacing:.04em;border:1px solid currentColor;border-radius:3px;padding:0 .2rem;vertical-align:.08em}
+.subtabs-select,.tabs-select{display:none;width:100%;font-weight:600;background:var(--panel)}
+
+/* ===== Базы данных: сортировка и мобильный лист фильтров ===== */
+.db-toolbar{align-items:flex-end}
+.db-toolbar input[type=search]{flex:1 1 18rem;max-width:28rem}
+.db-filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end}
+.db-filters select{min-width:9rem}
+.db-filters .sortbar{margin-left:0}
+.filters-btn,.filters-head,.filters-apply{display:none}
+.filters-backdrop{display:none}
 
 .inv-tools{display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap;margin:.35rem 0 .6rem}
-.inv-tools .add{margin:0;flex:1 1 18rem}
+.inv-tools .add{margin:0;flex:1 1 100%;min-width:0}
+.inv-tools .sortbar{margin-left:auto}
 .sortbar{display:flex;align-items:flex-end;gap:.35rem;margin-left:auto}
 .sortbar label{display:grid;gap:.15rem;font-size:.8rem;color:var(--mute)}
 .sortbar select{min-width:10.5rem}
@@ -98,13 +119,69 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .beast.picked{border-color:var(--acc)}
 .beast.picked>summary{background:var(--bg)}
 
-@media(max-width:700px){
-  .subtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-left:-.25rem;margin-right:-.25rem;padding-left:.25rem;padding-right:.25rem;scroll-snap-type:x proximity}
-  .subtabs::-webkit-scrollbar{display:none}
-  .subtabs button{flex:0 0 auto;scroll-snap-align:start}
-  .inv-tools{flex-direction:column;align-items:stretch}
-  .sortbar{margin-left:0;justify-content:space-between}
-  .sortbar label{flex:1}
-  .sortbar select{width:100%;min-width:0}
-  .sortdir{flex:0 0 auto}
+/* ===== Мобильный режим: узкий экран или сенсорное устройство ===== */
+:root[data-ui=mobile] body{font-size:14px;-webkit-text-size-adjust:100%}
+:root[data-ui=mobile] header{gap:.4rem;padding:max(.45rem,env(safe-area-inset-top)) max(.55rem,env(safe-area-inset-right)) .45rem max(.55rem,env(safe-area-inset-left))}
+:root[data-ui=mobile] .logo{font-size:1rem}
+:root[data-ui=mobile] nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.15rem;width:100%}
+:root[data-ui=mobile] nav a{display:flex;align-items:center;justify-content:center;min-height:2.35rem;padding:.3rem .15rem;font-size:.78rem;line-height:1.15;text-align:center}
+:root[data-ui=mobile] main{padding:.55rem max(.55rem,env(safe-area-inset-right)) max(.55rem,env(safe-area-inset-bottom)) max(.55rem,env(safe-area-inset-left))}
+:root[data-ui=mobile] input,
+:root[data-ui=mobile] select,
+:root[data-ui=mobile] textarea{font-size:16px}
+:root[data-ui=mobile] button{min-height:2.5rem}
+:root[data-ui=mobile] .panel{padding:.7rem;border-radius:6px;margin-bottom:.7rem}
+:root[data-ui=mobile] .panel h2{font-size:1rem;margin:.05rem 0 .5rem}
+:root[data-ui=mobile] .char-layout,
+:root[data-ui=mobile] .char-col{gap:.7rem}
+:root[data-ui=mobile] .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem}
+:root[data-ui=mobile] .row summary{flex-direction:column;gap:.2rem;padding:.5rem .6rem}
+:root[data-ui=mobile] .price{text-align:left}
+:root[data-ui=mobile] .body{padding:.3rem .6rem .7rem}
+:root[data-ui=mobile] dl{grid-template-columns:1fr;gap:.1rem 0}
+:root[data-ui=mobile] dt{margin-top:.35rem}
+:root[data-ui=mobile] .desc,
+:root[data-ui=mobile] .row b{overflow-wrap:anywhere}
+:root[data-ui=mobile] .ctl input{width:5rem}
+:root[data-ui=mobile] .line{padding:.4rem .55rem;gap:.45rem}
+:root[data-ui=mobile] .line .grow,
+:root[data-ui=mobile] details.line>summary .grow{min-width:0;width:100%}
+:root[data-ui=mobile] .inv-head{flex-direction:column;gap:.2rem}
+:root[data-ui=mobile] .inv-summary{gap:.25rem}
+:root[data-ui=mobile] .inv-summary .chip{font-size:.75rem}
+:root[data-ui=mobile] .storage-slot{flex-direction:column;align-items:stretch;gap:.4rem}
+:root[data-ui=mobile] .storage-slot label{flex:1 1 auto}
+:root[data-ui=mobile] .inv-tools{flex-direction:column;align-items:stretch;gap:.5rem}
+:root[data-ui=mobile] .inv-tools .add{flex:1 1 auto}
+:root[data-ui=mobile] .add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);align-items:center;gap:.45rem}
+:root[data-ui=mobile] .add input[type=search]{grid-column:1;width:100%;min-width:0}
+:root[data-ui=mobile] .add select{grid-column:2;width:100%;min-width:0}
+:root[data-ui=mobile] .add button{grid-column:1/-1;width:100%}
+:root[data-ui=mobile] input[type=search]{min-width:0}
+:root[data-ui=mobile] .subtabs,
+:root[data-ui=mobile] .db-tabs,
+:root[data-ui=mobile] .util-tabs{display:none}
+:root[data-ui=mobile] .subtabs-select,
+:root[data-ui=mobile] .tabs-select{display:block;margin:.45rem 0 .6rem}
+:root[data-ui=mobile] .sortbar{margin-left:0;justify-content:space-between;width:100%}
+:root[data-ui=mobile] .sortbar label{flex:1;min-width:0}
+:root[data-ui=mobile] .sortbar select{width:100%;min-width:0}
+:root[data-ui=mobile] .sortdir{flex:0 0 auto}
+:root[data-ui=mobile] .toolbar{gap:.4rem}
+:root[data-ui=mobile] .db-toolbar input[type=search]{flex:1 1 8rem}
+:root[data-ui=mobile] .filters-btn{display:inline-block;flex:0 0 auto}
+:root[data-ui=mobile] .db-filters{position:fixed;top:0;right:0;bottom:0;z-index:40;width:min(86vw,340px);margin:0;padding:1rem;background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:stretch;gap:.8rem;overflow:auto;transform:translateX(105%);visibility:hidden;transition:transform .2s ease,visibility 0s linear .2s}
+:root[data-ui=mobile] .db-filters.open{transform:none;visibility:visible;transition:transform .2s ease}
+:root[data-ui=mobile] .db-filters select{width:100%;min-width:0}
+:root[data-ui=mobile] .db-filters .sortbar{width:100%;justify-content:space-between}
+:root[data-ui=mobile] .db-filters .sortbar label{flex:1}
+:root[data-ui=mobile] .db-filters .sortbar select{width:100%}
+:root[data-ui=mobile] .filters-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:1.05rem}
+:root[data-ui=mobile] .filters-apply{display:block;width:100%;background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+:root[data-ui=mobile] .filters-backdrop:not([hidden]){display:block;position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.38)}
+body.drawer-open{overflow:hidden}
+
+/* Телефон в ландшафте: места больше, поля не растягиваются на всю ширину. */
+@media(min-width:700px){
+  :root[data-ui=mobile] .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
 }

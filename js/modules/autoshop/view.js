@@ -1,4 +1,4 @@
-import { esc, num, label, opts, set, fieldValue } from '../../core/util.js';
+import { esc, num, label, opts, set, fieldValue, optLabel } from '../../core/util.js';
 import { partsOf, KIND_LABEL, statChips } from './parts.js';
 import { summarize } from './aggregate.js';
 
@@ -15,7 +15,7 @@ export function render(ctx) {
   const parts = partsOf(ctx.data), of = (kind) => parts.filter((p) => p.stats.kind === kind);
   const find = (id) => parts.find((p) => p.item.id === id);
   const pick = (id) => { const p = id && find(id); return p ? { cost: p.item.cost, stats: p.stats, name: label(p.item) } : null; };
-  const select = (path, kind, cur) => `<select data-b="${path}"><option value="">—</option>${opts(of(kind), cur, (p) => `${label(p.item)} · ${p.item.rarity} · ${num(p.item.cost)}`, (p) => p.item.id)}</select>`;
+  const select = (path, kind, cur) => `<select data-b="${path}"><option value="">—</option>${opts(of(kind), cur, (p) => optLabel(p.item), (p) => p.item.id)}</select>`;
   const sum = summarize({ body: pick(B.body), wheels: pick(B.wheels), engine: pick(B.engine), weapons: B.weapons.map(pick), modules: B.modules.map(pick), discount: B.discount });
   const picked = [B.body, B.wheels, B.engine, ...B.weapons, ...B.modules].map(find).filter(Boolean);
 
