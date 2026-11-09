@@ -48,5 +48,13 @@ check('навык и характеристика подсвечены', html2.i
 check('описание навыка раскрывается кликом', html2.includes('data-skill=') && html2.includes('<details'));
 check('общая сумма щепок выведена', html2.includes('Щепки:'));
 check('деталей техники', partsOf(d).length === 164, partsOf(d).length);
+const invHtml = character.render(ctx);
+check('инвентарь: подвкладки и сводка', ['Карманы', 'Экипировка', 'Импланты', 'Репозиторий', 'Сумма:', 'Продажа:'].every((x) => invHtml.includes(x)));
+check('инвентарь: сортировка по параметрам', invHtml.includes('data-sort="pockets"') && invHtml.includes('Количество') && invHtml.includes('Цена продажи'));
+const fakeRoot = { addEventListener() {} };
+character.bind(fakeRoot, ctx);
+fakeRoot.onclick({ target: { closest: (s) => s === '[data-itab]' ? { dataset: { itab: 'beasts' } } : null } });
+const beastHtml = character.render({ ...ctx, char: { ...c, race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id] } });
+check('инвентарь: способности Зверя (WIP)', beastHtml.includes('Способности Зверя') && beastHtml.includes('WIP') && beastHtml.includes(d.beasts[0].name));
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');
 process.exit(fail ? 1 : 0);
