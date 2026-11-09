@@ -3,9 +3,9 @@ export const num = (n) => Number(n || 0).toLocaleString('ru-RU');
 export const RC = { 'Обычный': 'c', 'Необычный': 'u', 'Редкий': 'r', 'Эпический': 'e', 'Легендарный': 'l', 'Культовый': 'k' };
 export const RARITIES = Object.keys(RC);
 export const label = (it) => `${it.tag ? `[${it.tag}] ` : ''}${it.name}`;
-// Короткая метка для выпадающих списков: [Тег] Название [Р] и * у культовых. Без ID.
+// Короткая метка для выпадающих списков: [Тег] Название [Р] и * у культовых (кроме редкости «Культовый»). Без ID.
 export const RARITY_SHORT = Object.freeze({ 'Обычный': 'О', 'Необычный': 'Н', 'Редкий': 'Р', 'Эпический': 'Э', 'Легендарный': 'Л', 'Культовый': 'К' });
-export const optLabel = (it) => `${label(it)}${it.rarity ? ` [${RARITY_SHORT[it.rarity] || String(it.rarity).slice(0, 1)}]` : ''}${it.iconic ? '*' : ''}`;
+export const optLabel = (it) => `${label(it)}${it.rarity ? ` [${RARITY_SHORT[it.rarity] || String(it.rarity).slice(0, 1)}]` : ''}${it.iconic && it.rarity !== 'Культовый' ? '*' : ''}`;
 export const uniq = (rows, key) => [...new Set(rows.map((r) => r[key]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
 export const opts = (rows, sel, text = (r) => r.name, val = (r) => r.id) =>
   rows.map((r) => `<option value="${esc(val(r))}"${String(val(r)) === String(sel) ? ' selected' : ''}>${esc(text(r))}</option>`).join('');

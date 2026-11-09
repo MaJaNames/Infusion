@@ -31,6 +31,9 @@ const del = (kind, i) => `<button class="x" data-del="${kind}.${i}" title="Уб�
 const missing = (kind, i, id) => `<div class="line miss">Записи ${esc(id)} больше нет в базе ${del(kind, i)}</div>`;
 const slots = (rows) => `<div class="chips">${rows.map((s) => `<span class="lim ${s.status === 'ОК' ? 'o' : s.status === 'Занято' ? 'b' : s.status === 'Свободно' ? 'f' : 'x2'}">${esc(s.tag)} ${s.used}/${s.limit} · ${s.status}</span>`).join('')}</div>`;
 const optionLabel = (it) => optLabel(it);
+const abilityText = (a) => `${a.kind === 'mutation' ? 'Мутация' : 'Способность'}: ${a.name}${a.class_requirement ? ' (' + a.class_requirement + ')' : ''}`;
+const abilityRows = (d) => d.abilities.map((a) => ({ id: a.id, text: abilityText(a), group: a.kind === 'mutation' ? 'Мутации' : 'Способности' }));
+const comboRows = (kind, c, d) => (kind.startsWith('abilities.') ? abilityRows(d) : adderRows(kind, c, d));
 
 // Состояние подвкладок и сортировки переживает перерисовку, как и OPEN у навыков.
 const UI = {
@@ -50,27 +53,50 @@ const sdef = (name, get, cmp = cmpText) => ({ name, get, cmp });
 function adderRows(kind, c, d) {
   if (kind === 'skills') return d.skills.map((s) => ({ id: s.id, text: `${s.name} · ${d.statMap.get(s.stat)?.name || s.stat} ${s.tier}`, group: d.statMap.get(s.stat)?.name || 'Навыки' }));
   if (kind === 'pockets') return d.items.map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
-  if (kind === 'repository') return d.cards.map((x) => ({ id: x.id, text: optLabel(x), group: x.school || 'Без школы' }));
+  if (kind === 'repository') return d.cards.map((x) => {
+    const own = c.class && x.classes.includes(c.class), general = x.classes.includes('Общие');
+    return { id: x.id, text: optLabel(x), group: own ? c.class : general ? 'Общие' : 'Другие классы', rank: own ? 0 : general ? 1 : 2 };
+  });
+  // Импланты ставятся сразу из справочника и не занимают места в хранилище.
+  if (kind === 'implants') return d.items.filter((it) => it.category === 'Имплант').map((it) => ({ id: it.id, text: optionLabel(it), group: 'Импланты' }));
   return c.pockets.map((e) => d.itemMap.get(e.id)).filter(Boolean).filter((it) => it.tag !== STORAGE_TAG).map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
 }
 
-function groupOptions(rows) {
+function grouped(rows) {
   const groups = new Map();
   for (const r of rows) {
     const g = r.group || 'Без группы';
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g).push(r);
   }
-  return [...groups.entries()].sort(([a], [b]) => cmpText(a, b)).map(([g, list]) =>
-    `<optgroup label="${esc(g)}">${list.sort((a, b) => cmpText(a.text, b.text)).map((r) => `<option value="${esc(r.id)}">${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
+  return [...groups.entries()].sort(([a, la], [b, lb]) => ((la[0]?.rank ?? 0) - (lb[0]?.rank ?? 0)) || cmpText(a, b))
+    .map(([g, list]) => [g, [...list].sort((a, b) => cmpText(a.text, b.text))]);
+}
+
+function groupOptions(rows) {
+  return grouped(rows).map(([g, list]) =>
+    `<optgroup label="${esc(g)}">${list.map((r) => `<option value="${esc(r.id)}">${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
+}
+
+function comboList(rows) {
+  if (!rows.length) return '<p class="combo-empty">Ничего не найдено</p>';
+  return grouped(rows).map(([g, list]) =>
+    `<div class="combo-group"><div class="combo-group-name">${esc(g)}</div>${list.map((r) => `<button type="button" class="combo-opt" role="option" data-combo-opt="${esc(r.id)}">${esc(r.text)}</button>`).join('')}</div>`).join('');
 }
 
 function adder(kind, hint, c, d, disabled = false) {
   const rows = adderRows(kind, c, d), empty = !rows.length, off = disabled || empty;
-  const emptyText = kind === 'equipment' || kind === 'implants' ? 'Сначала добавьте предметы в хранилище' : 'Нет доступных вариантов';
+  const emptyText = kind === 'equipment' ? 'Сначала добавьте предметы в хранилище' : 'Нет доступных вариантов';
   return `<div class="add" data-addbox="${kind}" data-hint="${esc(hint)}">
     <input type="search" data-search="${kind}" placeholder="Фильтр…" autocomplete="off"${off ? ' disabled' : ''}>
     <select data-in="${kind}" aria-label="${esc(hint)}"${off ? ' disabled' : ''}><option value="">${esc(hint)}</option>${empty ? `<option value="" disabled>${esc(emptyText)}</option>` : groupOptions(rows)}</select>
+    <div class="combo" data-combo="${kind}">
+      <button type="button" class="combo-btn" data-combo-btn="${kind}" aria-haspopup="listbox" aria-expanded="false"${off ? ' disabled' : ''}><span data-combo-label="${kind}">${esc(hint)}</span><span class="combo-caret" aria-hidden="true">▾</span></button>
+      <div class="combo-pop" data-combo-pop="${kind}" hidden>
+        <input type="search" class="combo-search" data-combo-search="${kind}" placeholder="Поиск…" autocomplete="off" aria-label="Поиск: ${esc(hint)}">
+        <div class="combo-list" role="listbox" aria-label="${esc(hint)}" data-combo-list="${kind}"></div>
+      </div>
+    </div>
     <button data-add="${kind}"${off ? ' disabled' : ''}>Добавить</button></div>`;
 }
 
@@ -130,12 +156,20 @@ function sortBar(kind, defs) {
 
 function inventorySummary(c, d) {
   const s = { count: 0, cost: 0, sell: 0, tali: 0, cards: 0, capacity: RULES.pocketLimit, over: false };
+  // Установленные импланты не занимают место в хранилище, даже если остались в старом списке.
+  const installed = new Map();
+  for (const id of c.implants) installed.set(id, (installed.get(id) || 0) + 1);
   for (const e of c.pockets) {
     const it = d.itemMap.get(e.id);
     if (!it) continue;
-    const qty = Number(e.qty) || 0;
+    let qty = Number(e.qty) || 0;
+    if (it.category === 'Имплант' && installed.get(it.id)) {
+      const used = Math.min(qty, installed.get(it.id));
+      qty -= used;
+      installed.set(it.id, installed.get(it.id) - used);
+    }
     s.count += qty;
-    s.cost += it.cost * qty;
+    s.cost += (it.cost || 0) * qty;
     s.sell += sellPrice(it, c).value * qty;
   }
   for (const id of c.implants) {
@@ -191,6 +225,18 @@ const skillRow = (s, d) => {
   </details>`;
 };
 
+function abilityCombo(id, i, d) {
+  const chosen = id ? d.abilityMap.get(id) : null, key = `abilities.${i}`, hint = `Слот ${i + 1}: пусто`;
+  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${opts(d.abilities, id, abilityText)}</select>
+    <div class="combo grow" data-combo="${key}" data-combo-target="${key}">
+      <button type="button" class="combo-btn" data-combo-btn="${key}" aria-haspopup="listbox" aria-expanded="false"><span data-combo-label="${key}">${esc(chosen ? abilityText(chosen) : hint)}</span><span class="combo-caret" aria-hidden="true">▾</span></button>
+      <div class="combo-pop" data-combo-pop="${key}" hidden>
+        <input type="search" class="combo-search" data-combo-search="${key}" placeholder="Поиск…" autocomplete="off" aria-label="Поиск: ${esc(hint)}">
+        <div class="combo-list" role="listbox" aria-label="${esc(hint)}" data-combo-list="${key}"></div>
+      </div>
+    </div></div>${chosen ? `<p class="desc meta">${esc(chosen.description)}</p>` : ''}`;
+}
+
 function inventoryPanel(c, d, r, race) {
   const tabs = inventoryTabs(c, race);
   const available = tabs.filter((t) => t.ok);
@@ -227,7 +273,7 @@ function inventoryPanel(c, d, r, race) {
       const key = `${active}.${id}`;
       return itemRow(it, `<div class="ctl">${del(active, i)}</div>`, { openKey: key, open: OPEN_ROWS.has(key) });
     };
-    body = `<div class="inv-tools">${adder(active, 'Выбрать из хранилища…', c, d)}${sortBar(active, defs)}</div>
+    body = `<div class="inv-tools">${adder(active, active === 'implants' ? 'Выбрать имплант…' : 'Выбрать из хранилища…', c, d)}${sortBar(active, defs)}</div>
       ${slots(active === 'equipment' ? r.gearSlots : r.implantSlots)}
       <div class="list">${rows.map(idRow).join('') || `<div class="empty">${active === 'equipment' ? 'Экипировка пуста.' : 'Импланты не выбраны.'}</div>`}</div>`;
   } else if (active === 'repository') {
@@ -303,8 +349,7 @@ export function render(ctx) {
         ${adder('skills', full ? `Лимит навыков: ${r.skillLimit}` : 'Найти навык…', c, d, full)}
         ${full ? `<p class="meta bad">Лимит навыков: ${r.skillLimit} (4 × ранг ${r.rankLevel}).</p>` : ''}
         ${r.skills.map((s) => skillRow(s, d)).join('') || '<p class="meta">Навыки не выбраны.</p>'}</section>
-      <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => `<div class="line"><select class="grow" data-p="abilities.${i}"><option value="">Слот ${i + 1}: пусто</option>${opts(d.abilities, id, (a) => `${a.kind === 'mutation' ? 'Мутация' : 'Способность'}: ${a.name}${a.class_requirement ? ' (' + a.class_requirement + ')' : ''}`)}</select></div>
-        ${id && d.abilityMap.get(id) ? `<p class="desc meta">${esc(d.abilityMap.get(id).description)}</p>` : ''}`).join('')}</section>
+      <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d)).join('')}</section>
     </div>
     <div class="char-col">
       ${inventoryPanel(c, d, r, race)}
@@ -315,7 +360,20 @@ export function render(ctx) {
 
 export function bind(root, ctx) {
   const c = ctx.char, done = () => { ctx.save(); ctx.rerender(); };
+  const closeCombos = () => root.querySelectorAll?.('[data-combo-pop]')?.forEach?.((pop) => {
+    pop.hidden = true;
+    pop.closest('[data-combo]')?.querySelector('[data-combo-btn]')?.setAttribute('aria-expanded', 'false');
+  });
   root.oninput = (e) => {
+    const comboKind = e.target.dataset.comboSearch;
+    if (comboKind) {
+      const box = e.target.closest('[data-combo]');
+      if (!box) return;
+      const q = e.target.value.trim().toLowerCase();
+      const rows = comboRows(comboKind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group}`.toLowerCase().includes(q));
+      box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
+      return;
+    }
     const kind = e.target.dataset.search;
     if (!kind) return;
     const box = e.target.closest('[data-addbox]'), select = box?.querySelector(`[data-in="${kind}"]`);
@@ -355,6 +413,40 @@ export function bind(root, ctx) {
     }
   };
   root.onclick = (e) => {
+    const comboBtn = e.target.closest('[data-combo-btn]');
+    if (comboBtn) {
+      const combo = comboBtn.closest('[data-combo]'), pop = combo?.querySelector('[data-combo-pop]');
+      const willOpen = !!pop?.hidden;
+      closeCombos();
+      if (willOpen) {
+        pop.hidden = false;
+        const btnRect = comboBtn.getBoundingClientRect(), gap = 8;
+        const below = innerHeight - btnRect.bottom - gap, above = btnRect.top - gap;
+        const up = below < 352 && above > below;
+        pop.classList.toggle('up', up);
+        pop.style.maxHeight = `${Math.min(352, Math.max(160, up ? above : below))}px`;
+        comboBtn.setAttribute('aria-expanded', 'true');
+        const search = pop.querySelector('[data-combo-search]');
+        search.value = '';
+        pop.querySelector('[data-combo-list]').innerHTML = comboList(comboRows(combo.dataset.combo, c, ctx.data));
+        search.focus();
+      }
+      return;
+    }
+    const comboOpt = e.target.closest('[data-combo-opt]');
+    if (comboOpt) {
+      const combo = comboOpt.closest('[data-combo]'), kind = combo?.dataset.combo, target = combo?.dataset.comboTarget;
+      const select = target ? root.querySelector(`[data-p="${target}"]`) : (kind ? root.querySelector(`[data-in="${kind}"]`) : null);
+      if (select) {
+        select.value = comboOpt.dataset.comboOpt;
+        if (target) { closeCombos(); select.dispatchEvent(new Event('change', { bubbles: true })); return; }
+      }
+      const label = combo?.querySelector('[data-combo-label]');
+      if (label) label.textContent = comboOpt.textContent;
+      closeCombos();
+      return;
+    }
+    if (!e.target.closest('[data-combo]')) closeCombos();
     const itab = e.target.closest('[data-itab]');
     if (itab) { UI.tab = itab.dataset.itab; ctx.rerender(); return; }
     const dir = e.target.closest('[data-dir]');
@@ -393,5 +485,42 @@ export function bind(root, ctx) {
       if (det.open) OPEN_ROWS.add(det.dataset.row); else OPEN_ROWS.delete(det.dataset.row);
     };
     root.addEventListener('toggle', root._rowToggle, true);
+  }
+  if (!root._comboKeys) {
+    root._comboKeys = (e) => {
+      const combo = e.target.closest?.('[data-combo]');
+      if (!combo) return;
+      const btn = combo.querySelector('[data-combo-btn]'), pop = combo.querySelector('[data-combo-pop]');
+      if (e.key === 'Escape') {
+        pop.hidden = true;
+        btn?.setAttribute('aria-expanded', 'false');
+        btn?.focus();
+        return;
+      }
+      if (e.key === 'Enter' && e.target.matches('[data-combo-search]')) {
+        const first = combo.querySelector('.combo-opt');
+        if (first) { e.preventDefault(); first.click(); }
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const opts = [...combo.querySelectorAll('.combo-opt')];
+        if (!opts.length) return;
+        e.preventDefault();
+        const i = opts.indexOf(e.target);
+        const next = e.key === 'ArrowDown' ? (i < 0 ? 0 : Math.min(opts.length - 1, i + 1)) : (i <= 0 ? 0 : i - 1);
+        opts[next].focus();
+      }
+    };
+    root.addEventListener('keydown', root._comboKeys);
+  }
+  if (typeof document !== 'undefined' && !document._infusionComboClose) {
+    document._infusionComboClose = (e) => {
+      if (e.target.closest?.('[data-combo]')) return;
+      document.querySelectorAll('[data-combo-pop]:not([hidden])').forEach((pop) => {
+        pop.hidden = true;
+        pop.closest('[data-combo]')?.querySelector('[data-combo-btn]')?.setAttribute('aria-expanded', 'false');
+      });
+    };
+    document.addEventListener('click', document._infusionComboClose);
   }
 }

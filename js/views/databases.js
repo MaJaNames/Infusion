@@ -6,13 +6,13 @@ const S = {
   tab: 'items', q: '', rar: '', f: '', n: 80,
   sort: { items: ['id', 1], cards: ['id', 1], parts: ['id', 1] },
 };
-const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали техники'], ['rules', 'Сводки правил']];
+const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали Кочевника'], ['rules', 'Сводки правил']];
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
 const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${title}<div class="meta">${meta}</div></div><span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 
 export const itemRow = (it, controls = '', o = {}) => row(RC[it.rarity] || 'c', `<span class="tag">${esc(it.tag || '—')}</span><b>${esc(it.name)}</b>`,
-  `${esc(it.rarity)} · ${esc(it.category)}${it.iconic ? ' · культовый' : ''}${it.organization !== 'Общедоступно' ? ' · ' + esc(it.organization) : ''}`, `${num(it.cost)}${qtyLine(o.qty)}`,
+  `${esc(it.rarity)} · ${esc(it.category)}${it.iconic && it.rarity !== 'Культовый' ? ' · культовый' : ''}${it.organization !== 'Общедоступно' ? ' · ' + esc(it.organization) : ''}`, `${num(it.cost)}${qtyLine(o.qty)}`,
   `${controls}<p class="desc">${esc(it.description)}</p>`, o);
 
 export const cardRow = (c, controls = '', o = {}) => row(RC[c.rarity] || 'c', `<span class="tag">${esc(c.tag || '—')}</span><b>${esc(c.name)}</b>`,
