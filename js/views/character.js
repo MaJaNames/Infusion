@@ -4,6 +4,7 @@ import { RULES, allowedClasses } from '../character/rules.js';
 import { itemRow, cardRow } from './databases.js';
 
 const OPEN = new Set(); // раскрытые описания навыков, чтобы состояние переживало перерисовку
+const OPEN_ROWS = new Set(); // раскрытые карточки предметов и карт
 // Порядок характеристик в интерфейсе не зависит от порядка строк в базе.
 const STAT_ORDER = ['strength', 'dexterity', 'intelligence', 'will', 'charisma', 'perception', 'technique', 'luck', 'constitution'];
 const STORAGE_TAG = 'K';
@@ -128,7 +129,7 @@ function sortBar(kind, defs) {
 }
 
 function inventorySummary(c, d) {
-  const s = { count: 0, cost: 0, sell: 0, tali: 0, kronos: 0, cards: 0, capacity: RULES.pocketLimit, over: false };
+  const s = { count: 0, cost: 0, sell: 0, tali: 0, cards: 0, capacity: RULES.pocketLimit, over: false };
   for (const e of c.pockets) {
     const it = d.itemMap.get(e.id);
     if (!it) continue;
@@ -137,17 +138,13 @@ function inventorySummary(c, d) {
     s.cost += it.cost * qty;
     s.sell += sellPrice(it, c).value * qty;
   }
-  for (const id of [...c.equipment, ...c.implants]) {
+  for (const id of c.implants) {
     const it = d.itemMap.get(id);
     if (!it) continue;
-    s.cost += it.cost;
+    s.cost += it.cost || 0;
     s.sell += sellPrice(it, c).value;
   }
   const storage = c.storage ? storageItems(c, d).find((it) => it.id === c.storage) : null;
-  if (storage) {
-    s.cost += storage.cost;
-    s.sell += sellPrice(storage, c).value;
-  }
   s.capacity += storageBonus(storage);
   s.over = s.count > s.capacity;
   for (const e of c.repository) {
@@ -156,8 +153,9 @@ function inventorySummary(c, d) {
     const qty = Number(e.qty) || 0;
     s.cards += qty;
     s.tali += (cd.price_tali || 0) * qty;
-    s.kronos += (cd.kronos || 0) * qty;
   }
+  // Сумма: хранилище + импланты + репозиторий; тали переводятся в кредиты.
+  s.cost += s.tali * RULES.taliToCredits;
   return s;
 }
 
@@ -213,9 +211,10 @@ function inventoryPanel(c, d, r, race) {
     </div>${storage ? `<p class="desc meta storage-desc">${esc(storage.description)}</p>` : ''}`;
     const pocketRow = ({ e, i, it }) => {
       if (!it) return missing('pockets', i, e.id);
-      const sp = sellPrice(it, c);
+      const sp = sellPrice(it, c), key = `pockets.${it.id}`;
       return itemRow(it, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="pockets.${i}.qty" value="${e.qty}"></label>
-        <label>Цена продажи <input type="number" data-p="overrides.sellPrice.${it.id}" value="${sp.overridden ? sp.value : ''}" placeholder="авто ${num(sp.auto)}"></label>${del('pockets', i)}</div>`);
+        <label>Цена продажи <input type="number" data-p="overrides.sellPrice.${it.id}" value="${sp.overridden ? sp.value : ''}" placeholder="авто ${num(sp.auto)}"></label>${del('pockets', i)}</div>`,
+      { qty: e.qty, openKey: key, open: OPEN_ROWS.has(key) });
     };
     body = `${storageSlot}<div class="inv-tools">${adder('pockets', 'Найти предмет…', c, d)}${sortBar('pockets', defs)}</div>
       <div class="list">${rows.map(pocketRow).join('') || '<div class="empty">Хранилище пусто. Добавьте первый предмет.</div>'}</div>`;
@@ -223,16 +222,23 @@ function inventoryPanel(c, d, r, race) {
     const defs = itemSortDefs(false, c);
     const ids = active === 'equipment' ? c.equipment : c.implants;
     const rows = sortRows(active, ids.map((id, i) => { const it = d.itemMap.get(id); return { id, i, it, miss: !it }; }), defs);
-    const idRow = ({ id, i, it }) => it ? itemRow(it, `<div class="ctl">${del(active, i)}</div>`) : missing(active, i, id);
+    const idRow = ({ id, i, it }) => {
+      if (!it) return missing(active, i, id);
+      const key = `${active}.${id}`;
+      return itemRow(it, `<div class="ctl">${del(active, i)}</div>`, { openKey: key, open: OPEN_ROWS.has(key) });
+    };
     body = `<div class="inv-tools">${adder(active, 'Выбрать из хранилища…', c, d)}${sortBar(active, defs)}</div>
       ${slots(active === 'equipment' ? r.gearSlots : r.implantSlots)}
       <div class="list">${rows.map(idRow).join('') || `<div class="empty">${active === 'equipment' ? 'Экипировка пуста.' : 'Импланты не выбраны.'}</div>`}</div>`;
   } else if (active === 'repository') {
     const defs = cardSortDefs();
     const rows = sortRows('repository', c.repository.map((e, i) => { const cd = d.cardMap.get(e.id); return { e, i, cd, miss: !cd }; }), defs);
-    const cardEntry = ({ e, i, cd }) => cd
-      ? cardRow(cd, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="repository.${i}.qty" value="${e.qty}"></label>${del('repository', i)}</div>`)
-      : missing('repository', i, e.id);
+    const cardEntry = ({ e, i, cd }) => {
+      if (!cd) return missing('repository', i, e.id);
+      const key = `repository.${cd.id}`;
+      return cardRow(cd, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="repository.${i}.qty" value="${e.qty}"></label>${del('repository', i)}</div>`,
+        { qty: e.qty, openKey: key, open: OPEN_ROWS.has(key) });
+    };
     body = `<div class="inv-tools">${adder('repository', 'Найти карту…', c, d)}${sortBar('repository', defs)}</div>
       <div class="list">${rows.map(cardEntry).join('') || '<div class="empty">Репозиторий пуст. Добавьте первую карту.</div>'}</div>`;
   } else {
@@ -249,9 +255,9 @@ function inventoryPanel(c, d, r, race) {
     <div class="inv-head"><h2>Инвентарь</h2>
       <div class="chips inv-summary">
         <span class="chip${sum.over ? ' bad' : ''}" title="Занято мест в хранилище / всего мест (базовые ${RULES.pocketLimit} + бонус [K])">Позиций: ${num(sum.count)} / ${num(sum.capacity)}</span>
-        <span class="chip total" title="Суммарная стоимость предметов по номиналу">Сумма: ${num(sum.cost)}</span>
+        <span class="chip total" title="Сумма по номиналу: хранилище, импланты и репозиторий. 1 Тали = ${RULES.taliToCredits} кредитов">Сумма: ${num(sum.cost)}</span>
         <span class="chip" title="Сколько получится при продаже всего по правилам (5% или ручная цена)">Продажа: ${num(sum.sell)}</span>
-        ${sum.cards ? `<span class="chip" title="Стоимость карт в тали и Кроносе">Карты: ${num(sum.tali)} тали · ${num(sum.kronos)} Кронос</span>` : ''}
+        ${sum.cards ? `<span class="chip" title="Суммарная цена карт в тали; в сумму идёт с переводом в кредиты">Карты: ${num(sum.tali)} тали</span>` : ''}
       </div>
     </div>
     <div class="subtabs" role="tablist">${available.map((t) => `<button type="button" role="tab" data-itab="${t.id}" class="${active === t.id ? 'on' : ''}" aria-selected="${active === t.id}">${esc(t.label)}${t.count ? ` <span class="tabcount">${t.count}</span>` : ''}${t.wip ? ' <span class="wip">WIP</span>' : ''}</button>`).join('')}</div>
@@ -378,5 +384,14 @@ export function bind(root, ctx) {
       if (det.open) OPEN.add(det.dataset.skill); else OPEN.delete(det.dataset.skill);
     };
     root.addEventListener('toggle', root._skillToggle, true);
+  }
+  if (!root._rowToggle) {
+    // Клик по «+/-» количества перерисовывает список — раскрытые карточки запоминаем.
+    root._rowToggle = (e) => {
+      const det = e.target.closest?.('details.row[data-row]');
+      if (!det) return;
+      if (det.open) OPEN_ROWS.add(det.dataset.row); else OPEN_ROWS.delete(det.dataset.row);
+    };
+    root.addEventListener('toggle', root._rowToggle, true);
   }
 }

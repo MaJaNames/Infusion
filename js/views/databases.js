@@ -8,16 +8,17 @@ const S = {
 };
 const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали техники'], ['rules', 'Сводки правил']];
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body) => `<details class="row ${cls}"><summary><div>${title}<div class="meta">${meta}</div></div><span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${title}<div class="meta">${meta}</div></div><span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
+const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 
-export const itemRow = (it, controls = '') => row(RC[it.rarity] || 'c', `<span class="tag">${esc(it.tag || '—')}</span><b>${esc(it.name)}</b>`,
-  `${esc(it.rarity)} · ${esc(it.category)}${it.iconic ? ' · культовый' : ''}${it.organization !== 'Общедоступно' ? ' · ' + esc(it.organization) : ''}`, num(it.cost),
-  `${controls}<p class="desc">${esc(it.description)}</p>`);
+export const itemRow = (it, controls = '', o = {}) => row(RC[it.rarity] || 'c', `<span class="tag">${esc(it.tag || '—')}</span><b>${esc(it.name)}</b>`,
+  `${esc(it.rarity)} · ${esc(it.category)}${it.iconic ? ' · культовый' : ''}${it.organization !== 'Общедоступно' ? ' · ' + esc(it.organization) : ''}`, `${num(it.cost)}${qtyLine(o.qty)}`,
+  `${controls}<p class="desc">${esc(it.description)}</p>`, o);
 
-export const cardRow = (c, controls = '') => row(RC[c.rarity] || 'c', `<span class="tag">${esc(c.tag || '—')}</span><b>${esc(c.name)}</b>`,
-  `${esc(c.rarity)} · ${esc(c.school)}${c.essence ? ' · ' + esc(c.essence) : ''}`, `${c.price_tali ? num(c.price_tali) + ' тали' : '—'}<small>Кронос ${c.kronos}</small>`,
+export const cardRow = (c, controls = '', o = {}) => row(RC[c.rarity] || 'c', `<span class="tag">${esc(c.tag || '—')}</span><b>${esc(c.name)}</b>`,
+  `${esc(c.rarity)} · ${esc(c.school)}${c.essence ? ' · ' + esc(c.essence) : ''}`, `${c.price_tali ? num(c.price_tali) + ' тали' : '—'}${qtyLine(o.qty)}<small>Кронос ${c.kronos}</small>`,
   `${controls}<div class="chips">${c.classes.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}${c.consumable ? '<span class="chip warn">расходуется</span>' : ''}</div>
-   <p class="desc">${esc(c.mechanics)}</p>${dl([['Параметры', c.params], ['Тип урона', c.damage_type], ['Дальность', c.distance], ['Срабатывание', c.activation], ['Эффекты', c.effects], ['Испытание', c.test], ['Усиление', c.amplify], ['Сотворение', c.creation === 'Базис' ? '' : c.creation]])}`);
+   <p class="desc">${esc(c.mechanics)}</p>${dl([['Параметры', c.params], ['Тип урона', c.damage_type], ['Дальность', c.distance], ['Срабатывание', c.activation], ['Эффекты', c.effects], ['Испытание', c.test], ['Усиление', c.amplify], ['Сотворение', c.creation === 'Базис' ? '' : c.creation]])}`, o);
 
 const partRow = (p) => row(RC[p.item.rarity] || 'c', `<span class="tag">${KIND_LABEL[p.stats.kind] || '?'}</span><b>${esc(p.item.name)}</b>`, esc(p.item.rarity), num(p.item.cost),
   `<div class="chips">${statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`);

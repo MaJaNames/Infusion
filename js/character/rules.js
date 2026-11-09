@@ -6,6 +6,7 @@ export const RULES = Object.freeze({
   sellPriceRate: 0.05,
   skillLimitPerRank: 4,
   pocketLimit: 20,
+  taliToCredits: 10,
 });
 
 // Стоимость навыка в щепках и проверка доступности по характеристике.

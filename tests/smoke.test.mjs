@@ -1,6 +1,6 @@
 // node tests/smoke.test.mjs — рисует все вкладки на данных data.json и проверяет расчёты персонажа.
 import { readFileSync } from 'node:fs';
-import { indexData, optLabel } from '../js/core/util.js';
+import { indexData, optLabel, num } from '../js/core/util.js';
 import { blankChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
 import { classAllowed, RULES } from '../js/character/rules.js';
@@ -68,6 +68,24 @@ const pocketSelect = invHtml.match(/<select data-in="pockets"[\s\S]*?<\/select>/
 check('хранилище: [K] добавляется через обычный список', pocketSelect.includes('[Acs]') && pocketSelect.includes('[K]') && pocketSelect.includes('Хранилище вер. 1'));
 const equipSelect = invStorage.match(/<select data-in="equipment"[\s\S]*?<\/select>/)?.[0] || '';
 check('хранилище: [K] не предлагается для экипировки', !equipSelect.includes('[K]'));
+const itemCost = (id) => d.itemMap.get(id)?.cost || 0;
+const expectedSum = c.pockets.reduce((a, e) => a + itemCost(e.id) * (e.qty || 0), 0)
+  + c.implants.reduce((a, id) => a + itemCost(id), 0)
+  + c.repository.reduce((a, e) => a + (d.cardMap.get(e.id)?.price_tali || 0) * (e.qty || 0) * RULES.taliToCredits, 0);
+check('сумма: хранилище + импланты + репозиторий', invHtml.includes(`Сумма: ${num(expectedSum)}`) && expectedSum === 10900, expectedSum);
+check('сумма: 1 Тали = 10 кредитов', RULES.taliToCredits === 10 && invHtml.includes('1 Тали = 10 кредитов'));
+const summaryHtml = invHtml.match(/<div class="chips inv-summary">([\s\S]*?)<\/div>/)?.[1] || '';
+check('сводка карт: только суммарные тали', summaryHtml.includes('Карты: 70 тали') && !summaryHtml.includes('Кронос'), summaryHtml);
+const invGear = character.render({ ...ctx, char: { ...c, equipment: ['0x0e7'] } });
+check('сумма: экипировка не входит', invGear.includes(`Сумма: ${num(expectedSum)}`) && !invGear.includes(`Сумма: ${num(expectedSum + 1300)}`));
+check('карточка предмета: количество и состояние раскрытия', (() => {
+  const html = databases.itemRow(d.items[0], '', { qty: 4, openKey: 'pockets.0x001', open: true });
+  return html.includes('<small>Кол-во: 4</small>') && html.includes('data-row="pockets.0x001"') && html.includes(' open>');
+})());
+check('карточка карты: количество и состояние раскрытия', (() => {
+  const html = databases.cardRow(d.cards[0], '', { qty: 3, openKey: 'repository.0x001', open: true });
+  return html.includes('<small>Кол-во: 3</small>') && html.includes('data-row="repository.0x001"') && html.includes(' open>');
+})());
 const STAT_ORDER = ['strength', 'dexterity', 'intelligence', 'will', 'charisma', 'perception', 'technique', 'luck', 'constitution'];
 const statPos = STAT_ORDER.map((k) => invHtml.indexOf(`data-p="stats.${k}"`));
 check('характеристики: нужный порядок', statPos.every((p, i) => p >= 0 && (i === 0 || p > statPos[i - 1])));
@@ -93,6 +111,10 @@ const polarHtml = character.render({ ...ctx, char: { ...c, race: '0x002', class:
 const novusHtml = character.render({ ...ctx, char: { ...c, race: '0x001', class: 'Свой' } });
 check('сущность доступна только Новусситу', !polarHtml.includes('data-p="essence"') && novusHtml.includes('data-p="essence"'));
 check('подсказки: списки вместо сплошного текста', helpBlock('char').includes('<ul>') && helpBlock('char').includes('Хранилище') && helpBlock('db').includes('<li>'));
+const swSource = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+const indexSource = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+check('обновление интерфейса: service worker и свежие файлы', swSource.includes("cache: 'no-store'") && indexSource.includes("register('sw.js'"));
+check('обновление интерфейса: данные персонажа не затрагиваются', !swSource.includes('localStorage') && !swSource.includes('indexedDB'));
 const fakeRoot = { addEventListener() {} };
 character.bind(fakeRoot, ctx);
 fakeRoot.onclick({ target: { closest: (s) => s === '[data-itab]' ? { dataset: { itab: 'beasts' } } : null } });

@@ -30,5 +30,22 @@
   <div id="app">Загрузка…</div>
 </main>
 <script type="module" src="js/main.js"></script>
+<script>
+// Обновление интерфейса без ручной чистки кэша. Данные персонажа в localStorage не затрагиваются.
+(() => {
+  if (!('serviceWorker' in navigator)) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    let reloaded = false;
+    try { reloaded = sessionStorage.getItem('infusion-sw-reloaded') === '1'; } catch { /* приватный режим */ }
+    if (hadController || reloaded) return;
+    try { sessionStorage.setItem('infusion-sw-reloaded', '1'); } catch { /* приватный режим */ }
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then((reg) => reg.update())
+    .catch(() => { /* service worker недоступен */ });
+})();
+</script>
 </body>
 </html>
