@@ -1,0 +1,20 @@
+name: Обновить снимок базы
+on:
+  schedule: [{ cron: '0 3 * * *' }]   # раз в сутки
+  workflow_dispatch:                   # и вручную: вкладка Actions → Run workflow (доступно только владельцу репозитория)
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tools/export-data.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/data.json
+          git diff --cached --quiet || (git commit -m "Обновлён снимок базы" && git push)

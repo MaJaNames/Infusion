@@ -1,8 +1,0 @@
-{
- "pointsBudget": 56,
- "hpPerConstitution": 25,
- "sellPriceRate": 0.05,
- "shardCost": "(skill.tier - 4) * level",
- "skillAvailable": "characterStat >= skill.tier",
- "notes": "Все значения можно переопределить в character.overrides"
-}
