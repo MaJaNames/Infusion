@@ -153,6 +153,12 @@
     function FreeComboInput({ label, value, onChange, options }) {
       const [isCustom, setIsCustom] = useState(() => !options.includes(value) && value !== "");
 
+      useEffect(() => {
+        if (!options.includes(value) && value !== "") {
+          setIsCustom(true);
+        }
+      }, [value, options]);
+
       return (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
@@ -199,11 +205,13 @@
       const [itemForm, setItemForm] = useState(defaultItemForm);
       const [itemsBatch, setItemsBatch] = useState([]);
       const [itemsSql, setItemsSql] = useState("");
+      const [editingItemIndex, setEditingItemIndex] = useState(null);
 
       // Cards State
       const [cardForm, setCardForm] = useState(defaultCardForm);
       const [cardsBatch, setCardsBatch] = useState([]);
       const [cardsSql, setCardsSql] = useState("");
+      const [editingCardIndex, setEditingCardIndex] = useState(null);
 
       // 1. INITIAL CACHE LOAD UPON MOUNT
       useEffect(() => {
@@ -242,7 +250,7 @@
         if (window.lucide) {
           window.lucide.createIcons();
         }
-      }, [activeTab, itemsBatch, cardsBatch, itemsSql, cardsSql]);
+      }, [activeTab, itemsBatch, cardsBatch, itemsSql, cardsSql, editingItemIndex, editingCardIndex]);
 
       const handleCopy = (text) => {
         const textarea = document.createElement("textarea");
@@ -260,22 +268,40 @@
       };
 
       // --- ITEM ACTIONS ---
-      const handleAddItem = (e) => {
+      const handleSaveItem = (e) => {
         e.preventDefault();
         if (!itemForm.name.trim()) return;
 
-        setItemsBatch([...itemsBatch, { ...itemForm }]);
-        setItemForm((prev) => ({
-          ...prev,
-          id: "",
-          tag: "",
-          name: "",
-          description: ""
-        }));
+        if (editingItemIndex !== null) {
+          const updated = [...itemsBatch];
+          updated[editingItemIndex] = { ...itemForm };
+          setItemsBatch(updated);
+          setEditingItemIndex(null);
+        } else {
+          setItemsBatch([...itemsBatch, { ...itemForm }]);
+        }
+
+        setItemForm(defaultItemForm());
       };
 
-      const handleRemoveItem = (index) => {
+      const handleEditItem = (index) => {
+        setEditingItemIndex(index);
+        setItemForm({ ...itemsBatch[index] });
+      };
+
+      const handleCancelEditItem = () => {
+        setEditingItemIndex(null);
+        setItemForm(defaultItemForm());
+      };
+
+      const handleRemoveItem = (index, e) => {
+        if (e) e.stopPropagation();
         setItemsBatch(itemsBatch.filter((_, i) => i !== index));
+        if (editingItemIndex === index) {
+          handleCancelEditItem();
+        } else if (editingItemIndex !== null && editingItemIndex > index) {
+          setEditingItemIndex(editingItemIndex - 1);
+        }
       };
 
       const handleGenerateItemsSql = () => {
@@ -295,7 +321,7 @@
         const values = itemsBatch.map((it) => {
           const descEsc = (it.description || "").replace(/'/g, "''");
           const nameEsc = (it.name || "").replace(/'/g, "''");
-          const costVal = it.cost.trim() === "" ? "0" : it.cost.trim();
+          const costVal = (it.cost || "0").trim() === "" ? "0" : it.cost.trim();
 
           let parts = [];
           if (hasExplicitId) {
@@ -321,22 +347,40 @@
       };
 
       // --- CARD ACTIONS ---
-      const handleAddCard = (e) => {
+      const handleSaveCard = (e) => {
         e.preventDefault();
         if (!cardForm.name.trim()) return;
 
-        setCardsBatch([...cardsBatch, { ...cardForm }]);
-        setCardForm((prev) => ({
-          ...prev,
-          id: "",
-          tag: "",
-          name: "",
-          mechanics: ""
-        }));
+        if (editingCardIndex !== null) {
+          const updated = [...cardsBatch];
+          updated[editingCardIndex] = { ...cardForm };
+          setCardsBatch(updated);
+          setEditingCardIndex(null);
+        } else {
+          setCardsBatch([...cardsBatch, { ...cardForm }]);
+        }
+
+        setCardForm(defaultCardForm());
       };
 
-      const handleRemoveCard = (index) => {
+      const handleEditCard = (index) => {
+        setEditingCardIndex(index);
+        setCardForm({ ...cardsBatch[index] });
+      };
+
+      const handleCancelEditCard = () => {
+        setEditingCardIndex(null);
+        setCardForm(defaultCardForm());
+      };
+
+      const handleRemoveCard = (index, e) => {
+        if (e) e.stopPropagation();
         setCardsBatch(cardsBatch.filter((_, i) => i !== index));
+        if (editingCardIndex === index) {
+          handleCancelEditCard();
+        } else if (editingCardIndex !== null && editingCardIndex > index) {
+          setEditingCardIndex(editingCardIndex - 1);
+        }
       };
 
       const handleGenerateCardsSql = () => {
@@ -370,8 +414,8 @@
 
           const essenceFmt = c.essence === "NULL" ? "null" : `'${c.essence}'`;
           const dmgFmt = c.damage_type === "NULL" ? "null" : `'${c.damage_type}'`;
-          const kronosVal = c.kronos.trim() === "" ? "0" : c.kronos.trim();
-          const taliVal = c.price_tali.trim() === "" ? "0" : c.price_tali.trim();
+          const kronosVal = (c.kronos || "0").trim() === "" ? "0" : c.kronos.trim();
+          const taliVal = (c.price_tali || "0").trim() === "" ? "0" : c.price_tali.trim();
 
           let parts = [];
           if (hasExplicitId) {
@@ -472,13 +516,15 @@
               /* ================= ITEMS TAB ================= */
               <div className="space-y-6">
                 <form
-                  onSubmit={handleAddItem}
-                  className="bg-cyber-panel border border-cyber-border rounded-xl p-4 sm:p-6 shadow-md space-y-4"
+                  onSubmit={handleSaveItem}
+                  className={`bg-cyber-panel border rounded-xl p-4 sm:p-6 shadow-md space-y-4 transition-colors ${
+                    editingItemIndex !== null ? "border-cyber-neon" : "border-cyber-border"
+                  }`}
                 >
                   <div className="flex items-center justify-between border-b border-cyber-border pb-3">
                     <h2 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <i data-lucide="sliders" className="w-4 h-4 text-cyber-accent"></i>
-                      Конфигурация предмета
+                      <i data-lucide={editingItemIndex !== null ? "edit-3" : "sliders"} className="w-4 h-4 text-cyber-accent"></i>
+                      {editingItemIndex !== null ? `Редактирование предмета #${editingItemIndex + 1}` : "Конфигурация предмета"}
                     </h2>
                     <span className="text-[11px] text-slate-500">
                       ID генерируется автоматически БД, если оставлен пустым
@@ -597,15 +643,29 @@
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="pt-2">
+                  {/* Submit & Action Buttons */}
+                  <div className="pt-2 flex items-center gap-3">
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
+                      className={`w-full sm:w-auto px-6 py-2.5 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${
+                        editingItemIndex !== null
+                          ? "bg-cyber-accent hover:bg-cyber-neon text-black shadow-cyber-accent/30"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30"
+                      }`}
                     >
-                      <i data-lucide="plus-circle" className="w-4 h-4"></i>
-                      Добавить в пакет
+                      <i data-lucide={editingItemIndex !== null ? "check" : "plus-circle"} className="w-4 h-4"></i>
+                      {editingItemIndex !== null ? "Сохранить изменения" : "Добавить в пакет"}
                     </button>
+
+                    {editingItemIndex !== null && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditItem}
+                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Отмена
+                      </button>
+                    )}
                   </div>
                 </form>
 
@@ -625,6 +685,7 @@
                       onClick={() => {
                         setItemsBatch([]);
                         setItemsSql("");
+                        handleCancelEditItem();
                       }}
                       disabled={itemsBatch.length === 0 && !itemsSql}
                       className="px-4 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/40 text-rose-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
@@ -642,49 +703,64 @@
                 {/* BATCH ITEMS LIST */}
                 {itemsBatch.length > 0 && (
                   <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Содержимое пакета предпросмотр:
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        Содержимое пакета (нажмите на элемент для редактирования):
+                      </h3>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {itemsBatch.map((it, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-cyber-card border border-cyber-border rounded-lg p-3 flex items-start justify-between gap-2 relative group"
-                        >
-                          <div className="space-y-1 overflow-hidden text-xs">
-                            <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
-                              <span>{it.name}</span>
-                              {it.iconic && (
-                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
-                                  Iconic
-                                </span>
+                      {itemsBatch.map((it, idx) => {
+                        const isEditing = editingItemIndex === idx;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => handleEditItem(idx)}
+                            className={`bg-cyber-card border rounded-lg p-3 flex items-start justify-between gap-2 relative group cursor-pointer transition-all hover:bg-cyber-hover ${
+                              isEditing
+                                ? "border-cyber-neon ring-1 ring-cyber-neon/50 bg-cyber-hover"
+                                : "border-cyber-border hover:border-cyber-accent/50"
+                            }`}
+                          >
+                            <div className="space-y-1 overflow-hidden text-xs">
+                              <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
+                                <span>{it.name}</span>
+                                {it.iconic && (
+                                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
+                                    Iconic
+                                  </span>
+                                )}
+                                {isEditing && (
+                                  <span className="text-[10px] bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40 px-1 rounded font-normal">
+                                    Редактируется
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
+                                <span>Кат: {it.category}</span>
+                                <span>•</span>
+                                <span>Ред: {it.rarity}</span>
+                              </div>
+                              {it.id && (
+                                <div className="text-slate-500 font-mono text-[10px]">
+                                  ID: {it.id}
+                                </div>
+                              )}
+                              {it.tag && (
+                                <div className="text-slate-500 font-mono text-[10px]">
+                                  Tag: {it.tag}
+                                </div>
                               )}
                             </div>
-                            <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
-                              <span>Кат: {it.category}</span>
-                              <span>•</span>
-                              <span>Ред: {it.rarity}</span>
-                            </div>
-                            {it.id && (
-                              <div className="text-slate-500 font-mono text-[10px]">
-                                ID: {it.id}
-                              </div>
-                            )}
-                            {it.tag && (
-                              <div className="text-slate-500 font-mono text-[10px]">
-                                Tag: {it.tag}
-                              </div>
-                            )}
+                            <button
+                              onClick={(e) => handleRemoveItem(idx, e)}
+                              className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
+                              title="Удалить"
+                            >
+                              <i data-lucide="x" className="w-4 h-4"></i>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleRemoveItem(idx)}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
-                            title="Удалить"
-                          >
-                            <i data-lucide="x" className="w-4 h-4"></i>
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -719,13 +795,15 @@
               /* ================= CARDS TAB ================= */
               <div className="space-y-6">
                 <form
-                  onSubmit={handleAddCard}
-                  className="bg-cyber-panel border border-cyber-border rounded-xl p-4 sm:p-6 shadow-md space-y-4"
+                  onSubmit={handleSaveCard}
+                  className={`bg-cyber-panel border rounded-xl p-4 sm:p-6 shadow-md space-y-4 transition-colors ${
+                    editingCardIndex !== null ? "border-cyber-neon" : "border-cyber-border"
+                  }`}
                 >
                   <div className="flex items-center justify-between border-b border-cyber-border pb-3">
                     <h2 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <i data-lucide="sliders" className="w-4 h-4 text-cyber-accent"></i>
-                      Конфигурация карты / базиса
+                      <i data-lucide={editingCardIndex !== null ? "edit-3" : "sliders"} className="w-4 h-4 text-cyber-accent"></i>
+                      {editingCardIndex !== null ? `Редактирование карты #${editingCardIndex + 1}` : "Конфигурация карты / базиса"}
                     </h2>
                     <span className="text-[11px] text-slate-500">
                       ID генерируется автоматически БД, если оставлен пустым
@@ -1040,15 +1118,29 @@
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="pt-2">
+                  {/* Submit & Action Buttons */}
+                  <div className="pt-2 flex items-center gap-3">
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
+                      className={`w-full sm:w-auto px-6 py-2.5 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${
+                        editingCardIndex !== null
+                          ? "bg-cyber-accent hover:bg-cyber-neon text-black shadow-cyber-accent/30"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30"
+                      }`}
                     >
-                      <i data-lucide="plus-circle" className="w-4 h-4"></i>
-                      Добавить в пакет
+                      <i data-lucide={editingCardIndex !== null ? "check" : "plus-circle"} className="w-4 h-4"></i>
+                      {editingCardIndex !== null ? "Сохранить изменения" : "Добавить в пакет"}
                     </button>
+
+                    {editingCardIndex !== null && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditCard}
+                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        Отмена
+                      </button>
+                    )}
                   </div>
                 </form>
 
@@ -1068,6 +1160,7 @@
                       onClick={() => {
                         setCardsBatch([]);
                         setCardsSql("");
+                        handleCancelEditCard();
                       }}
                       disabled={cardsBatch.length === 0 && !cardsSql}
                       className="px-4 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/40 text-rose-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
@@ -1085,49 +1178,64 @@
                 {/* BATCH CARDS LIST */}
                 {cardsBatch.length > 0 && (
                   <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Содержимое пакета предпросмотр:
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        Содержимое пакета (нажмите на элемент для редактирования):
+                      </h3>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {cardsBatch.map((c, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-cyber-card border border-cyber-border rounded-lg p-3 flex items-start justify-between gap-2 relative group"
-                        >
-                          <div className="space-y-1 overflow-hidden text-xs">
-                            <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
-                              <span>{c.name}</span>
-                              {c.iconic && (
-                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
-                                  Iconic
-                                </span>
+                      {cardsBatch.map((c, idx) => {
+                        const isEditing = editingCardIndex === idx;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => handleEditCard(idx)}
+                            className={`bg-cyber-card border rounded-lg p-3 flex items-start justify-between gap-2 relative group cursor-pointer transition-all hover:bg-cyber-hover ${
+                              isEditing
+                                ? "border-cyber-neon ring-1 ring-cyber-neon/50 bg-cyber-hover"
+                                : "border-cyber-border hover:border-cyber-accent/50"
+                            }`}
+                          >
+                            <div className="space-y-1 overflow-hidden text-xs">
+                              <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
+                                <span>{c.name}</span>
+                                {c.iconic && (
+                                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
+                                    Iconic
+                                  </span>
+                                )}
+                                {isEditing && (
+                                  <span className="text-[10px] bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40 px-1 rounded font-normal">
+                                    Редактируется
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
+                                <span>Школа: {c.school}</span>
+                                <span>•</span>
+                                <span>Ред: {c.rarity}</span>
+                              </div>
+                              {c.id && (
+                                <div className="text-slate-500 font-mono text-[10px]">
+                                  ID: {c.id}
+                                </div>
+                              )}
+                              {c.tag && (
+                                <div className="text-slate-500 font-mono text-[10px]">
+                                  Tag: {c.tag}
+                                </div>
                               )}
                             </div>
-                            <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
-                              <span>Школа: {c.school}</span>
-                              <span>•</span>
-                              <span>Ред: {c.rarity}</span>
-                            </div>
-                            {c.id && (
-                              <div className="text-slate-500 font-mono text-[10px]">
-                                ID: {c.id}
-                              </div>
-                            )}
-                            {c.tag && (
-                              <div className="text-slate-500 font-mono text-[10px]">
-                                Tag: {c.tag}
-                              </div>
-                            )}
+                            <button
+                              onClick={(e) => handleRemoveCard(idx, e)}
+                              className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
+                              title="Удалить"
+                            >
+                              <i data-lucide="x" className="w-4 h-4"></i>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleRemoveCard(idx)}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
-                            title="Удалить"
-                          >
-                            <i data-lucide="x" className="w-4 h-4"></i>
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
