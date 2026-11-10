@@ -56,7 +56,6 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #00a8cc;
     }
-    /* Disable double-tap zoom on mobile inputs */
     button, input, select, textarea {
       touch-action: manipulation;
     }
@@ -67,6 +66,10 @@
 
   <script type="text/babel">
     const { useState, useEffect } = React;
+
+    // --- CACHE ENGINE CONFIG ---
+    const CACHE_KEY = 'infusion_sql_generator_cache_v1';
+    const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
     // --- PRESET DROPDOWN CONSTANTS ---
     const ITEM_CATEGORIES = [
@@ -146,7 +149,7 @@
       iconic: false
     });
 
-    // Reusable Custom Combo/Select Field with Option to Switch to Free Input
+    // Reusable Custom Combo/Select Field
     function FreeComboInput({ label, value, onChange, options }) {
       const [isCustom, setIsCustom] = useState(() => !options.includes(value) && value !== "");
 
@@ -189,7 +192,7 @@
     }
 
     function App() {
-      const [activeTab, setActiveTab] = useState("items"); // 'items' | 'cards'
+      const [activeTab, setActiveTab] = useState("items");
       const [copied, setCopied] = useState(false);
 
       // Items State
@@ -202,13 +205,45 @@
       const [cardsBatch, setCardsBatch] = useState([]);
       const [cardsSql, setCardsSql] = useState("");
 
+      // 1. INITIAL CACHE LOAD UPON MOUNT
+      useEffect(() => {
+        try {
+          const raw = localStorage.getItem(CACHE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const age = Date.now() - (parsed.timestamp || 0);
+            if (age < CACHE_TTL_MS) {
+              if (Array.isArray(parsed.itemsBatch)) setItemsBatch(parsed.itemsBatch);
+              if (Array.isArray(parsed.cardsBatch)) setCardsBatch(parsed.cardsBatch);
+            } else {
+              localStorage.removeItem(CACHE_KEY);
+            }
+          }
+        } catch (e) {
+          console.warn("Could not load batch cache:", e);
+        }
+      }, []);
+
+      // 2. AUTO-SAVE CACHE WHEN BATCHES CHANGE
+      useEffect(() => {
+        try {
+          const cacheData = {
+            timestamp: Date.now(),
+            itemsBatch,
+            cardsBatch
+          };
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        } catch (e) {
+          console.warn("Could not save batch cache:", e);
+        }
+      }, [itemsBatch, cardsBatch]);
+
       useEffect(() => {
         if (window.lucide) {
           window.lucide.createIcons();
         }
       }, [activeTab, itemsBatch, cardsBatch, itemsSql, cardsSql]);
 
-      // Copy text to clipboard using execCommand fallback
       const handleCopy = (text) => {
         const textarea = document.createElement("textarea");
         textarea.value = text;
@@ -249,7 +284,6 @@
           return;
         }
 
-        // Include ID ONLY if at least one item has a non-empty ID entered manually
         const hasExplicitId = itemsBatch.some((it) => it.id && it.id.trim() !== "");
         const hasTag = itemsBatch.some((it) => it.tag && it.tag.trim() !== "");
 
@@ -311,7 +345,6 @@
           return;
         }
 
-        // Include ID ONLY if at least one card has a non-empty ID entered manually
         const hasExplicitId = cardsBatch.some((c) => c.id && c.id.trim() !== "");
         const hasTag = cardsBatch.some((c) => c.tag && c.tag.trim() !== "");
 
@@ -329,7 +362,6 @@
           const nameEsc = (c.name || "").replace(/'/g, "''");
           const mechEsc = (c.mechanics || "").replace(/'/g, "''");
 
-          // Process PostgreSQL string array format
           const classesArr = (c.classes || "")
             .split(",")
             .map((s) => `"${s.trim()}"`)
