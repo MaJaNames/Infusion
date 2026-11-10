@@ -36,8 +36,9 @@ details.row[open]{border-color:var(--rc,var(--c))}
 .tag{font-size:.75rem;border:1px solid var(--line);border-radius:4px;padding:0 .35rem;margin-right:.45rem;color:var(--mute);background:var(--bg)}
 .meta{color:var(--mute);font-size:.85rem}
 .price{text-align:right;white-space:nowrap}.price small{display:block;color:var(--mute)}
-.money{display:inline-flex;align-items:center;gap:.28rem;white-space:nowrap}
-.money img{width:1.05em;height:1.05em;object-fit:contain;flex:0 0 auto}
+.money{display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap;line-height:1}
+.money img{width:1.05em;height:1.05em;object-fit:contain;flex:0 0 auto;display:block}
+.money-num{display:inline-block;line-height:1}
 .price .money{justify-content:flex-end}
 .price .sell{font-size:.75rem}
 .body{padding:.3rem .9rem .9rem;border-top:1px dashed var(--line)}
@@ -118,6 +119,7 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .subtabs button:hover{background:var(--bg)}
 .subtabs button.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
 .subtabs .tabcount{font-size:.72rem;opacity:.75;margin-left:.1rem}
+.wip{font-size:.62rem;letter-spacing:.04em;border:1px solid currentColor;border-radius:3px;padding:0 .25rem;vertical-align:.08em;color:var(--mute);font-weight:400}
 .subtabs .wip{font-size:.62rem;letter-spacing:.04em;border:1px solid currentColor;border-radius:3px;padding:0 .2rem;vertical-align:.08em}
 .subtabs-select,.tabs-select{display:none;width:100%;font-weight:600;background:var(--panel)}
 
@@ -139,8 +141,89 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .sortdir{padding:.45rem .65rem;font-size:1rem;line-height:1}
 .wip-note{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.2rem 0 .4rem}
 .pick{display:flex;align-items:center;gap:.5rem;font-size:.9rem;cursor:pointer;margin:.4rem 0}
+.clinic-toggle{display:inline-flex;align-items:center;gap:.45rem;font-size:.9rem;cursor:pointer;margin:.1rem 0 .55rem;padding:.4rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--panel);width:fit-content;max-width:100%}
+.clinic-toggle input{flex:0 0 auto;width:auto}
+.ctl .clinic-toggle{margin:0;padding:.25rem .5rem;font-size:.82rem}
+.row summary .clinic-toggle{flex:0 0 auto;align-self:center;margin:0;padding:.2rem .5rem;font-size:.78rem;background:var(--bg)}
+.row summary .clinic-toggle input{width:auto;min-height:0}
 .beast.picked{border-color:var(--acc)}
 .beast.picked>summary{background:var(--bg)}
+
+/* ===== Автомастерская: гараж, сборка и итоги ===== */
+.garage-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap}
+.garage-head h2{margin:.1rem 0 .25rem}
+.garage-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.garage-tabs{margin:.2rem 0 .55rem}
+.garage-tabs button{display:inline-flex;align-items:center;gap:.4rem;max-width:18rem}
+.garage-tab-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.garage-count{font-size:.72rem;opacity:.75;border:1px solid currentColor;border-radius:99px;padding:0 .35rem;line-height:1.35}
+.garage-summary{margin:0;flex:1 1 34rem;min-width:0}
+.garage-summary .chip{display:inline-flex;align-items:center;gap:.2rem}
+.garage-topline{display:flex;align-items:flex-end;justify-content:space-between;gap:.7rem;flex-wrap:wrap;margin:.1rem 0 .5rem}
+.hp-field.garage-hp{flex:0 0 auto;margin:0}
+.hp-input{display:flex;align-items:center;gap:.35rem}
+.hp-input input{width:7.5rem}
+.hp-input .meta{white-space:nowrap}
+.garage-edit{display:flex;align-items:flex-end;gap:.5rem;flex-wrap:wrap;margin-top:.55rem;padding-top:.6rem;border-top:1px dashed var(--line)}
+.garage-name{display:grid;gap:.2rem;font-size:.8rem;color:var(--mute);flex:0 1 26rem;max-width:32rem;min-width:0}
+.garage-name input{width:100%}
+.garage-edit .danger{margin-left:auto}
+.garage-notes{display:grid;gap:.2rem;font-size:.8rem;color:var(--mute);margin-top:.55rem}
+.garage-notes textarea{width:100%;min-height:4.5rem;resize:vertical}
+.garage-picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(20rem,100%),1fr));gap:.55rem .8rem;margin:.35rem 0 .2rem}
+.garage-pick{display:grid;gap:.2rem;font-size:.85rem;color:var(--mute);min-width:0}
+.garage-pick .add{margin:0;width:100%}
+.garage-pick .combo{max-width:none}
+.garage-pick .combo-btn{width:100%}
+.transport-slot{display:grid;gap:.5rem;margin:0 0 .7rem;padding:.6rem .7rem;border:1px dashed var(--line);border-radius:8px;background:var(--bg)}
+.transport-slot>label{display:grid;gap:.2rem;font-size:.85rem;color:var(--mute);max-width:32rem}
+.transport-slot>label select{width:100%}
+.transport-card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:6px;padding:.55rem .8rem;min-width:0}
+.transport-card .part-slot{font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);margin-bottom:.1rem}
+.transport-card .chips{margin:.35rem 0 .2rem}
+.transport-card .chip.total{border-color:var(--acc);color:var(--acc);font-weight:600}
+.transport-card .meta{margin:.2rem 0 0}
+.hp-field{display:grid;gap:.2rem;font-size:.8rem;color:var(--mute);flex:0 1 12rem;min-width:0}
+.hp-field input{width:100%}
+.shop-group{margin-top:1rem}
+.shop-group:first-of-type{margin-top:.15rem}
+.shop-group h3{margin:.1rem 0 .5rem;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--mute)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:.5rem}
+.stat-card{border:1px solid var(--line);border-radius:8px;padding:.5rem .65rem;background:var(--bg);min-width:0}
+button.stat-card{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+button.stat-card:hover{border-color:var(--mute)}
+.stat-card.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.stat-card>span{display:block;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
+.stat-card b{display:block;margin-top:.15rem;font-size:1.15rem;line-height:1.25;overflow-wrap:anywhere}
+.stat-card.cost{border-color:var(--acc)}
+.stat-card.cost b{color:var(--acc);display:flex;align-items:center}
+.stat-card .money{font-size:1rem}
+.sources{margin-top:.7rem;padding:.55rem .7rem;border:1px solid var(--acc);border-radius:8px;background:var(--bg)}
+.sources-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.sources-head h3{margin:0;font-size:.85rem}
+.sources ul{list-style:none;margin:.45rem 0 .3rem;padding:0}
+.sources li{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:.2rem 0;border-bottom:1px dashed var(--line);font-size:.9rem}
+.sources li:last-child{border-bottom:0}
+.sources li b{white-space:nowrap}
+.sources-total{margin:.35rem 0 0;font-size:.9rem}
+.sources-total b{color:var(--acc)}
+.part-list{display:grid;gap:.4rem}
+.part-card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--rc,var(--c));border-radius:6px;min-width:0}
+.part-card:last-child{margin-bottom:0}
+.part-card>summary{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;padding:.55rem .8rem;cursor:pointer;list-style:none}
+.part-card>summary::-webkit-details-marker{display:none}
+.part-card[open]{border-color:var(--rc,var(--c))}
+.part-card .part-main{flex:1;min-width:0}
+.part-card .part-slot{font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);margin-bottom:.1rem}
+.part-card b{overflow-wrap:anywhere}
+.part-card .chips{margin:.35rem 0 .2rem}
+.part-card .meta{display:block;margin-top:.1rem}
+.part-card .price{flex:0 0 auto}
+.part-hp{padding:.35rem .8rem .65rem;border-top:1px dashed var(--line)}
+.part-hp label{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;font-size:.8rem;color:var(--mute)}
+.part-hp input{width:7.5rem}
+.chip.drone{border-color:var(--acc);color:var(--acc)}
+.part-empty{padding:1.2rem;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:8px}
 
 /* ===== Мобильный режим: узкий экран или сенсорное устройство ===== */
 :root[data-ui=mobile] body{font-size:14px;-webkit-text-size-adjust:100%}
@@ -167,6 +250,7 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 :root[data-ui=mobile] .desc,
 :root[data-ui=mobile] .row b{overflow-wrap:anywhere}
 :root[data-ui=mobile] .ctl input{width:5rem}
+:root[data-ui=mobile] .ctl .clinic-toggle input{width:auto}
 :root[data-ui=mobile] .line{padding:.4rem .55rem;gap:.45rem}
 :root[data-ui=mobile] .line .grow,
 :root[data-ui=mobile] details.line>summary .grow{min-width:0;width:100%}
@@ -207,6 +291,25 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 :root[data-ui=mobile] .filters-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:1.05rem}
 :root[data-ui=mobile] .filters-apply{display:block;width:100%;background:var(--acc);color:var(--accfg);border-color:var(--acc)}
 :root[data-ui=mobile] .filters-backdrop:not([hidden]){display:block;position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.38)}
+:root[data-ui=mobile] .garage-head{flex-direction:column;gap:.45rem}
+:root[data-ui=mobile] .garage-actions{width:100%}
+:root[data-ui=mobile] .garage-actions button{width:100%}
+:root[data-ui=mobile] .garage-edit{flex-direction:column;align-items:stretch}
+:root[data-ui=mobile] .garage-name{flex:0 0 auto}
+:root[data-ui=mobile] .garage-edit .danger{width:100%;margin-left:0}
+:root[data-ui=mobile] .garage-topline{flex-direction:column;align-items:stretch;gap:.5rem}
+:root[data-ui=mobile] .garage-summary{flex:1 1 auto}
+:root[data-ui=mobile] .garage-hp{width:100%}
+:root[data-ui=mobile] .hp-input input{width:100%}
+:root[data-ui=mobile] .sources li{flex-wrap:wrap;gap:.2rem}
+:root[data-ui=mobile] .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem}
+:root[data-ui=mobile] .stat-card{padding:.45rem .55rem}
+:root[data-ui=mobile] .stat-card b{font-size:1.05rem}
+:root[data-ui=mobile] .part-card>summary{flex-direction:column;gap:.3rem;padding:.5rem .6rem}
+:root[data-ui=mobile] .part-card .price{text-align:left}
+:root[data-ui=mobile] .garage-notes{width:100%}
+:root[data-ui=mobile] .garage-picks{grid-template-columns:1fr;gap:.5rem}
+:root[data-ui=mobile] .transport-slot>label{max-width:none;width:100%}
 body.drawer-open{overflow:hidden}
 
 /* Телефон в ландшафте: места больше, поля не растягиваются на всю ширину. */

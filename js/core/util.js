@@ -11,7 +11,7 @@ export const ICONS = Object.freeze({ tali: 'assets/icons/tali.webp', credits: 'a
 // Цена с иконкой валюты: тали — карты, кредиты — предметы и суммы.
 export const money = (value, kind = 'credits') => {
   const tali = kind === 'tali', src = tali ? ICONS.tali : ICONS.credits, name = tali ? 'тали' : 'кредиты';
-  return `<span class="money"><img src="${src}" alt="${name}" title="${name}" loading="lazy">${num(value)}</span>`;
+  return `<span class="money"><img src="${src}" alt="${name}" title="${name}" loading="lazy"><span class="money-num">${num(value)}</span></span>`;
 };
 export const opts = (rows, sel, text = (r) => r.name, val = (r) => r.id) =>
   rows.map((r) => `<option value="${esc(val(r))}"${String(val(r)) === String(sel) ? ' selected' : ''}>${esc(text(r))}</option>`).join('');

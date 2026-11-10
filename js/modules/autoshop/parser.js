@@ -48,5 +48,20 @@ export function parsePart(text = '') {
   const kind = find(/Эффект:\s*Модификация\s*:\s*([^;]+);/i, t)?.trim().toLowerCase() ?? '';
   out.kind = KIND[kind] ?? null;
   out.unique = find(/Уникальный эффект:\s*(.*)/i, t)?.trim() ?? '';
+  // Механические уникальные эффекты: «пол» Скорохода и требование к колёсам.
+  out.speedFloor = Number(find(/скороход транспорта не может упасть ниже\s*(\d+)/i, t)) || 0;
+  out.wheelReq = find(/ставиться только с направляющими\s*"?([^"\n]+)"?/i, t)?.trim() ?? '';
   return out;
+}
+
+// Отдельный разбор для дронов: в их описании число стоит после параметра («хп 300», «Деф п 80», «ОП 1»).
+// «ОП» — это запас хода, по смыслу совпадает со «Скороходом».
+export function parseDrone(text = '') {
+  const t = String(text);
+  const after = (re) => { const m = re.exec(t); return m ? int(m[1]) : 0; };
+  return {
+    hp: after(/(?:хп|оз)\s*(\d+)/i),
+    defP: after(/деф\s*п?\.?\s*(\d+)/i),
+    op: after(/(?:^|\s)оп\s*(\d+)/i),
+  };
 }

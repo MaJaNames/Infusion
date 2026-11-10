@@ -6,12 +6,12 @@ const norm = (t) => String(t || '').replace(/^\[|\]$/g, '').toLowerCase();
 const flat = (s) => String(s).replace(/\s+/g, '');
 const val = (auto, o) => ({ value: o ?? auto, auto, overridden: o !== null && o !== undefined });
 
-export const sellPrice = (it, c) => val(it.sell_price ?? Math.round(it.cost * RULES.sellPriceRate), c.overrides.sellPrice?.[it.id] ?? null);
+export const sellPrice = (it) => it.sell_price ?? Math.round(it.cost * RULES.sellPriceRate);
 
 // Максимум выбранных навыков: 4 × ранг персонажа (от 4 до 40).
 export const skillLimit = (c, d) => (d.rankMap.get(Number(c.rank))?.level || d.ranks[0]?.level || 1) * RULES.skillLimitPerRank;
 
-function slotUsage(ids, limits, d, gear) {
+function slotUsage(ids, limits, d, gear, extraTags = []) {
   const used = new Map(limits.map((s) => [norm(s.tag), 0]));
   for (const id of ids) {
     const it = d.itemMap.get(id);
@@ -22,13 +22,18 @@ function slotUsage(ids, limits, d, gear) {
     if (gear && !GEAR.includes(t)) t = 'we';
     if (used.has(t)) used.set(t, used.get(t) + 1);
   }
+  // Транспорт Кочевника занимает слот [Tr], хотя хранится не в списке экипировки.
+  for (const tag of extraTags) {
+    const t = norm(tag);
+    if (used.has(t)) used.set(t, used.get(t) + 1);
+  }
   return limits.map((s) => {
     const u = used.get(norm(s.tag)) || 0;
     return { tag: s.tag, limit: s.max_count, used: u, status: u > s.max_count ? 'Сверх лимита!' : u === s.max_count ? 'Занято' : u > 0 ? 'ОК' : 'Свободно' };
   });
 }
 
-export function derive(c, d) {
+export function derive(c, d, extraGear = []) {
   const o = c.overrides, rank = d.rankMap.get(Number(c.rank)) || d.ranks[0], limit = skillLimit(c, d);
   const skills = c.skills.map((s, i) => {
     const sk = d.skillMap.get(s.id);
@@ -51,7 +56,7 @@ export function derive(c, d) {
     skills, shardsTotal: skills.reduce((a, s) => a + s.shards.value, 0),
     skillCount: c.skills.length, skillLimit: limit, skillsOverLimit: c.skills.length > limit,
     statIssues,
-    gearSlots: slotUsage(c.equipment, d.slots.filter((s) => s.grp === 'gear'), d, true),
+    gearSlots: slotUsage(c.equipment, d.slots.filter((s) => s.grp === 'gear'), d, true, extraGear),
     implantSlots: slotUsage(c.implants, d.slots.filter((s) => s.grp === 'implant'), d, false),
   };
 }

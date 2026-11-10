@@ -1,1 +1,38 @@
+# Локальный сервер
 localserver.bat
+
+# Зависимости и логи Node (сборки нет, но npm может появиться)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Секреты и локальные настройки
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Мусор ОС и редакторов
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Временные файлы и результаты проверок
+*.log
+*.tmp
+*.bak
+coverage/
+test-results/
+playwright-report/
+*.cpuprofile
+*.heapprofile
+_mobile-check.html
+
+# Выгрузка гаража из «Автомастерской»
+transport.json

@@ -1,7 +1,11 @@
-import { esc, num, label, opts, set, fieldValue, RARITIES, optLabel } from '../core/util.js';
+import { esc, num, label, opts, set, fieldValue, RARITIES, optLabel, money } from '../core/util.js';
 import { derive, sellPrice, skillLimit } from '../character/derive.js';
 import { RULES, allowedClasses } from '../character/rules.js';
 import { itemRow, cardRow } from './databases.js';
+import { G, partCount } from '../modules/autoshop/store.js';
+import { partsOf } from '../modules/autoshop/parts.js';
+import { summarize } from '../modules/autoshop/aggregate.js';
+import { comboList, groupedRows, closeCombos, openCombo, comboKeydown, installComboClose } from '../core/combo.js';
 
 const OPEN = new Set(); // раскрытые описания навыков, чтобы состояние переживало перерисовку
 const OPEN_ROWS = new Set(); // раскрытые карточки предметов и карт
@@ -24,6 +28,21 @@ const storageItems = (c, d) => {
     if (it?.tag === STORAGE_TAG && !found.has(it.id)) found.set(it.id, it);
   }
   return [...found.values()];
+};
+// Транспорт кочевника берётся из гаража в Утилитах. Доступен только классу Кочевник.
+const isKochevnik = (c) => c.class === 'Кочевник';
+const transportData = (c, d) => {
+  if (!isKochevnik(c) || !c.transport) return null;
+  const vehicle = G.vehicles.find((v) => v.id === c.transport);
+  if (!vehicle) return null;
+  const parts = partsOf(d);
+  const pick = (id) => {
+    const p = id && parts.find((x) => x.item.id === id);
+    return p ? { cost: p.item.cost, stats: p.stats, name: label(p.item), drone: p.drone } : null;
+  };
+  const B = vehicle.build;
+  const sum = summarize({ body: pick(B.body), wheels: pick(B.wheels), engine: pick(B.engine), weapons: B.weapons.map(pick), modules: B.modules.map(pick), discount: B.discount });
+  return { vehicle, build: B, sum };
 };
 const ov = (title, path, v) => `<label class="ov${v.overridden ? ' on' : ''}"><span>${title}</span><b class="${v.value < 0 ? 'bad' : ''}">${num(v.value)}</b>
   <input type="number" data-p="${path}" value="${v.overridden ? v.value : ''}" placeholder="авто ${num(v.auto)}"></label>`;
@@ -62,26 +81,9 @@ function adderRows(kind, c, d) {
   return c.pockets.map((e) => d.itemMap.get(e.id)).filter(Boolean).filter((it) => it.tag !== STORAGE_TAG).map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
 }
 
-function grouped(rows) {
-  const groups = new Map();
-  for (const r of rows) {
-    const g = r.group || 'Без группы';
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g).push(r);
-  }
-  return [...groups.entries()].sort(([a, la], [b, lb]) => ((la[0]?.rank ?? 0) - (lb[0]?.rank ?? 0)) || cmpText(a, b))
-    .map(([g, list]) => [g, [...list].sort((a, b) => cmpText(a.text, b.text))]);
-}
-
 function groupOptions(rows) {
-  return grouped(rows).map(([g, list]) =>
+  return groupedRows(rows).map(([g, list]) =>
     `<optgroup label="${esc(g)}">${list.map((r) => `<option value="${esc(r.id)}">${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
-}
-
-function comboList(rows) {
-  if (!rows.length) return '<p class="combo-empty">Ничего не найдено</p>';
-  return grouped(rows).map(([g, list]) =>
-    `<div class="combo-group"><div class="combo-group-name">${esc(g)}</div>${list.map((r) => `<button type="button" class="combo-opt" role="option" data-combo-opt="${esc(r.id)}">${esc(r.text)}</button>`).join('')}</div>`).join('');
 }
 
 function adder(kind, hint, c, d, disabled = false) {
@@ -108,7 +110,7 @@ const itemSortDefs = (withQty, c) => {
     category: sdef('Категория', (x) => x.it?.category || ''),
     organization: sdef('Организация', (x) => x.it?.organization || ''),
     cost: sdef('Цена', (x) => x.it?.cost || 0, cmpNum),
-    sell: sdef('Цена продажи', (x) => (x.it ? sellPrice(x.it, c).value : 0), cmpNum),
+    sell: sdef('Цена продажи', (x) => (x.it ? sellPrice(x.it) : 0), cmpNum),
     id: sdef('ID', (x) => x.it?.id || ''),
   };
   if (withQty) {
@@ -155,7 +157,8 @@ function sortBar(kind, defs) {
 }
 
 function inventorySummary(c, d) {
-  const s = { count: 0, cost: 0, sell: 0, tali: 0, cards: 0, capacity: RULES.pocketLimit, over: false };
+  const s = { count: 0, cost: 0, sell: 0, tali: 0, cards: 0, transport: 0, capacity: RULES.pocketLimit, over: false };
+  const clinic = Array.isArray(c.clinicImplants) ? c.clinicImplants : [];
   // Установленные импланты не занимают место в хранилище, даже если остались в старом списке.
   const installed = new Map();
   for (const id of c.implants) installed.set(id, (installed.get(id) || 0) + 1);
@@ -170,14 +173,18 @@ function inventorySummary(c, d) {
     }
     s.count += qty;
     s.cost += (it.cost || 0) * qty;
-    s.sell += sellPrice(it, c).value * qty;
+    s.sell += sellPrice(it) * qty;
   }
   for (const id of c.implants) {
     const it = d.itemMap.get(id);
     if (!it) continue;
     s.cost += it.cost || 0;
-    s.sell += sellPrice(it, c).value;
+    s.sell += sellPrice(it);
+    if (clinic.includes(id)) s.cost += RULES.clinicCost[it.rarity] || 0;
   }
+  // Транспорт входит в сумму по номиналу, но не в продажу.
+  const transport = transportData(c, d);
+  if (transport) { s.transport = transport.sum.cost; s.cost += transport.sum.cost; }
   const storage = c.storage ? storageItems(c, d).find((it) => it.id === c.storage) : null;
   s.capacity += storageBonus(storage);
   s.over = s.count > s.capacity;
@@ -197,7 +204,7 @@ function inventoryTabs(c, race) {
   const qty = (rows) => rows.reduce((a, e) => a + (Number(e.qty) || 0), 0);
   return [
     { id: 'pockets', label: 'Хранилище', ok: true, count: qty(c.pockets) },
-    { id: 'equipment', label: 'Экипировка', ok: true, count: c.equipment.length },
+    { id: 'equipment', label: 'Экипировка', ok: true, count: c.equipment.length + (isKochevnik(c) && c.transport ? 1 : 0) },
     { id: 'implants', label: 'Импланты', ok: !!race?.implants_allowed, hint: 'только Поляриец и Новуссит', count: c.implants.length },
     { id: 'repository', label: 'Репозиторий', ok: race?.name === 'Новуссит', hint: 'только Новуссит', count: qty(c.repository) },
     { id: 'beasts', label: 'Способности Зверя', ok: race?.name === 'Хуманиец' && c.class === 'Зверь', hint: 'Хуманиец с классом Зверь', wip: true, count: Array.isArray(c.beasts) ? c.beasts.length : 0 },
@@ -237,6 +244,35 @@ function abilityCombo(id, i, d) {
     </div></div>${chosen ? `<p class="desc meta">${esc(chosen.description)}</p>` : ''}`;
 }
 
+function transportPicker(c, d, tr) {
+  const options = G.vehicles.map((v) => `<option value="${esc(v.id)}"${v.id === c.transport ? ' selected' : ''}>${esc(v.name)} · ${partCount(v.build)}</option>`).join('');
+  const B = tr?.build;
+  const s = tr?.sum;
+  const chips = tr ? [
+    `<span class="chip">Деталей: ${partCount(B)}</span>`,
+    `<span class="chip">ОЗ: ${B.currentHp != null ? `${num(B.currentHp)} / ${num(s.maxHp)}` : num(s.maxHp)}</span>`,
+    `<span class="chip">Деф.п: ${num(s.defP)}</span>`,
+    `<span class="chip">УКЛ: ${num(s.evasion)}</span>`,
+    `<span class="chip">Скороход: ${num(s.speed)}</span>`,
+    `<span class="chip">Полёт: ${num(s.flight)}</span>`,
+    `<span class="chip">Экранирование: ${num(s.screen)}</span>`,
+    `<span class="chip total">Стоимость: ${money(s.cost)}</span>`,
+  ].join('') : '';
+  return `<div class="transport-slot">
+    <label>[Tr] Транспорт кочевника<select data-transport><option value="">— не выбран —</option>${options}</select></label>
+    ${tr ? `<article class="transport-card">
+      <div class="part-main">
+        <div class="part-slot">Транспорт кочевника</div>
+        <b>${esc(tr.vehicle.name)}</b>
+        <div class="chips">${chips}</div>
+        ${s.warnings.length ? `<p class="bad">${s.warnings.map((w) => esc(w)).join('; ')}</p>` : ''}
+        ${s.speedFloor ? `<p class="meta">Минимум Скорохода: ${num(s.speedFloor)} (уникальный эффект двигателя).</p>` : ''}
+        ${tr.vehicle.notes ? `<p class="desc meta">${esc(tr.vehicle.notes)}</p>` : ''}
+      </div>
+    </article>` : '<p class="meta">Выберите транспорт из гаража в Утилитах. Он занимает слот [Tr], входит в сумму, но не в продажу.</p>'}
+  </div>`;
+}
+
 function inventoryPanel(c, d, r, race) {
   const tabs = inventoryTabs(c, race);
   const available = tabs.filter((t) => t.ok);
@@ -257,9 +293,8 @@ function inventoryPanel(c, d, r, race) {
     </div>${storage ? `<p class="desc meta storage-desc">${esc(storage.description)}</p>` : ''}`;
     const pocketRow = ({ e, i, it }) => {
       if (!it) return missing('pockets', i, e.id);
-      const sp = sellPrice(it, c), key = `pockets.${it.id}`;
-      return itemRow(it, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="pockets.${i}.qty" value="${e.qty}"></label>
-        <label>Цена продажи <input type="number" data-p="overrides.sellPrice.${it.id}" value="${sp.overridden ? sp.value : ''}" placeholder="авто ${num(sp.auto)}"></label>${del('pockets', i)}</div>`,
+      const key = `pockets.${it.id}`;
+      return itemRow(it, `<div class="ctl"><label>Кол-во <input type="number" min="1" data-p="pockets.${i}.qty" value="${e.qty}"></label>${del('pockets', i)}</div>`,
       { qty: e.qty, openKey: key, open: OPEN_ROWS.has(key) });
     };
     body = `${storageSlot}<div class="inv-tools">${adder('pockets', 'Найти предмет…', c, d)}${sortBar('pockets', defs)}</div>
@@ -271,9 +306,16 @@ function inventoryPanel(c, d, r, race) {
     const idRow = ({ id, i, it }) => {
       if (!it) return missing(active, i, id);
       const key = `${active}.${id}`;
+      if (active === 'implants') {
+        const on = Array.isArray(c.clinicImplants) && c.clinicImplants.includes(id);
+        const install = RULES.clinicCost[it.rarity] || 0;
+        const badge = `<label class="clinic-toggle" title="Установка в клинике: +${num(install)}. В продажу не входит"><input type="checkbox" data-clinic="${esc(id)}"${on ? ' checked' : ''}> Клиника</label>`;
+        return itemRow(it, `<div class="ctl">${del(active, i)}</div>`, { badge, cost: (it.cost || 0) + (on ? install : 0), openKey: key, open: OPEN_ROWS.has(key) });
+      }
       return itemRow(it, `<div class="ctl">${del(active, i)}</div>`, { openKey: key, open: OPEN_ROWS.has(key) });
     };
-    body = `<div class="inv-tools">${adder(active, active === 'implants' ? 'Выбрать имплант…' : 'Выбрать из хранилища…', c, d)}${sortBar(active, defs)}</div>
+    const trBlock = active === 'equipment' && isKochevnik(c) ? transportPicker(c, d, transportData(c, d)) : '';
+    body = `${trBlock}<div class="inv-tools">${adder(active, active === 'implants' ? 'Выбрать имплант…' : 'Выбрать из хранилища…', c, d)}${sortBar(active, defs)}</div>
       ${slots(active === 'equipment' ? r.gearSlots : r.implantSlots)}
       <div class="list">${rows.map(idRow).join('') || `<div class="empty">${active === 'equipment' ? 'Экипировка пуста.' : 'Импланты не выбраны.'}</div>`}</div>`;
   } else if (active === 'repository') {
@@ -301,8 +343,8 @@ function inventoryPanel(c, d, r, race) {
     <div class="inv-head"><h2>Инвентарь</h2>
       <div class="chips inv-summary">
         <span class="chip${sum.over ? ' bad' : ''}" title="Занято мест в хранилище / всего мест (базовые ${RULES.pocketLimit} + бонус [K])">Позиций: ${num(sum.count)} / ${num(sum.capacity)}</span>
-        <span class="chip total" title="Сумма по номиналу: хранилище, импланты и репозиторий. 1 Тали = ${RULES.taliToCredits} кредитов">Сумма: ${num(sum.cost)}</span>
-        <span class="chip" title="Сколько получится при продаже всего по правилам (5% или ручная цена)">Продажа: ${num(sum.sell)}</span>
+        <span class="chip total" title="Сумма по номиналу: хранилище, импланты, репозиторий и транспорт. 1 Тали = ${RULES.taliToCredits} кредитов">Сумма: ${num(sum.cost)}</span>
+        <span class="chip" title="Сколько получится при продаже всего по правилам (5% от номинала)">Продажа: ${num(sum.sell)}</span>
         ${sum.cards ? `<span class="chip" title="Суммарная цена карт в тали; в сумму идёт с переводом в кредиты">Карты: ${num(sum.tali)} тали</span>` : ''}
       </div>
     </div>
@@ -314,12 +356,16 @@ function inventoryPanel(c, d, r, race) {
 }
 
 export function render(ctx) {
-  const c = ctx.char, d = ctx.data, r = derive(c, d);
+  const c = ctx.char, d = ctx.data;
   const race = d.raceMap.get(c.race), trait = d.traitMap.get(c.trait);
   const isNovus = race?.name === 'Новуссит';
   if (!isNovus && c.essence) c.essence = null;
   const classes = allowedClasses(c.race, d.classes);
   if (!classes.some((x) => x.name === c.class)) c.class = classes[0]?.name || '';
+  // Транспорт доступен только Кочевнику и только пока машина есть в гараже.
+  if (!isKochevnik(c)) c.transport = null;
+  else if (c.transport && !G.vehicles.some((v) => v.id === c.transport)) c.transport = null;
+  const r = derive(c, d, isKochevnik(c) && c.transport ? ['Tr'] : []);
   const stats = [...d.stats].sort((a, b) => STAT_ORDER.indexOf(a.key) - STAT_ORDER.indexOf(b.key));
   const stat = (s) => {
     const issue = r.statIssues[s.key];
@@ -360,10 +406,6 @@ export function render(ctx) {
 
 export function bind(root, ctx) {
   const c = ctx.char, done = () => { ctx.save(); ctx.rerender(); };
-  const closeCombos = () => root.querySelectorAll?.('[data-combo-pop]')?.forEach?.((pop) => {
-    pop.hidden = true;
-    pop.closest('[data-combo]')?.querySelector('[data-combo-btn]')?.setAttribute('aria-expanded', 'false');
-  });
   root.oninput = (e) => {
     const comboKind = e.target.dataset.comboSearch;
     if (comboKind) {
@@ -384,9 +426,22 @@ export function bind(root, ctx) {
     select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
   root.onchange = (e) => {
+    if (e.target.dataset.clinic !== undefined) {
+      const id = e.target.dataset.clinic;
+      if (!Array.isArray(c.clinicImplants)) c.clinicImplants = [];
+      if (e.target.checked) { if (!c.clinicImplants.includes(id)) c.clinicImplants.push(id); }
+      else c.clinicImplants = c.clinicImplants.filter((x) => x !== id);
+      done();
+      return;
+    }
+    if (e.target.dataset.transport !== undefined) {
+      c.transport = e.target.value || null;
+      done();
+      return;
+    }
     if (e.target.dataset.p) {
       const path = e.target.dataset.p;
-      set(c, path, fieldValue(e.target));
+      set(c, path, e.target.type === 'checkbox' ? e.target.checked : fieldValue(e.target));
       if (path.startsWith('stats.')) {
         const key = path.slice(6), max = ctx.data.statMap.get(key)?.max || 10;
         c.stats[key] = Math.min(max, Math.max(1, Math.round(Number(c.stats[key]) || 1)));
@@ -396,6 +451,7 @@ export function bind(root, ctx) {
         if (!allowed.some((x) => x.name === c.class)) c.class = allowed[0]?.name || '';
         if (ctx.data.raceMap.get(c.race)?.name !== 'Новуссит') c.essence = null;
       }
+      if ((path === 'race' || path === 'class') && !isKochevnik(c)) c.transport = null;
       done(); return;
     }
     if (e.target.dataset.itabSelect !== undefined) { UI.tab = e.target.value; ctx.rerender(); return; }
@@ -415,22 +471,9 @@ export function bind(root, ctx) {
   root.onclick = (e) => {
     const comboBtn = e.target.closest('[data-combo-btn]');
     if (comboBtn) {
-      const combo = comboBtn.closest('[data-combo]'), pop = combo?.querySelector('[data-combo-pop]');
-      const willOpen = !!pop?.hidden;
-      closeCombos();
-      if (willOpen) {
-        pop.hidden = false;
-        const btnRect = comboBtn.getBoundingClientRect(), gap = 8;
-        const below = innerHeight - btnRect.bottom - gap, above = btnRect.top - gap;
-        const up = below < 352 && above > below;
-        pop.classList.toggle('up', up);
-        pop.style.maxHeight = `${Math.min(352, Math.max(160, up ? above : below))}px`;
-        comboBtn.setAttribute('aria-expanded', 'true');
-        const search = pop.querySelector('[data-combo-search]');
-        search.value = '';
-        pop.querySelector('[data-combo-list]').innerHTML = comboList(comboRows(combo.dataset.combo, c, ctx.data));
-        search.focus();
-      }
+      const combo = comboBtn.closest('[data-combo]');
+      if (combo?.querySelector('[data-combo-pop]')?.hidden) openCombo(comboBtn, comboRows(combo.dataset.combo, c, ctx.data), root);
+      else closeCombos(root);
       return;
     }
     const comboOpt = e.target.closest('[data-combo-opt]');
@@ -439,14 +482,14 @@ export function bind(root, ctx) {
       const select = target ? root.querySelector(`[data-p="${target}"]`) : (kind ? root.querySelector(`[data-in="${kind}"]`) : null);
       if (select) {
         select.value = comboOpt.dataset.comboOpt;
-        if (target) { closeCombos(); select.dispatchEvent(new Event('change', { bubbles: true })); return; }
+        if (target) { closeCombos(root); select.dispatchEvent(new Event('change', { bubbles: true })); return; }
       }
       const label = combo?.querySelector('[data-combo-label]');
       if (label) label.textContent = comboOpt.textContent;
-      closeCombos();
+      closeCombos(root);
       return;
     }
-    if (!e.target.closest('[data-combo]')) closeCombos();
+    if (!e.target.closest('[data-combo]')) closeCombos(root);
     const itab = e.target.closest('[data-itab]');
     if (itab) { UI.tab = itab.dataset.itab; ctx.rerender(); return; }
     const dir = e.target.closest('[data-dir]');
@@ -456,7 +499,17 @@ export function bind(root, ctx) {
       ctx.rerender(); return;
     }
     const add = e.target.closest('[data-add]'), rm = e.target.closest('[data-del]');
-    if (rm) { const [kind, i] = rm.dataset.del.split('.'); c[kind].splice(Number(i), 1); if (c.storage && !c.pockets.some((x) => x.id === c.storage)) c.storage = null; done(); }
+    if (rm) {
+      const [kind, i] = rm.dataset.del.split('.');
+      const idx = Number(i);
+      if (kind === 'implants') {
+        const id = c.implants[idx];
+        c.implants.splice(idx, 1);
+        if (id && !c.implants.includes(id) && Array.isArray(c.clinicImplants)) c.clinicImplants = c.clinicImplants.filter((x) => x !== id);
+      } else c[kind].splice(idx, 1);
+      if (c.storage && !c.pockets.some((x) => x.id === c.storage)) c.storage = null;
+      done();
+    }
     if (!add) return;
     const kind = add.dataset.add, input = root.querySelector(`[data-in="${kind}"]`);
     const id = input?.value;
@@ -487,40 +540,8 @@ export function bind(root, ctx) {
     root.addEventListener('toggle', root._rowToggle, true);
   }
   if (!root._comboKeys) {
-    root._comboKeys = (e) => {
-      const combo = e.target.closest?.('[data-combo]');
-      if (!combo) return;
-      const btn = combo.querySelector('[data-combo-btn]'), pop = combo.querySelector('[data-combo-pop]');
-      if (e.key === 'Escape') {
-        pop.hidden = true;
-        btn?.setAttribute('aria-expanded', 'false');
-        btn?.focus();
-        return;
-      }
-      if (e.key === 'Enter' && e.target.matches('[data-combo-search]')) {
-        const first = combo.querySelector('.combo-opt');
-        if (first) { e.preventDefault(); first.click(); }
-        return;
-      }
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        const opts = [...combo.querySelectorAll('.combo-opt')];
-        if (!opts.length) return;
-        e.preventDefault();
-        const i = opts.indexOf(e.target);
-        const next = e.key === 'ArrowDown' ? (i < 0 ? 0 : Math.min(opts.length - 1, i + 1)) : (i <= 0 ? 0 : i - 1);
-        opts[next].focus();
-      }
-    };
+    root._comboKeys = comboKeydown;
     root.addEventListener('keydown', root._comboKeys);
   }
-  if (typeof document !== 'undefined' && !document._infusionComboClose) {
-    document._infusionComboClose = (e) => {
-      if (e.target.closest?.('[data-combo]')) return;
-      document.querySelectorAll('[data-combo-pop]:not([hidden])').forEach((pop) => {
-        pop.hidden = true;
-        pop.closest('[data-combo]')?.querySelector('[data-combo-btn]')?.setAttribute('aria-expanded', 'false');
-      });
-    };
-    document.addEventListener('click', document._infusionComboClose);
-  }
+  installComboClose();
 }

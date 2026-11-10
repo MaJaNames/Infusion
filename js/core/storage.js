@@ -2,8 +2,9 @@ const KEY = 'infusion.char';
 export const blankChar = () => ({
   v: 1, name: '', player: '', race: '0x002', rank: 1, class: 'Соло', trait: null, essence: null,
   stats: { strength: 5, dexterity: 5, intelligence: 5, will: 5, charisma: 5, perception: 5, technique: 5, luck: 5, constitution: 5 },
-  skills: [], abilities: [], pockets: [], equipment: [], implants: [], repository: [], beasts: [], storage: null, notes: '',
-  overrides: { freePoints: null, hpMax: null, kronosMax: null, sellPrice: {}, shards: {} },
+  skills: [], abilities: [], pockets: [], equipment: [], implants: [], repository: [], beasts: [], storage: null, notes: '', clinicImplants: [],
+  transport: null,
+  overrides: { freePoints: null, hpMax: null, kronosMax: null, shards: {} },
 });
 export const loadChar = () => { try { return { ...blankChar(), ...JSON.parse(localStorage.getItem(KEY)) }; } catch { return blankChar(); } };
 export const saveChar = (c) => { try { localStorage.setItem(KEY, JSON.stringify(c)); } catch { /* память браузера недоступна */ } };

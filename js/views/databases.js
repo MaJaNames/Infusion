@@ -1,6 +1,6 @@
 import { esc, num, RC, RARITIES, label, uniq, money } from '../core/util.js';
 import { RULES } from '../character/rules.js';
-import { partsOf, KIND_LABEL, STAT_LABEL, statChips } from '../modules/autoshop/parts.js';
+import { partsOf, KIND_LABEL, STAT_LABEL, statChips, droneChips } from '../modules/autoshop/parts.js';
 
 const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали Кочевника'], ['rules', 'Справочник']];
 const S = {
@@ -23,7 +23,7 @@ const RULE_GROUP_RANK = new Map(RULE_GROUPS.map((g, i) => [g, i]));
 const RULE_SUB_RANK = new Map([['Ранги', 0], ['Сущности', 1], ['Способности', 2], ['Мутации', 3], ['Черты', 4]]);
 
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${title}<div class="meta">${meta}</div></div><span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${title}<div class="meta">${meta}</div></div>${o.badge || ''}<span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 const credits = (n) => money(n, 'credits');
 const tali = (n) => money(n, 'tali');
@@ -40,7 +40,7 @@ const firstNum = (v) => { const m = String(v ?? '').match(/-?\d+/); return m ? N
 
 export const itemRow = (it, controls = '', o = {}) => row(RC[it.rarity] || 'c', `<span class="tag">${esc(it.tag || '—')}</span><b>${esc(it.name)}</b>`,
   `${esc(it.rarity)} · ${esc(it.category)}${it.iconic && it.rarity !== 'Культовый' ? ' · культовый' : ''}${it.organization !== 'Общедоступно' ? ' · ' + esc(it.organization) : ''}`,
-  `${credits(it.cost)}${qtyLine(o.qty)}<small class="sell">${credits(sell(it))}</small>`,
+  `${credits(o.cost ?? it.cost)}${qtyLine(o.qty)}<small class="sell">${credits(sell(it))}</small>`,
   `${controls}<p class="desc">${esc(it.description)}</p>`, o);
 
 export const cardRow = (c, controls = '', o = {}) => row(RC[c.rarity] || 'c', `<span class="tag">${esc(c.tag || '—')}</span><b>${esc(c.name)}</b>`,
@@ -50,7 +50,7 @@ export const cardRow = (c, controls = '', o = {}) => row(RC[c.rarity] || 'c', `<
    <p class="desc">${esc(c.mechanics)}</p>${dl([['Параметры', c.params], ['Тип урона', c.damage_type], ['Дальность', c.distance], ['Срабатывание', c.activation], ['Эффекты', c.effects], ['Испытание', c.test], ['Усиление', c.amplify], ['Сотворение', c.creation === 'Базис' ? '' : c.creation]])}`, o);
 
 const partRow = (p) => row(RC[p.item.rarity] || 'c', `<span class="tag">${KIND_LABEL[p.stats.kind] || '?'}</span><b>${esc(p.item.name)}</b>`, esc(p.item.rarity), credits(p.item.cost),
-  `<div class="chips">${statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`);
+  `<div class="chips">${p.drone ? `${droneChips(p.drone)}<span class="chip drone">Дрон</span>` : statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`);
 
 const ITEM_SORT = {
   name: sdef('Название', (it) => label(it)),

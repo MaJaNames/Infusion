@@ -1,6 +1,6 @@
 // node tests/smoke.test.mjs — рисует все вкладки на данных data.json и проверяет расчёты персонажа.
 import { readFileSync } from 'node:fs';
-import { indexData, optLabel, num } from '../js/core/util.js';
+import { indexData, optLabel, num, esc } from '../js/core/util.js';
 import { blankChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
 import { classAllowed, RULES } from '../js/character/rules.js';
@@ -8,7 +8,10 @@ import { helpBlock } from '../js/core/help.js';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
+import * as shop from '../js/modules/autoshop/view.js';
 import { partsOf } from '../js/modules/autoshop/parts.js';
+import { summarize } from '../js/modules/autoshop/aggregate.js';
+import { G, importGarage, normGarage, currentVehicle } from '../js/modules/autoshop/store.js';
 
 const d = indexData(JSON.parse(readFileSync(new URL('../data/data.json', import.meta.url), 'utf8')));
 let fail = 0;
@@ -85,6 +88,19 @@ check('сумма: экипировка не входит', invGear.includes(`С
 const implantItem = d.items.find((i) => i.category === 'Имплант');
 const implantStored = character.render({ ...ctx, char: { ...blankChar(), pockets: [{ id: implantItem.id, qty: 1 }], implants: [implantItem.id] } });
 check('импланты: установленный не занимает место и не дублируется', implantStored.includes('Позиций: 0 / 20') && implantStored.includes(`Сумма: ${num(implantItem.cost || 0)}`));
+check('хранилище: без ручной цены продажи и глобальной клиники', !invHtml.includes('overrides.sellPrice') && blankChar().overrides.sellPrice === undefined && blankChar().clinic === undefined && Array.isArray(blankChar().clinicImplants));
+const clinicItem = d.items.find((i) => i.category === 'Имплант' && RULES.clinicCost[i.rarity]);
+const clinicBase = { ...blankChar(), race: '0x002', class: 'Соло', implants: [clinicItem.id] };
+const clinicOff = character.render({ ...ctx, char: clinicBase });
+const clinicOn = character.render({ ...ctx, char: { ...clinicBase, clinicImplants: [clinicItem.id] } });
+const clinicInstall = RULES.clinicCost[clinicItem.rarity];
+const clinicSell = clinicItem.sell_price ?? Math.round((clinicItem.cost || 0) * RULES.sellPriceRate);
+check('клиника: установка входит в цену импланта и сумму, но не в продажу', clinicOff.includes(`Сумма: ${num(clinicItem.cost || 0)}`) && clinicOn.includes(`Сумма: ${num((clinicItem.cost || 0) + clinicInstall)}`) && clinicOn.includes(`Продажа: ${num(clinicSell)}`) && !clinicOn.includes('Клиника: +'));
+const clinicItems = d.items.filter((i) => i.category === 'Имплант' && RULES.clinicCost[i.rarity]).slice(0, 2);
+const mixedSum = clinicItems.reduce((a, i) => a + (i.cost || 0), 0) + RULES.clinicCost[clinicItems[0].rarity];
+const bothSum = mixedSum + RULES.clinicCost[clinicItems[1].rarity];
+const mixedClinic = character.render({ ...ctx, char: { ...blankChar(), race: '0x002', class: 'Соло', implants: clinicItems.map((i) => i.id), clinicImplants: [clinicItems[0].id] } });
+check('клиника: установка только у отмеченного импланта', mixedClinic.includes(`Сумма: ${num(mixedSum)}`) && !mixedClinic.includes(`Сумма: ${num(bothSum)}`));
 check('карточка предмета: количество и состояние раскрытия', (() => {
   const html = databases.itemRow(d.items[0], '', { qty: 4, openKey: 'pockets.0x001', open: true });
   return html.includes('<small>Кол-во: 4</small>') && html.includes('data-row="pockets.0x001"') && html.includes(' open>');
@@ -144,6 +160,107 @@ const hillz = d.items.filter((i) => i.organization === 'Хиллз').length;
 check('база: фильтр по организации работает', dbRes.innerHTML.includes(`Найдено: ${hillz}`), hillz);
 check('база: в описании нет порядкового номера строки', !/<div class="body">\s*\d/.test(dbRes.innerHTML), dbRes.innerHTML.match(/<div class="body">\s*\d/)?.[0]);
 check('утилиты: мобильные вкладки', utilities.render(ctx).includes('data-tab-select'));
+
+// Автомастерская: несколько Кочевников в гараже.
+const shopRoot = { addEventListener() {} };
+shop.bind(shopRoot, { ...ctx, rerender() {} });
+const shopHtml = utilities.render(ctx);
+check('автомастерская: гараж и переключение машин', ['garage-tabs', 'data-vehicle-select', 'data-add-vehicle', 'data-vehicle-name', 'data-del-vehicle', 'data-import-garage', 'data-garage-file', 'data-vehicle-notes'].every((x) => shopHtml.includes(x)));
+check('автомастерская: у последней машины удаление недоступно', /data-del-vehicle disabled/.test(shopHtml));
+check('автомастерская: группы деталей и карточки итогов', ['Корпус и ходовая', 'Оружие', 'Модули', 'Скидка'].every((x) => shopHtml.includes(x)) && shopHtml.includes('class="stat-grid"') && shopHtml.includes('stat-card cost'));
+check('автомастерская: выбор детали с поиском, как в «Персонаже»', ['data-combo="body"', 'data-combo-search="body"', 'class="combo-pop"', 'data-combo-list="body"', 'garage-picks'].every((x) => shopHtml.includes(x)));
+check('автомастерская: выгрузка гаража и поле текущего ОЗ', shopHtml.includes('data-export-garage') && shopHtml.includes('data-b="currentHp"') && shopHtml.includes('Текущее ОЗ'));
+shopRoot.onchange({ target: { dataset: { b: 'currentHp' }, value: '42', type: 'number', tagName: 'INPUT' } });
+const hpHtml = utilities.render(ctx);
+check('автомастерская: текущее ОЗ сохраняется и выводится', hpHtml.includes('value="42"') && hpHtml.includes('ОЗ: 42 /'));
+
+const clickShop = (sel, dataset = {}) => shopRoot.onclick({ target: { closest: (s) => (s === sel ? { dataset } : null) } });
+clickShop('[data-add-vehicle]');
+let garageHtml = utilities.render(ctx);
+const vehicleIds = [...garageHtml.matchAll(/data-vehicle="([^"]+)"/g)].map((m) => m[1]);
+check('автомастерская: добавление второй машины', vehicleIds.length === 2 && garageHtml.includes('Транспорт 2'), vehicleIds.length);
+
+const bodyPart = partsOf(d).find((p) => p.stats.kind === 'body');
+shopRoot.onchange({ target: { dataset: { b: 'body' }, value: bodyPart.item.id, type: 'select-one', tagName: 'SELECT' } });
+garageHtml = utilities.render(ctx);
+check('автомастерская: деталь попала в состав второй машины', garageHtml.includes('part-slot">Кузов') && garageHtml.includes(esc(bodyPart.item.name)));
+check('автомастерская: карточка детали раскрывается и принимает текущее ОЗ', garageHtml.includes(`data-part-hp="${bodyPart.item.id}"`) && garageHtml.includes('class="part-hp"'));
+shopRoot.onchange({ target: { dataset: { partHp: bodyPart.item.id }, value: '17', type: 'number', tagName: 'INPUT' } });
+const partHpHtml = utilities.render(ctx);
+check('автомастерская: текущее ОЗ детали сохраняется', partHpHtml.includes(`data-part-hp="${bodyPart.item.id}" value="17"`) && partHpHtml.includes('Текущее ОЗ: 17 /'));
+const chipOrder = ['Деталей:', 'ОЗ:', 'Деф.п:', 'УКЛ:', 'Скороход:', 'Полёт:', 'Экранирование:', 'Стоимость:'];
+const chipPos = chipOrder.map((x) => garageHtml.indexOf(`>${x}`));
+check('автомастерская: статы сверху в нужном порядке', chipPos.every((p, i) => p >= 0 && (i === 0 || p > chipPos[i - 1])), chipPos.join(','));
+check('автомастерская: статы в подсказке названия машины', garageHtml.includes('title="Деталей:') && garageHtml.includes('Деф.п:') && garageHtml.includes('Экранирование:'));
+clickShop('[data-source]', { source: 'defP' });
+const srcHtml = utilities.render(ctx);
+check('автомастерская: клик по параметру показывает источники', srcHtml.includes('Источники: ДЕФ.П') && srcHtml.includes(esc(bodyPart.item.name)));
+clickShop('[data-source]', { source: 'defP' });
+
+clickShop('[data-vehicle]', { vehicle: vehicleIds[0] });
+const firstHtml = utilities.render(ctx);
+check('автомастерская: сборки машин независимы', firstHtml.includes('part-empty') && !firstHtml.includes('part-slot">Кузов'));
+
+clickShop('[data-vehicle]', { vehicle: vehicleIds[1] });
+const backHtml = utilities.render(ctx);
+check('автомастерская: сборка второй машины сохранилась', backHtml.includes('part-slot">Кузов'));
+
+shopRoot.onchange({ target: { dataset: { vehicleName: '' }, value: 'Ржавый', type: 'text', tagName: 'INPUT' } });
+const renamedHtml = utilities.render(ctx);
+check('автомастерская: переименование машины', renamedHtml.includes('value="Ржавый"') && renamedHtml.includes('>Ржавый</span><span class="garage-count"'));
+
+shopRoot.onchange({ target: { dataset: { vehicleNotes: '' }, value: 'Эффект: +2 к защите', type: 'textarea', tagName: 'TEXTAREA' } });
+const notesHtml = utilities.render(ctx);
+check('автомастерская: заметки транспорта сохраняются', notesHtml.includes('Эффект: +2 к защите') && notesHtml.includes('data-vehicle-notes'));
+
+clickShop('[data-del-vehicle]');
+garageHtml = utilities.render(ctx);
+const leftIds = [...garageHtml.matchAll(/data-vehicle="([^"]+)"/g)].map((m) => m[1]);
+check('автомастерская: удаление машины', leftIds.length === 1 && leftIds[0] === vehicleIds[0] && /data-del-vehicle disabled/.test(garageHtml));
+
+// Дрон: свои ОЗ, защита и ОП из описания, но в итоги машины они не входят.
+const dronePart = partsOf(d).find((p) => p.drone);
+check('дрон: характеристики из описания', !!dronePart && dronePart.drone.hp === 300 && dronePart.drone.defP === 80 && dronePart.drone.op === 1, JSON.stringify(dronePart?.drone));
+const pickOf = (id) => { const p = partsOf(d).find((x) => x.item.id === id); return p ? { cost: p.item.cost, stats: p.stats, name: p.item.name, drone: p.drone } : null; };
+const withDrone = summarize({ body: pickOf(bodyPart.item.id), wheels: null, engine: null, weapons: [], modules: [pickOf(dronePart.item.id)] });
+const withoutDrone = summarize({ body: pickOf(bodyPart.item.id), wheels: null, engine: null, weapons: [], modules: [] });
+check('дрон: статы не входят в итоги, стоимость входит', withDrone.defP === withoutDrone.defP && withDrone.maxHp === withoutDrone.maxHp && withDrone.cost === withoutDrone.cost + dronePart.item.cost, `${withDrone.defP}/${withoutDrone.defP} ${withDrone.cost}/${withoutDrone.cost}`);
+shopRoot.onchange({ target: { dataset: { b: 'modules.0' }, value: dronePart.item.id, type: 'select-one', tagName: 'SELECT' } });
+const droneHtml = utilities.render(ctx);
+check('дрон: карточка показывает свои статы', droneHtml.includes('Дрон') && droneHtml.includes('ОЗ 300') && droneHtml.includes('ДЕФ(П) 80') && droneHtml.includes('ОП 1') && droneHtml.includes('не входят в итоги'));
+
+// Уникальные механические эффекты двигателей.
+const motor5 = partsOf(d).find((p) => p.item.id === '0x03f');
+const motor1 = partsOf(d).find((p) => p.item.id === '0x03b');
+const torus5 = partsOf(d).find((p) => p.item.id === '0x044');
+const athena = partsOf(d).find((p) => p.item.id === '0x00e');
+const tracks = partsOf(d).find((p) => p.item.id === '0x04f');
+const gida = partsOf(d).find((p) => p.item.id === '0x07f');
+const elada = partsOf(d).find((p) => p.item.id === '0x05d');
+const offroad = partsOf(d).find((p) => p.item.id === '0x045');
+check('двигатели: пол Скорохода из уникального эффекта', motor5.stats.speedFloor === 2 && motor1.stats.speedFloor === 0, `${motor5.stats.speedFloor}/${motor1.stats.speedFloor}`);
+check('двигатели: Торус требует «Элиада»', torus5.stats.wheelReq === 'Элиада', torus5.stats.wheelReq);
+const floorBuild = summarize({ body: pickOf(athena.item.id), wheels: pickOf(tracks.item.id), engine: pickOf(motor5.item.id), weapons: [], modules: [pickOf(gida.item.id)] });
+check('двигатели: пол Скорохода поднимает итог', floorBuild.speed === 2 && floorBuild.speedFloor === 2 && floorBuild.sources.speed.some((x) => x.name.includes('Минимум Скорохода')), `${floorBuild.speed}/${floorBuild.speedFloor}`);
+const torusBad = summarize({ body: pickOf(athena.item.id), wheels: pickOf(offroad.item.id), engine: pickOf(torus5.item.id), weapons: [], modules: [] });
+const torusOk = summarize({ body: pickOf(athena.item.id), wheels: pickOf(elada.item.id), engine: pickOf(torus5.item.id), weapons: [], modules: [] });
+check('Торус: без «Элиады» предупреждение', torusBad.warnings.some((w) => w.includes('Элиада')) && !torusOk.warnings.some((w) => w.includes('Элиада')));
+const torusNoWheels = summarize({ body: pickOf(athena.item.id), wheels: null, engine: pickOf(torus5.item.id), weapons: [], modules: [] });
+check('Торус: чужие колёса не идут в итоги', torusBad.maxHp === torusNoWheels.maxHp && torusBad.defP === torusNoWheels.defP && torusBad.speed === torusNoWheels.speed, `${torusBad.maxHp}/${torusNoWheels.maxHp}`);
+shopRoot.onchange({ target: { dataset: { b: 'wheels' }, value: offroad.item.id, type: 'select-one', tagName: 'SELECT' } });
+const wheelsBeforeTorus = currentVehicle().build.wheels;
+shopRoot.onchange({ target: { dataset: { b: 'engine' }, value: torus5.item.id, type: 'select-one', tagName: 'SELECT' } });
+check('Торус: чужие колёса снимаются автоматически', wheelsBeforeTorus === offroad.item.id && currentVehicle().build.wheels === null, `${wheelsBeforeTorus} → ${currentVehicle().build.wheels}`);
+shopRoot.onchange({ target: { dataset: { b: 'wheels' }, value: offroad.item.id, type: 'select-one', tagName: 'SELECT' } });
+check('Торус: поставить другие колёса нельзя', currentVehicle().build.wheels === null);
+const torusHtml = utilities.render(ctx);
+const wheelSelect = torusHtml.match(/<select data-b="wheels"[^>]*>([\s\S]*?)<\/select>/)?.[1] || '';
+check('Торус: в списке колёс только «Элиада»', wheelSelect.includes(`value="${elada.item.id}"`) && !wheelSelect.includes(`value="${offroad.item.id}"`) && wheelSelect.includes('Элиада'));
+check('Торус: предупреждение видно в гараже', torusHtml.includes('нужны колёса «Элиада»'));
+shopRoot.onchange({ target: { dataset: { b: 'wheels' }, value: elada.item.id, type: 'select-one', tagName: 'SELECT' } });
+const torusOkHtml = utilities.render(ctx);
+check('Торус: с «Элиадой» предупреждение исчезает', currentVehicle().build.wheels === elada.item.id && !torusOkHtml.includes('нужны колёса «Элиада»'));
+
 check('по умолчанию Поляриец-Соло', blankChar().race === '0x002' && blankChar().class === 'Соло');
 check('метка выбора: [Тег] Название [Р]*', optLabel({ tag: 'Acs', name: 'Тест', rarity: 'Редкий', iconic: true }) === '[Acs] Тест [Р]*');
 check('метка выбора: «Культовый» без звёздочки', optLabel({ tag: 'Acs', name: 'Тест', rarity: 'Культовый', iconic: true }) === '[Acs] Тест [К]');
@@ -161,9 +278,11 @@ const polarHtml = character.render({ ...ctx, char: { ...c, race: '0x002', class:
 const novusHtml = character.render({ ...ctx, char: { ...c, race: '0x001', class: 'Свой' } });
 check('сущность доступна только Новусситу', !polarHtml.includes('data-p="essence"') && novusHtml.includes('data-p="essence"'));
 check('подсказки: списки вместо сплошного текста', helpBlock('char').includes('<ul>') && helpBlock('char').includes('Хранилище') && helpBlock('db').includes('<li>'));
+check('подсказки: гараж, текущее ОЗ и клиника', helpBlock('util').includes('вкладками') && helpBlock('util').includes('Текущее ОЗ') && helpBlock('util').includes('Выгрузка') && helpBlock('char').includes('Клиника:'));
 const swSource = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 check('обновление интерфейса: service worker и свежие файлы', swSource.includes("cache: 'no-store'") && indexSource.includes("register('sw.js'"));
+check('иконка сайта: paw.webp', indexSource.includes('rel="icon"') && indexSource.includes('assets/icons/paw.webp'));
 check('обновление интерфейса: данные персонажа не затрагиваются', !swSource.includes('localStorage') && !swSource.includes('indexedDB'));
 const fakeRoot = { addEventListener() {} };
 character.bind(fakeRoot, ctx);
@@ -172,6 +291,11 @@ clickTab('implants');
 const impHtml = character.render(ctx);
 const firstImplant = d.items.find((i) => i.category === 'Имплант');
 check('импланты: ставятся из справочника без хранилища', impHtml.includes('Выбрать имплант…') && impHtml.includes('<optgroup label="Импланты">') && impHtml.includes(optLabel(firstImplant)));
+const rowImplant = d.itemMap.get(c.implants[0]);
+const rowInstall = RULES.clinicCost[rowImplant.rarity] || 0;
+check('импланты: галочка «Клиника» у конкретного импланта', impHtml.includes(`data-clinic="${rowImplant.id}"`) && impHtml.includes('> Клиника') && !impHtml.includes('data-p="clinic"'));
+const impClinicHtml = character.render({ ...ctx, char: { ...c, clinicImplants: [rowImplant.id] } });
+check('импланты: цена строки включает установку', impClinicHtml.includes(`>${num((rowImplant.cost || 0) + rowInstall)}</span>`));
 clickTab('equipment');
 const eqHtml = character.render(ctx);
 check('экипировка: по-прежнему из хранилища', eqHtml.includes('Выбрать из хранилища…') && !eqHtml.includes('Выбрать имплант…'));
@@ -183,5 +307,29 @@ check('репозиторий: выбранный класс → общие → 
 clickTab('beasts');
 const beastHtml = character.render({ ...ctx, char: { ...c, race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id] } });
 check('инвентарь: способности Зверя (WIP)', beastHtml.includes('Способности Зверя') && beastHtml.includes('WIP') && beastHtml.includes(d.beasts[0].name));
+
+// Транспорт в экипировке Кочевника.
+const legacyGarage = normGarage(null, { body: bodyPart.item.id, wheels: null, engine: null, weapons: [], modules: [], discount: 0 });
+check('миграция: старая сборка становится транспортом', legacyGarage.vehicles.length === 1 && legacyGarage.vehicles[0].name === 'Транспорт 1' && legacyGarage.vehicles[0].build.body === bodyPart.item.id);
+const importBefore = G.vehicles.length;
+const importCount = importGarage(JSON.stringify({ vehicles: [{ id: 'v-import-test', name: 'Импорт', notes: 'Из файла', build: { body: bodyPart.item.id } }] }));
+const imported = G.vehicles[G.vehicles.length - 1];
+check('импорт: транспорт добавляется с новым ID', importCount === 1 && G.vehicles.length === importBefore + 1 && imported.id !== 'v-import-test' && imported.name === 'Импорт');
+const legacyImportBefore = G.vehicles.length;
+check('импорт: старая одиночная сборка тоже подходит', importGarage(JSON.stringify({ body: bodyPart.item.id })) === 1 && G.vehicles.length === legacyImportBefore + 1);
+
+clickTab('equipment');
+const trSum = summarize({ body: pickOf(bodyPart.item.id), wheels: null, engine: null, weapons: [], modules: [] });
+const trHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Кочевник', transport: imported.id } });
+check('экипировка: транспорт Кочевника занимает [Tr] и виден', trHtml.includes('data-transport') && trHtml.includes('[Tr] 1/1') && trHtml.includes(imported.name));
+check('экипировка: транспорт входит в сумму, но не в продажу', trHtml.includes(`Сумма: ${num(trSum.cost)}`) && trHtml.includes('Продажа: 0'));
+const soloTrHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Соло', transport: imported.id } });
+check('экипировка: транспорт недоступен не-Кочевнику', !soloTrHtml.includes('data-transport') && !soloTrHtml.includes('[Tr] 1/1'));
+fakeRoot.onchange({ target: { dataset: { transport: imported.id }, value: imported.id } });
+c.transport = imported.id;
+fakeRoot.onchange({ target: { dataset: { p: 'class' }, value: 'Соло', type: 'select-one', tagName: 'SELECT' } });
+check('экипировка: при смене класса транспорт сбрасывается', c.transport === null);
+check('подсказки: транспорт, импорт и заметки', helpBlock('util').includes('Загрузить') && helpBlock('util').includes('Заметки') && helpBlock('util').includes('Текущее ОЗ') && helpBlock('util').includes('Элиада') && helpBlock('char').includes('Транспорт'));
+
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');
 process.exit(fail ? 1 : 0);
