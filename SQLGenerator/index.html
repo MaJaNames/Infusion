@@ -4,309 +4,1154 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Infusion SQL Generator</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            cyber: {
-              bg: '#0f1117',
-              panel: '#13161e',
-              card: '#171b24',
-              hover: '#262d3d',
-              accent: '#00a8cc',
-              neon: '#00d4ff',
-              gold: '#ffc832',
-              border: '#1f2430',
-              input: '#1c212d'
-            }
-          },
-          fontFamily: {
-            sans: ['Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
-            mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- React & Lucide Libraries -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
   <style>
+    /* --- SYSTEM & THEME TOKENS --- */
+    :root {
+      --cyber-bg: #0f1117;
+      --cyber-panel: #13161e;
+      --cyber-card: #171b24;
+      --cyber-hover: #262d3d;
+      --cyber-accent: #00a8cc;
+      --cyber-neon: #00d4ff;
+      --cyber-gold: #ffc832;
+      --cyber-border: #1f2430;
+      --cyber-input: #1c212d;
+      --cyber-emerald: #10b981;
+      --cyber-rose: #f43f5e;
+      --cyber-sky: #0284c7;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--cyber-bg);
+      color: var(--text-main);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      min-height: 100vh;
+      padding-bottom: 2rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     /* Custom Scrollbars */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: #0f1117;
+      background: var(--cyber-bg);
     }
     ::-webkit-scrollbar-thumb {
-      background: #262d3d;
+      background: var(--cyber-hover);
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #00a8cc;
+      background: var(--cyber-accent);
     }
+
     button, input, select, textarea {
       touch-action: manipulation;
+      font-family: inherit;
+    }
+
+    /* Container Utility */
+    .app-container {
+      max-width: 1152px;
+      margin: 0 auto;
+      padding: 0.75rem;
+    }
+    @media (min-width: 640px) {
+      .app-container {
+        padding: 1.5rem;
+      }
+    }
+
+    /* Panels & Cards */
+    .panel {
+      background-color: var(--cyber-panel);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.2s ease;
+    }
+    @media (min-width: 640px) {
+      .panel {
+        padding: 1.5rem;
+      }
+    }
+
+    .panel-active-edit {
+      border-color: var(--cyber-neon) !important;
+    }
+
+    /* Header Layout */
+    .app-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    @media (min-width: 640px) {
+      .app-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    /* Typography Utilities */
+    .title-text {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--cyber-neon);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: 0.025em;
+    }
+    .badge-tag {
+      font-size: 0.75rem;
+      font-family: Consolas, Monaco, monospace;
+      padding: 0.125rem 0.5rem;
+      border-radius: 0.25rem;
+      background-color: rgba(0, 168, 204, 0.2);
+      color: var(--cyber-accent);
+      border: 1px solid rgba(0, 168, 204, 0.3);
+    }
+    .subtitle-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.125rem;
+    }
+
+    /* Tabs */
+    .tabs-wrapper {
+      display: flex;
+      background-color: var(--cyber-bg);
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--cyber-border);
+      align-self: flex-start;
+    }
+    @media (min-width: 640px) {
+      .tabs-wrapper {
+        align-self: center;
+      }
+    }
+
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      color: #fff;
+      background-color: var(--cyber-hover);
+    }
+    .tab-btn.active {
+      background-color: var(--cyber-accent);
+      color: #fff;
+      box-shadow: 0 4px 6px -1px rgba(0, 168, 204, 0.3);
+    }
+    .tab-counter {
+      margin-left: 0.25rem;
+      padding: 0.05rem 0.4rem;
+      font-size: 0.625rem;
+      background-color: rgba(0, 0, 0, 0.4);
+      border-radius: 9999px;
+      color: var(--cyber-gold);
+    }
+
+    /* Grid & Form Elements */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 640px) {
+      .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .form-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .col-span-full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    label {
+      color: #cbd5e1;
+      font-weight: 500;
+      font-size: 0.8125rem;
+    }
+
+    .required-star {
+      color: var(--cyber-rose);
+    }
+
+    .toggle-custom-btn {
+      font-size: 0.6875rem;
+      color: var(--cyber-neon);
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .toggle-custom-btn:hover {
+      text-decoration: underline;
+    }
+
+    input[type="text"], select, textarea {
+      width: 100%;
+      background-color: var(--cyber-input);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: #f1f5f9;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    input[type="text"]:focus, select:focus, textarea:focus {
+      border-color: var(--cyber-neon);
+    }
+    textarea {
+      resize: vertical;
+    }
+
+    /* Checkbox styling */
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding-top: 0.5rem;
+    }
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.8125rem;
+      color: #e2e8f0;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 1.125rem;
+      height: 1.125rem;
+      accent-color: var(--cyber-accent);
+      cursor: pointer;
+    }
+
+    /* Section Header inside Form */
+    .form-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--cyber-border);
+      padding-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .form-header-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-add {
+      background-color: #059669;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+    }
+    .btn-add:hover:not(:disabled) {
+      background-color: var(--cyber-emerald);
+    }
+
+    .btn-save {
+      background-color: var(--cyber-accent);
+      color: #000;
+      box-shadow: 0 4px 10px rgba(0, 168, 204, 0.3);
+    }
+    .btn-save:hover:not(:disabled) {
+      background-color: var(--cyber-neon);
+    }
+
+    .btn-cancel {
+      background-color: #1e293b;
+      color: #cbd5e1;
+    }
+    .btn-cancel:hover {
+      background-color: var(--cyber-hover);
+    }
+
+    .btn-generate {
+      background-color: var(--cyber-sky);
+      color: #fff;
+    }
+    .btn-generate:hover:not(:disabled) {
+      background-color: #38bdf8;
+    }
+
+    .btn-clear {
+      background-color: rgba(136, 19, 55, 0.4);
+      border: 1px solid rgba(225, 29, 72, 0.4);
+      color: #fca5a5;
+    }
+    .btn-clear:hover:not(:disabled) {
+      background-color: rgba(159, 18, 57, 0.7);
+    }
+
+    .btn-copy {
+      background-color: var(--cyber-accent);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 0.375rem 0.75rem;
+    }
+    .btn-copy:hover {
+      background-color: var(--cyber-neon);
+      color: #000;
+    }
+
+    /* Actions bar */
+    .actions-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    @media (min-width: 640px) {
+      .actions-bar {
+        flex-direction: row;
+      }
+    }
+    .actions-left {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    @media (min-width: 640px) {
+      .actions-left {
+        width: auto;
+      }
+    }
+
+    .batch-count-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--cyber-gold);
+      background-color: var(--cyber-bg);
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--cyber-border);
+      width: 100%;
+      text-align: center;
+    }
+    @media (min-width: 640px) {
+      .batch-count-badge {
+        width: auto;
+      }
+    }
+
+    /* Batch Items Preview Cards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    @media (min-width: 640px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .batch-item-card {
+      background-color: var(--cyber-card);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .batch-item-card:hover {
+      background-color: var(--cyber-hover);
+      border-color: rgba(0, 168, 204, 0.5);
+    }
+    .batch-item-card.editing {
+      border-color: var(--cyber-neon);
+      background-color: var(--cyber-hover);
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+    }
+
+    .card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      overflow: hidden;
+      font-size: 0.75rem;
+    }
+    .card-title {
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-sub {
+      color: var(--text-muted);
+      font-size: 0.6875rem;
+      display: flex;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+    .card-mono-tag {
+      color: var(--text-dim);
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.625rem;
+    }
+
+    .tag-iconic {
+      font-size: 0.625rem;
+      background-color: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 0 0.25rem;
+      border-radius: 0.25rem;
+    }
+
+    .tag-editing {
+      font-size: 0.625rem;
+      background-color: rgba(0, 212, 255, 0.2);
+      color: var(--cyber-neon);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      padding: 0 0.25rem;
+      border-radius: 0.25rem;
+    }
+
+    .btn-remove-item {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      padding: 0.25rem;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-remove-item:hover {
+      color: var(--cyber-rose);
+      background-color: rgba(136, 19, 55, 0.4);
+    }
+
+    /* Code SQL Output */
+    .sql-output-area {
+      width: 100%;
+      background-color: var(--cyber-bg);
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.8125rem;
+      color: #34d399;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--cyber-border);
+      outline: none;
+      line-height: 1.5;
+    }
+
+    /* Inline SVG Icon styling */
+    .icon-svg {
+      width: 1rem;
+      height: 1rem;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .icon-svg.lg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
-<body class="bg-cyber-bg text-slate-200 font-sans antialiased min-h-screen selection:bg-cyber-accent selection:text-white pb-20 md:pb-6">
-  <div id="root"></div>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="panel app-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="padding: 0.625rem; background: var(--cyber-card); border: 1px solid rgba(0,168,204,0.3); border-radius: 0.5rem; color: var(--cyber-neon); display: flex;">
+          <svg class="icon-svg lg" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        </div>
+        <div>
+          <h1 class="title-text">
+            <span>✦ INFUSION</span>
+            <span class="badge-tag">BATCH ENGINE</span>
+          </h1>
+          <p class="subtitle-text">Генератор SQL для базы данных (Предметы & Карты)</p>
+        </div>
+      </div>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+      <!-- Tab Buttons -->
+      <div class="tabs-wrapper">
+        <button id="tab-btn-items" class="tab-btn active">
+          <svg class="icon-svg" viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          Предметы
+          <span id="badge-count-items" class="tab counter hidden">0</span>
+        </button>
 
-    // --- CACHE ENGINE CONFIG ---
-    const CACHE_KEY = 'infusion_sql_generator_cache_v1';
-    const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+        <button id="tab-btn-cards" class="tab-btn">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1V4c0-.6-.4-1-1-1H3c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h2"></path><path d="M14 17H9"></path><path d="M10 21h4"></path><rect x="5" y="7" width="14" height="10" rx="1"></rect></svg>
+          Карты / Базисы
+          <span id="badge-count-cards" class="tab counter hidden">0</span>
+        </button>
+      </div>
+    </header>
 
-    // --- PRESET DROPDOWN CONSTANTS ---
-    const ITEM_CATEGORIES = [
-      "Расходник", "Техник", "Аксессуар", "Имплант", "Кочевник", 
-      "Особое", "Контейнер", "Оружие", "Одежда", "Экзо-Синты", 
-      "Недвижимость", "Скрипт", "Транспорт", "Артефакт", "Граната", "Рокер", "Обвес"
-    ];
-
-    const ITEM_RARITIES = [
-      "Обычный", "Необычный", "Редкий", "Эпический", "Легендарный", "Культовый", "ГРА"
-    ];
-
-    const ITEM_ORGANIZATIONS = [
-      "Общедоступно", "Создание", "Чёрный Рынок", "Ацуши", "Хиллз", 
-      "Неизвестно", "Именной", "Гончие", "Икс-Экшен", "Синопсис", "ГРА"
-    ];
-
-    const CARD_RARITIES = [
-      "Обычный", "Необычный", "Редкий", "Эпический", "Легендарный"
-    ];
-
-    const CARD_SCHOOLS = [
-      "Трансгрессия", "Инкарнация", "Авангард", "Нейромантия", "Медикус", "Общие"
-    ];
-
-    const CARD_ESSENCES = [
-      "NULL", "Кроно", "Термо", "Кеми", "Крио", "Аква", "Электро", "Пси", "Хроно", "Радио", "Физик"
-    ];
-
-    const CARD_DAMAGE_TYPES = [
-      "NULL", "Кронотический", "Термический", "Криотический", "Химический", 
-      "Кинетический", "Электрический", "Радиоактивный", "Гидравлический", 
-      "Псионический", "Хронотопический", "Психический"
-    ];
-
-    const CARD_AMPLIFY_OPTIONS = [
-      "Да", "Нет", "АТК", "АВХ", "АВХ, АТК", "АТК, Каскад", "АТК, АВХ"
-    ];
-
-    const CARD_CREATION_OPTIONS = [
-      "Базис", "Модификатор"
-    ];
-
-    // --- DEFAULTS ---
-    const defaultItemForm = () => ({
-      id: "",
-      tag: "",
-      name: "",
-      description: "",
-      cost: "0",
-      category: "Расходник",
-      rarity: "Обычный",
-      organization: "Общедоступно",
-      iconic: false
-    });
-
-    const defaultCardForm = () => ({
-      id: "",
-      tag: "",
-      name: "",
-      rarity: "Обычный",
-      classes: "Общие",
-      school: "Трансгрессия",
-      essence: "NULL",
-      params: "",
-      damage_type: "NULL",
-      distance: "",
-      activation: "",
-      effects: "",
-      test: "",
-      amplify: "Нет",
-      kronos: "0",
-      price_tali: "0",
-      creation: "Базис",
-      consumable: false,
-      mechanics: "",
-      iconic: false
-    });
-
-    // Reusable Custom Combo/Select Field
-    function FreeComboInput({ label, value, onChange, options }) {
-      const [isCustom, setIsCustom] = useState(() => !options.includes(value) && value !== "");
-
-      useEffect(() => {
-        if (!options.includes(value) && value !== "") {
-          setIsCustom(true);
-        }
-      }, [value, options]);
-
-      return (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-slate-300 font-medium text-xs sm:text-sm">{label}</label>
-            <button
-              type="button"
-              onClick={() => setIsCustom(!isCustom)}
-              className="text-[11px] text-cyber-neon hover:underline focus:outline-none"
-            >
-              {isCustom ? "← Выбрать из списка" : "+ Своё значение"}
-            </button>
+    <!-- Main Section -->
+    <main>
+      <!-- ================= ITEMS VIEW ================= -->
+      <div id="view-items" class="space-y">
+        <form id="form-item" class="panel" style="margin-bottom: 1.5rem;">
+          <div class="form-header">
+            <h2 class="form-header-title">
+              <svg class="icon-svg" style="color: var(--cyber-accent)" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+              <span id="item-form-header-text">Конфигурация предмета</span>
+            </h2>
+            <span class="subtitle-text">ID генерируется автоматически БД, если оставлен пустым</span>
           </div>
 
-          {isCustom ? (
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Введите значение..."
-              className="w-full bg-cyber-input border border-cyber-accent/40 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-            />
-          ) : (
-            <select
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="w-full bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-            >
-              {options.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          )}
+          <div class="form-grid">
+            <!-- ID -->
+            <div class="form-group">
+              <label>ID (опционально, авто БД):</label>
+              <input type="text" id="item-id" placeholder="Оставьте пустым для авто-ID" />
+            </div>
+
+            <!-- Tag -->
+            <div class="form-group">
+              <label>Тег (ручной ввод):</label>
+              <input type="text" id="item-tag" placeholder="Например: item_cyber_01" />
+            </div>
+
+            <!-- Name -->
+            <div class="form-group">
+              <label>Название <span class="required-star">*</span>:</label>
+              <input type="text" id="item-name" required placeholder="Название предмета..." />
+            </div>
+
+            <!-- Category -->
+            <div class="form-group" id="group-item-category"></div>
+
+            <!-- Rarity -->
+            <div class="form-group" id="group-item-rarity"></div>
+
+            <!-- Cost -->
+            <div class="form-group">
+              <label>Стоимость (Cost):</label>
+              <input type="text" id="item-cost" value="0" />
+            </div>
+
+            <!-- Organization -->
+            <div class="form-group" id="group-item-organization"></div>
+
+            <!-- Iconic -->
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="item-iconic" />
+                <span>Культовый (iconic)</span>
+              </label>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group col-span-full">
+              <label>Описание / Эффекты:</label>
+              <textarea id="item-description" rows="3" placeholder="Подробное описание или свойства предмета..."></textarea>
+            </div>
+          </div>
+
+          <div style="padding-top: 1rem; display: flex; gap: 0.75rem;">
+            <button type="submit" id="btn-item-submit" class="btn btn-add">
+              <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
+              <span id="btn-item-submit-text">Добавить в пакет</span>
+            </button>
+            <button type="button" id="btn-item-cancel" class="btn btn-cancel hidden">Отмена</button>
+          </div>
+        </form>
+
+        <!-- Batch Actions -->
+        <div class="panel actions-bar" style="margin-bottom: 1.5rem;">
+          <div class="actions-left">
+            <button id="btn-item-generate" class="btn btn-generate" disabled>
+              <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Сгенерировать SQL
+            </button>
+            <button id="btn-item-clear" class="btn btn-clear" disabled>
+              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Очистить
+            </button>
+          </div>
+          <div id="badge-item-count" class="batch-count-badge">📦 В пакете: 0 предметов</div>
         </div>
-      );
-    }
 
-    function App() {
-      const [activeTab, setActiveTab] = useState("items");
-      const [copied, setCopied] = useState(false);
+        <!-- Batch Items Preview List -->
+        <div id="container-items-preview" class="panel hidden" style="margin-bottom: 1.5rem;">
+          <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
+            Содержимое пакета (нажмите на элемент для редактирования):
+          </h3>
+          <div id="list-items-batch" class="cards-grid"></div>
+        </div>
 
-      // Items State
-      const [itemForm, setItemForm] = useState(defaultItemForm);
-      const [itemsBatch, setItemsBatch] = useState([]);
-      const [itemsSql, setItemsSql] = useState("");
-      const [editingItemIndex, setEditingItemIndex] = useState(null);
+        <!-- SQL Output -->
+        <div id="container-items-sql" class="panel hidden">
+          <div class="form-header">
+            <h3 class="title-text" style="font-size: 0.8125rem;">
+              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              Сгенерированный SQL (Items)
+            </h3>
+            <button id="btn-items-copy" class="btn btn-copy">
+              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="txt-items-copy">Скопировать SQL</span>
+            </button>
+          </div>
+          <textarea id="sql-output-items" class="sql-output-area" rows="10" readonly></textarea>
+        </div>
+      </div>
 
-      // Cards State
-      const [cardForm, setCardForm] = useState(defaultCardForm);
-      const [cardsBatch, setCardsBatch] = useState([]);
-      const [cardsSql, setCardsSql] = useState("");
-      const [editingCardIndex, setEditingCardIndex] = useState(null);
+      <!-- ================= CARDS VIEW ================= -->
+      <div id="view-cards" class="space-y hidden">
+        <form id="form-card" class="panel" style="margin-bottom: 1.5rem;">
+          <div class="form-header">
+            <h2 class="form-header-title">
+              <svg class="icon-svg" style="color: var(--cyber-accent)" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+              <span id="card-form-header-text">Конфигурация карты / базиса</span>
+            </h2>
+            <span class="subtitle-text">ID генерируется автоматически БД, если оставлен пустым</span>
+          </div>
 
-      // 1. INITIAL CACHE LOAD UPON MOUNT
-      useEffect(() => {
+          <div class="form-grid">
+            <!-- ID -->
+            <div class="form-group">
+              <label>ID (опционально, авто БД):</label>
+              <input type="text" id="card-id" placeholder="Оставьте пустым для авто-ID" />
+            </div>
+
+            <!-- Tag -->
+            <div class="form-group">
+              <label>Тег (ручной ввод):</label>
+              <input type="text" id="card-tag" placeholder="Например: card_fireball" />
+            </div>
+
+            <!-- Name -->
+            <div class="form-group">
+              <label>Название <span class="required-star">*</span>:</label>
+              <input type="text" id="card-name" required placeholder="Название карты..." />
+            </div>
+
+            <!-- Rarity -->
+            <div class="form-group">
+              <label>Редкость:</label>
+              <select id="card-rarity"></select>
+            </div>
+
+            <!-- Classes -->
+            <div class="form-group">
+              <label>Классы (через запятую):</label>
+              <input type="text" id="card-classes" value="Общие" placeholder="Общие, Маг..." />
+            </div>
+
+            <!-- School -->
+            <div class="form-group">
+              <label>Школа:</label>
+              <select id="card-school"></select>
+            </div>
+
+            <!-- Essence -->
+            <div class="form-group">
+              <label>Сущность (essence):</label>
+              <select id="card-essence"></select>
+            </div>
+
+            <!-- Params -->
+            <div class="form-group">
+              <label>Параметры (params):</label>
+              <input type="text" id="card-params" placeholder="Параметры..." />
+            </div>
+
+            <!-- Damage Type -->
+            <div class="form-group">
+              <label>Тип урона:</label>
+              <select id="card-damage_type"></select>
+            </div>
+
+            <!-- Distance -->
+            <div class="form-group">
+              <label>Дистанция (distance):</label>
+              <input type="text" id="card-distance" />
+            </div>
+
+            <!-- Activation -->
+            <div class="form-group">
+              <label>Срабатывание (activation):</label>
+              <input type="text" id="card-activation" />
+            </div>
+
+            <!-- Effects -->
+            <div class="form-group">
+              <label>Эффекты (effects):</label>
+              <input type="text" id="card-effects" />
+            </div>
+
+            <!-- Test -->
+            <div class="form-group">
+              <label>Испытание (test):</label>
+              <input type="text" id="card-test" />
+            </div>
+
+            <!-- Amplify -->
+            <div class="form-group">
+              <label>Усиление (amplify):</label>
+              <select id="card-amplify"></select>
+            </div>
+
+            <!-- Kronos -->
+            <div class="form-group">
+              <label>Затраты Кроноса:</label>
+              <input type="text" id="card-kronos" value="0" placeholder="0" />
+            </div>
+
+            <!-- Price Tali -->
+            <div class="form-group">
+              <label>Цена (Тали):</label>
+              <input type="text" id="card-price_tali" value="0" placeholder="0" />
+            </div>
+
+            <!-- Creation -->
+            <div class="form-group">
+              <label>Сотворение:</label>
+              <select id="card-creation"></select>
+            </div>
+
+            <!-- Checkboxes -->
+            <div class="form-group checkbox-group col-span-full">
+              <label class="checkbox-label">
+                <input type="checkbox" id="card-consumable" />
+                <span>Consumable (Расходуется)</span>
+              </label>
+
+              <label class="checkbox-label">
+                <input type="checkbox" id="card-iconic" />
+                <span>Iconic (Культовое)</span>
+              </label>
+            </div>
+
+            <!-- Mechanics -->
+            <div class="form-group col-span-full">
+              <label>Механика / Описание:</label>
+              <textarea id="card-mechanics" rows="3" placeholder="Подробная механика или описание карты..."></textarea>
+            </div>
+          </div>
+
+          <div style="padding-top: 1rem; display: flex; gap: 0.75rem;">
+            <button type="submit" id="btn-card-submit" class="btn btn-add">
+              <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
+              <span id="btn-card-submit-text">Добавить в пакет</span>
+            </button>
+            <button type="button" id="btn-card-cancel" class="btn btn-cancel hidden">Отмена</button>
+          </div>
+        </form>
+
+        <!-- Batch Actions -->
+        <div class="panel actions-bar" style="margin-bottom: 1.5rem;">
+          <div class="actions-left">
+            <button id="btn-card-generate" class="btn btn-generate" disabled>
+              <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Сгенерировать SQL
+            </button>
+            <button id="btn-card-clear" class="btn btn-clear" disabled>
+              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Очистить
+            </button>
+          </div>
+          <div id="badge-card-count" class="batch-count-badge">📜 В пакете: 0 карт</div>
+        </div>
+
+        <!-- Batch Cards Preview List -->
+        <div id="container-cards-preview" class="panel hidden" style="margin-bottom: 1.5rem;">
+          <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
+            Содержимое пакета (нажмите на элемент для редактирования):
+          </h3>
+          <div id="list-cards-batch" class="cards-grid"></div>
+        </div>
+
+        <!-- SQL Output -->
+        <div id="container-cards-sql" class="panel hidden">
+          <div class="form-header">
+            <h3 class="title-text" style="font-size: 0.8125rem;">
+              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              Сгенерированный SQL (Cards)
+            </h3>
+            <button id="btn-cards-copy" class="btn btn-copy">
+              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="txt-cards-copy">Скопировать SQL</span>
+            </button>
+          </div>
+          <textarea id="sql-output-cards" class="sql-output-area" rows="10" readonly></textarea>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- --- VANILLA JAVASCRIPT APPLICATION LOGIC --- -->
+  <script>
+    (function () {
+      // CACHE ENGINE
+      const CACHE_KEY = 'infusion_sql_generator_cache_v1';
+      const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+      // CONSTANTS
+      const ITEM_CATEGORIES = [
+        "Расходник", "Техник", "Аксессуар", "Имплант", "Кочевник", 
+        "Особое", "Контейнер", "Оружие", "Одежда", "Экзо-Синты", 
+        "Недвижимость", "Скрипт", "Транспорт", "Артефакт", "Граната", "Рокер", "Обвес"
+      ];
+      const ITEM_RARITIES = [
+        "Обычный", "Необычный", "Редкий", "Эпический", "Легендарный", "Культовый", "ГРА"
+      ];
+      const ITEM_ORGANIZATIONS = [
+        "Общедоступно", "Создание", "Чёрный Рынок", "Ацуши", "Хиллз", 
+        "Неизвестно", "Именной", "Гончие", "Икс-Экшен", "Синопсис", "ГРА"
+      ];
+      const CARD_RARITIES = ["Обычный", "Необычный", "Редкий", "Эпический", "Легендарный"];
+      const CARD_SCHOOLS = ["Трансгрессия", "Инкарнация", "Авангард", "Нейромантия", "Медикус", "Общие"];
+      const CARD_ESSENCES = ["NULL", "Кроно", "Термо", "Кеми", "Крио", "Аква", "Электро", "Пси", "Хроно", "Радио", "Физик"];
+      const CARD_DAMAGE_TYPES = [
+        "NULL", "Кронотический", "Термический", "Криотический", "Химический", 
+        "Кинетический", "Электрический", "Радиоактивный", "Гидравлический", 
+        "Псионический", "Хронотопический", "Психический"
+      ];
+      const CARD_AMPLIFY_OPTIONS = ["Да", "Нет", "АТК", "АВХ", "АВХ, АТК", "АТК, Каскад", "АТК, АВХ"];
+      const CARD_CREATION_OPTIONS = ["Базис", "Модификатор"];
+
+      // STATE
+      let activeTab = 'items';
+      let itemsBatch = [];
+      let cardsBatch = [];
+      let itemsSql = "";
+      let cardsSql = "";
+      let editingItemIndex = null;
+      let editingCardIndex = null;
+
+      // Dynamic Free-Combo State tracking
+      const comboStates = {
+        category: false,
+        rarity: false,
+        organization: false
+      };
+
+      // DEFAULTS
+      const defaultItemForm = () => ({
+        id: "", tag: "", name: "", description: "", cost: "0",
+        category: "Расходник", rarity: "Обычный", organization: "Общедоступно", iconic: false
+      });
+
+      const defaultCardForm = () => ({
+        id: "", tag: "", name: "", rarity: "Обычный", classes: "Общие", school: "Трансгрессия",
+        essence: "NULL", params: "", damage_type: "NULL", distance: "", activation: "",
+        effects: "", test: "", amplify: "Нет", kronos: "0", price_tali: "0", creation: "Базис",
+        consumable: false, mechanics: "", iconic: false
+      });
+
+      // INIT DYNAMIC FREE COMBO INPUTS
+      function initFreeCombo(containerId, fieldKey, labelText, options, defaultValue) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = `
+          <div class="form-label-row">
+            <label>${labelText}</label>
+            <button type="button" class="toggle-custom-btn" id="toggle-combo-${fieldKey}">+ Своё значение</button>
+          </div>
+          <div id="combo-input-wrapper-${fieldKey}"></div>
+        `;
+
+        const toggleBtn = document.getElementById(`toggle-combo-${fieldKey}`);
+        toggleBtn.addEventListener('click', () => {
+          comboStates[fieldKey] = !comboStates[fieldKey];
+          renderComboInput(fieldKey, options, getComboValue(fieldKey));
+        });
+
+        renderComboInput(fieldKey, options, defaultValue);
+      }
+
+      function renderComboInput(fieldKey, options, currentValue) {
+        const wrapper = document.getElementById(`combo-input-wrapper-${fieldKey}`);
+        const toggleBtn = document.getElementById(`toggle-combo-${fieldKey}`);
+        const isCustom = comboStates[fieldKey];
+
+        toggleBtn.textContent = isCustom ? "← Выбрать из списка" : "+ Своё значение";
+
+        if (isCustom) {
+          wrapper.innerHTML = `<input type="text" id="combo-field-${fieldKey}" value="${escapeHtml(currentValue)}" placeholder="Введите значение..." />`;
+        } else {
+          const optsHtml = options.map(opt => `<option value="${escapeHtml(opt)}" ${opt === currentValue ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('');
+          wrapper.innerHTML = `<select id="combo-field-${fieldKey}">${optsHtml}</select>`;
+        }
+      }
+
+      function getComboValue(fieldKey) {
+        const el = document.getElementById(`combo-field-${fieldKey}`);
+        return el ? el.value : '';
+      }
+
+      function setComboValue(fieldKey, value, options) {
+        const isCustom = !options.includes(value) && value !== "";
+        comboStates[fieldKey] = isCustom;
+        renderComboInput(fieldKey, options, value);
+      }
+
+      // UTILS
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function saveCache() {
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            itemsBatch,
+            cardsBatch
+          }));
+        } catch (e) {
+          console.warn("Could not save cache", e);
+        }
+      }
+
+      function loadCache() {
         try {
           const raw = localStorage.getItem(CACHE_KEY);
           if (raw) {
             const parsed = JSON.parse(raw);
-            const age = Date.now() - (parsed.timestamp || 0);
-            if (age < CACHE_TTL_MS) {
-              if (Array.isArray(parsed.itemsBatch)) setItemsBatch(parsed.itemsBatch);
-              if (Array.isArray(parsed.cardsBatch)) setCardsBatch(parsed.cardsBatch);
+            if (Date.now() - (parsed.timestamp || 0) < CACHE_TTL_MS) {
+              if (Array.isArray(parsed.itemsBatch)) itemsBatch = parsed.itemsBatch;
+              if (Array.isArray(parsed.cardsBatch)) cardsBatch = parsed.cardsBatch;
             } else {
               localStorage.removeItem(CACHE_KEY);
             }
           }
         } catch (e) {
-          console.warn("Could not load batch cache:", e);
+          console.warn("Could not load cache", e);
         }
-      }, []);
+      }
 
-      // 2. AUTO-SAVE CACHE WHEN BATCHES CHANGE
-      useEffect(() => {
-        try {
-          const cacheData = {
-            timestamp: Date.now(),
-            itemsBatch,
-            cardsBatch
-          };
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        } catch (e) {
-          console.warn("Could not save batch cache:", e);
+      function populateSelectOptions(selectId, options, selectedVal) {
+        const select = document.getElementById(selectId);
+        select.innerHTML = options.map(opt => 
+          `<option value="${escapeHtml(opt)}" ${opt === selectedVal ? 'selected' : ''}>${escapeHtml(opt)}</option>`
+        ).join('');
+      }
+
+      // TAB SWITCHING
+      function setTab(tab) {
+        activeTab = tab;
+        const btnItems = document.getElementById('tab-btn-items');
+        const btnCards = document.getElementById('tab-btn-cards');
+        const viewItems = document.getElementById('view-items');
+        const viewCards = document.getElementById('view-cards');
+
+        if (tab === 'items') {
+          btnItems.classList.add('active');
+          btnCards.classList.remove('active');
+          viewItems.classList.remove('hidden');
+          viewCards.classList.add('hidden');
+        } else {
+          btnCards.classList.add('active');
+          btnItems.classList.remove('active');
+          viewCards.classList.remove('hidden');
+          viewItems.classList.add('hidden');
         }
-      }, [itemsBatch, cardsBatch]);
+      }
 
-      useEffect(() => {
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
-      }, [activeTab, itemsBatch, cardsBatch, itemsSql, cardsSql, editingItemIndex, editingCardIndex]);
+      // ITEM FORM HANDLERS
+      function getFormItemValues() {
+        return {
+          id: document.getElementById('item-id').value,
+          tag: document.getElementById('item-tag').value,
+          name: document.getElementById('item-name').value,
+          category: getComboValue('category'),
+          rarity: getComboValue('rarity'),
+          cost: document.getElementById('item-cost').value,
+          organization: getComboValue('organization'),
+          iconic: document.getElementById('item-iconic').checked,
+          description: document.getElementById('item-description').value
+        };
+      }
 
-      const handleCopy = (text) => {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-          document.execCommand("copy");
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-          console.error("Failed to copy", err);
-        }
-        document.body.removeChild(textarea);
-      };
+      function setFormItemValues(data) {
+        document.getElementById('item-id').value = data.id || '';
+        document.getElementById('item-tag').value = data.tag || '';
+        document.getElementById('item-name').value = data.name || '';
+        setComboValue('category', data.category || ITEM_CATEGORIES[0], ITEM_CATEGORIES);
+        setComboValue('rarity', data.rarity || ITEM_RARITIES[0], ITEM_RARITIES);
+        document.getElementById('item-cost').value = data.cost || '0';
+        setComboValue('organization', data.organization || ITEM_ORGANIZATIONS[0], ITEM_ORGANIZATIONS);
+        document.getElementById('item-iconic').checked = !!data.iconic;
+        document.getElementById('item-description').value = data.description || '';
+      }
 
-      // --- ITEM ACTIONS ---
-      const handleSaveItem = (e) => {
-        e.preventDefault();
-        if (!itemForm.name.trim()) return;
+      function resetItemForm() {
+        editingItemIndex = null;
+        setFormItemValues(defaultItemForm());
+        updateItemFormUI();
+      }
+
+      function updateItemFormUI() {
+        const formPanel = document.getElementById('form-item');
+        const headerText = document.getElementById('item-form-header-text');
+        const submitBtnText = document.getElementById('btn-item-submit-text');
+        const submitBtn = document.getElementById('btn-item-submit');
+        const cancelBtn = document.getElementById('btn-item-cancel');
 
         if (editingItemIndex !== null) {
-          const updated = [...itemsBatch];
-          updated[editingItemIndex] = { ...itemForm };
-          setItemsBatch(updated);
-          setEditingItemIndex(null);
+          formPanel.classList.add('panel-active-edit');
+          headerText.textContent = `Редактирование предмета #${editingItemIndex + 1}`;
+          submitBtnText.textContent = "Сохранить изменения";
+          submitBtn.className = "btn btn-save";
+          cancelBtn.classList.remove('hidden');
         } else {
-          setItemsBatch([...itemsBatch, { ...itemForm }]);
+          formPanel.classList.remove('panel-active-edit');
+          headerText.textContent = "Конфигурация предмета";
+          submitBtnText.textContent = "Добавить в пакет";
+          submitBtn.className = "btn btn-add";
+          cancelBtn.classList.add('hidden');
+        }
+      }
+
+      function renderItemsBatch() {
+        const container = document.getElementById('container-items-preview');
+        const list = document.getElementById('list-items-batch');
+        const badgeCount = document.getElementById('badge-item-count');
+        const tabBadge = document.getElementById('badge-count-items');
+        const btnGen = document.getElementById('btn-item-generate');
+        const btnClr = document.getElementById('btn-item-clear');
+
+        badgeCount.textContent = `📦 В пакете: ${itemsBatch.length} предметов`;
+        if (itemsBatch.length > 0) {
+          tabBadge.textContent = itemsBatch.length;
+          tabBadge.classList.remove('hidden');
+          container.classList.remove('hidden');
+          btnGen.disabled = false;
+          btnClr.disabled = false;
+        } else {
+          tabBadge.classList.add('hidden');
+          container.classList.add('hidden');
+          btnGen.disabled = true;
+          btnClr.disabled = !itemsSql;
         }
 
-        setItemForm(defaultItemForm());
-      };
+        list.innerHTML = itemsBatch.map((it, idx) => {
+          const isEditing = editingItemIndex === idx;
+          return `
+            <div class="batch-item-card ${isEditing ? 'editing' : ''}" onclick="window.appEditItem(${idx})">
+              <div class="card-info">
+                <div class="card-title">
+                  <span>${escapeHtml(it.name)}</span>
+                  ${it.iconic ? '<span class="tag-iconic">Iconic</span>' : ''}
+                  ${isEditing ? '<span class="tag-editing">Редактируется</span>' : ''}
+                </div>
+                <div class="card-sub">
+                  <span>Кат: ${escapeHtml(it.category)}</span> • <span>Ред: ${escapeHtml(it.rarity)}</span>
+                </div>
+                ${it.id ? `<div class="card-mono-tag">ID: ${escapeHtml(it.id)}</div>` : ''}
+                ${it.tag ? `<div class="card-mono-tag">Tag: ${escapeHtml(it.tag)}</div>` : ''}
+              </div>
+              <button type="button" class="btn-remove-item" onclick="window.appRemoveItem(${idx}, event)" title="Удалить">
+                <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
 
-      const handleEditItem = (index) => {
-        setEditingItemIndex(index);
-        setItemForm({ ...itemsBatch[index] });
-      };
-
-      const handleCancelEditItem = () => {
-        setEditingItemIndex(null);
-        setItemForm(defaultItemForm());
-      };
-
-      const handleRemoveItem = (index, e) => {
-        if (e) e.stopPropagation();
-        setItemsBatch(itemsBatch.filter((_, i) => i !== index));
-        if (editingItemIndex === index) {
-          handleCancelEditItem();
-        } else if (editingItemIndex !== null && editingItemIndex > index) {
-          setEditingItemIndex(editingItemIndex - 1);
-        }
-      };
-
-      const handleGenerateItemsSql = () => {
+      function generateItemsSql() {
         if (itemsBatch.length === 0) {
-          setItemsSql("");
+          itemsSql = "";
+          document.getElementById('container-items-sql').classList.add('hidden');
           return;
         }
 
@@ -324,12 +1169,8 @@
           const costVal = (it.cost || "0").trim() === "" ? "0" : it.cost.trim();
 
           let parts = [];
-          if (hasExplicitId) {
-            parts.push(it.id && it.id.trim() !== "" ? `'${it.id.trim()}'` : "DEFAULT");
-          }
-          if (hasTag) {
-            parts.push(`'${(it.tag || "").replace(/'/g, "''")}'`);
-          }
+          if (hasExplicitId) parts.push(it.id && it.id.trim() !== "" ? `'${it.id.trim()}'` : "DEFAULT");
+          if (hasTag) parts.push(`'${(it.tag || "").replace(/'/g, "''")}'`);
 
           parts.push(`'${nameEsc}'`);
           parts.push(`'${descEsc}'`);
@@ -343,49 +1184,138 @@
         });
 
         const colsStr = cols.map((c) => `"${c}"`).join(", ");
-        setItemsSql(`insert into items (${colsStr})\nvalues\n${values.join(",\n")};`);
-      };
+        itemsSql = `insert into items (${colsStr})\nvalues\n${values.join(",\n")};`;
+        document.getElementById('sql-output-items').value = itemsSql;
+        document.getElementById('container-items-sql').classList.remove('hidden');
+      }
 
-      // --- CARD ACTIONS ---
-      const handleSaveCard = (e) => {
-        e.preventDefault();
-        if (!cardForm.name.trim()) return;
+      // CARD FORM HANDLERS
+      function getFormCardValues() {
+        return {
+          id: document.getElementById('card-id').value,
+          tag: document.getElementById('card-tag').value,
+          name: document.getElementById('card-name').value,
+          rarity: document.getElementById('card-rarity').value,
+          classes: document.getElementById('card-classes').value,
+          school: document.getElementById('card-school').value,
+          essence: document.getElementById('card-essence').value,
+          params: document.getElementById('card-params').value,
+          damage_type: document.getElementById('card-damage_type').value,
+          distance: document.getElementById('card-distance').value,
+          activation: document.getElementById('card-activation').value,
+          effects: document.getElementById('card-effects').value,
+          test: document.getElementById('card-test').value,
+          amplify: document.getElementById('card-amplify').value,
+          kronos: document.getElementById('card-kronos').value,
+          price_tali: document.getElementById('card-price_tali').value,
+          creation: document.getElementById('card-creation').value,
+          consumable: document.getElementById('card-consumable').checked,
+          iconic: document.getElementById('card-iconic').checked,
+          mechanics: document.getElementById('card-mechanics').value
+        };
+      }
+
+      function setFormCardValues(data) {
+        document.getElementById('card-id').value = data.id || '';
+        document.getElementById('card-tag').value = data.tag || '';
+        document.getElementById('card-name').value = data.name || '';
+        document.getElementById('card-rarity').value = data.rarity || CARD_RARITIES[0];
+        document.getElementById('card-classes').value = data.classes || 'Общие';
+        document.getElementById('card-school').value = data.school || CARD_SCHOOLS[0];
+        document.getElementById('card-essence').value = data.essence || CARD_ESSENCES[0];
+        document.getElementById('card-params').value = data.params || '';
+        document.getElementById('card-damage_type').value = data.damage_type || CARD_DAMAGE_TYPES[0];
+        document.getElementById('card-distance').value = data.distance || '';
+        document.getElementById('card-activation').value = data.activation || '';
+        document.getElementById('card-effects').value = data.effects || '';
+        document.getElementById('card-test').value = data.test || '';
+        document.getElementById('card-amplify').value = data.amplify || CARD_AMPLIFY_OPTIONS[1];
+        document.getElementById('card-kronos').value = data.kronos || '0';
+        document.getElementById('card-price_tali').value = data.price_tali || '0';
+        document.getElementById('card-creation').value = data.creation || CARD_CREATION_OPTIONS[0];
+        document.getElementById('card-consumable').checked = !!data.consumable;
+        document.getElementById('card-iconic').checked = !!data.iconic;
+        document.getElementById('card-mechanics').value = data.mechanics || '';
+      }
+
+      function resetCardForm() {
+        editingCardIndex = null;
+        setFormCardValues(defaultCardForm());
+        updateCardFormUI();
+      }
+
+      function updateCardFormUI() {
+        const formPanel = document.getElementById('form-card');
+        const headerText = document.getElementById('card-form-header-text');
+        const submitBtnText = document.getElementById('btn-card-submit-text');
+        const submitBtn = document.getElementById('btn-card-submit');
+        const cancelBtn = document.getElementById('btn-card-cancel');
 
         if (editingCardIndex !== null) {
-          const updated = [...cardsBatch];
-          updated[editingCardIndex] = { ...cardForm };
-          setCardsBatch(updated);
-          setEditingCardIndex(null);
+          formPanel.classList.add('panel-active-edit');
+          headerText.textContent = `Редактирование карты #${editingCardIndex + 1}`;
+          submitBtnText.textContent = "Сохранить изменения";
+          submitBtn.className = "btn btn-save";
+          cancelBtn.classList.remove('hidden');
         } else {
-          setCardsBatch([...cardsBatch, { ...cardForm }]);
+          formPanel.classList.remove('panel-active-edit');
+          headerText.textContent = "Конфигурация карты / базиса";
+          submitBtnText.textContent = "Добавить в пакет";
+          submitBtn.className = "btn btn-add";
+          cancelBtn.classList.add('hidden');
+        }
+      }
+
+      function renderCardsBatch() {
+        const container = document.getElementById('container-cards-preview');
+        const list = document.getElementById('list-cards-batch');
+        const badgeCount = document.getElementById('badge-card-count');
+        const tabBadge = document.getElementById('badge-count-cards');
+        const btnGen = document.getElementById('btn-card-generate');
+        const btnClr = document.getElementById('btn-card-clear');
+
+        badgeCount.textContent = `📜 В пакете: ${cardsBatch.length} карт`;
+        if (cardsBatch.length > 0) {
+          tabBadge.textContent = cardsBatch.length;
+          tabBadge.classList.remove('hidden');
+          container.classList.remove('hidden');
+          btnGen.disabled = false;
+          btnClr.disabled = false;
+        } else {
+          tabBadge.classList.add('hidden');
+          container.classList.add('hidden');
+          btnGen.disabled = true;
+          btnClr.disabled = !cardsSql;
         }
 
-        setCardForm(defaultCardForm());
-      };
+        list.innerHTML = cardsBatch.map((c, idx) => {
+          const isEditing = editingCardIndex === idx;
+          return `
+            <div class="batch-item-card ${isEditing ? 'editing' : ''}" onclick="window.appEditCard(${idx})">
+              <div class="card-info">
+                <div class="card-title">
+                  <span>${escapeHtml(c.name)}</span>
+                  ${c.iconic ? '<span class="tag-iconic">Iconic</span>' : ''}
+                  ${isEditing ? '<span class="tag-editing">Редактируется</span>' : ''}
+                </div>
+                <div class="card-sub">
+                  <span>Школа: ${escapeHtml(c.school)}</span> • <span>Ред: ${escapeHtml(c.rarity)}</span>
+                </div>
+                ${c.id ? `<div class="card-mono-tag">ID: ${escapeHtml(c.id)}</div>` : ''}
+                ${c.tag ? `<div class="card-mono-tag">Tag: ${escapeHtml(c.tag)}</div>` : ''}
+              </div>
+              <button type="button" class="btn-remove-item" onclick="window.appRemoveCard(${idx}, event)" title="Удалить">
+                <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
 
-      const handleEditCard = (index) => {
-        setEditingCardIndex(index);
-        setCardForm({ ...cardsBatch[index] });
-      };
-
-      const handleCancelEditCard = () => {
-        setEditingCardIndex(null);
-        setCardForm(defaultCardForm());
-      };
-
-      const handleRemoveCard = (index, e) => {
-        if (e) e.stopPropagation();
-        setCardsBatch(cardsBatch.filter((_, i) => i !== index));
-        if (editingCardIndex === index) {
-          handleCancelEditCard();
-        } else if (editingCardIndex !== null && editingCardIndex > index) {
-          setEditingCardIndex(editingCardIndex - 1);
-        }
-      };
-
-      const handleGenerateCardsSql = () => {
+      function generateCardsSql() {
         if (cardsBatch.length === 0) {
-          setCardsSql("");
+          cardsSql = "";
+          document.getElementById('container-cards-sql').classList.add('hidden');
           return;
         }
 
@@ -418,12 +1348,8 @@
           const taliVal = (c.price_tali || "0").trim() === "" ? "0" : c.price_tali.trim();
 
           let parts = [];
-          if (hasExplicitId) {
-            parts.push(c.id && c.id.trim() !== "" ? `'${c.id.trim()}'` : "DEFAULT");
-          }
-          if (hasTag) {
-            parts.push(`'${(c.tag || "").replace(/'/g, "''")}'`);
-          }
+          if (hasExplicitId) parts.push(c.id && c.id.trim() !== "" ? `'${c.id.trim()}'` : "DEFAULT");
+          if (hasTag) parts.push(`'${(c.tag || "").replace(/'/g, "''")}'`);
 
           parts.push(`'${nameEsc}'`);
           parts.push(`'${c.rarity}'`);
@@ -448,831 +1374,168 @@
         });
 
         const colsStr = cols.map((col) => `"${col}"`).join(", ");
-        setCardsSql(`insert into cards (${colsStr})\nvalues\n${values.join(",\n")};`);
+        cardsSql = `insert into cards (${colsStr})\nvalues\n${values.join(",\n")};`;
+        document.getElementById('sql-output-cards').value = cardsSql;
+        document.getElementById('container-cards-sql').classList.remove('hidden');
+      }
+
+      // GLOBAL BINDINGS FOR CLICK EVENTS
+      window.appEditItem = function(index) {
+        editingItemIndex = index;
+        setFormItemValues(itemsBatch[index]);
+        updateItemFormUI();
+        renderItemsBatch();
       };
 
-      return (
-        <div className="max-w-6xl mx-auto px-3 py-3 sm:px-6 sm:py-6">
-          {/* Header */}
-          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-cyber-panel border border-cyber-border rounded-xl p-4 mb-4 shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-cyber-card border border-cyber-accent/30 rounded-lg text-cyber-neon">
-                <i data-lucide="terminal" className="w-6 h-6"></i>
-              </div>
-              <div>
-                <h1 className="text-base sm:text-lg font-bold text-cyber-neon tracking-wide flex items-center gap-2">
-                  <span>✦ INFUSION</span>
-                  <span className="text-xs font-mono font-normal px-2 py-0.5 rounded bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30">
-                    BATCH ENGINE
-                  </span>
-                </h1>
-                <p className="text-xs text-slate-400">
-                  Генератор SQL для базы данных (Предметы & Карты)
-                </p>
-              </div>
-            </div>
+      window.appRemoveItem = function(index, event) {
+        if (event) event.stopPropagation();
+        itemsBatch.splice(index, 1);
+        if (editingItemIndex === index) {
+          resetItemForm();
+        } else if (editingItemIndex !== null && editingItemIndex > index) {
+          editingItemIndex--;
+        }
+        saveCache();
+        renderItemsBatch();
+        updateItemFormUI();
+      };
 
-            {/* Tab Controls */}
-            <div className="flex bg-cyber-bg p-1 rounded-lg border border-cyber-border self-start sm:self-center">
-              <button
-                onClick={() => setActiveTab("items")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
-                  activeTab === "items"
-                    ? "bg-cyber-accent text-white shadow-md shadow-cyber-accent/30"
-                    : "text-slate-400 hover:text-white hover:bg-cyber-hover"
-                }`}
-              >
-                <i data-lucide="package" className="w-4 h-4"></i>
-                Предметы
-                {itemsBatch.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-black/40 rounded-full text-cyber-gold">
-                    {itemsBatch.length}
-                  </span>
-                )}
-              </button>
+      window.appEditCard = function(index) {
+        editingCardIndex = index;
+        setFormCardValues(cardsBatch[index]);
+        updateCardFormUI();
+        renderCardsBatch();
+      };
 
-              <button
-                onClick={() => setActiveTab("cards")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
-                  activeTab === "cards"
-                    ? "bg-cyber-accent text-white shadow-md shadow-cyber-accent/30"
-                    : "text-slate-400 hover:text-white hover:bg-cyber-hover"
-                }`}
-              >
-                <i data-lucide="scroll" className="w-4 h-4"></i>
-                Карты / Базисы
-                {cardsBatch.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-black/40 rounded-full text-cyber-gold">
-                    {cardsBatch.length}
-                  </span>
-                )}
-              </button>
-            </div>
-          </header>
+      window.appRemoveCard = function(index, event) {
+        if (event) event.stopPropagation();
+        cardsBatch.splice(index, 1);
+        if (editingCardIndex === index) {
+          resetCardForm();
+        } else if (editingCardIndex !== null && editingCardIndex > index) {
+          editingCardIndex--;
+        }
+        saveCache();
+        renderCardsBatch();
+        updateCardFormUI();
+      };
 
-          {/* MAIN CONTENT AREA */}
-          <main className="space-y-6">
-            {activeTab === "items" ? (
-              /* ================= ITEMS TAB ================= */
-              <div className="space-y-6">
-                <form
-                  onSubmit={handleSaveItem}
-                  className={`bg-cyber-panel border rounded-xl p-4 sm:p-6 shadow-md space-y-4 transition-colors ${
-                    editingItemIndex !== null ? "border-cyber-neon" : "border-cyber-border"
-                  }`}
-                >
-                  <div className="flex items-center justify-between border-b border-cyber-border pb-3">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <i data-lucide={editingItemIndex !== null ? "edit-3" : "sliders"} className="w-4 h-4 text-cyber-accent"></i>
-                      {editingItemIndex !== null ? `Редактирование предмета #${editingItemIndex + 1}` : "Конфигурация предмета"}
-                    </h2>
-                    <span className="text-[11px] text-slate-500">
-                      ID генерируется автоматически БД, если оставлен пустым
-                    </span>
-                  </div>
+      // COPY TO CLIPBOARD HANDLER
+      function handleCopy(text, textSpanId) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand("copy");
+          const label = document.getElementById(textSpanId);
+          const oldText = label.textContent;
+          label.textContent = "Скопировано!";
+          setTimeout(() => label.textContent = oldText, 2000);
+        } catch (err) {
+          console.error("Failed to copy", err);
+        }
+        document.body.removeChild(textarea);
+      }
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* ID */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        ID (опционально, авто БД):
-                      </label>
-                      <input
-                        type="text"
-                        value={itemForm.id}
-                        onChange={(e) => setItemForm({ ...itemForm, id: e.target.value })}
-                        placeholder="Оставьте пустым для авто-ID"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon placeholder:text-slate-600"
-                      />
-                    </div>
+      // INITIAL DOM INITIALIZATION
+      document.addEventListener('DOMContentLoaded', () => {
+        loadCache();
 
-                    {/* Tag */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Тег (ручной ввод):
-                      </label>
-                      <input
-                        type="text"
-                        value={itemForm.tag}
-                        onChange={(e) => setItemForm({ ...itemForm, tag: e.target.value })}
-                        placeholder="Например: item_cyber_01"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
+        // Init Free Combos
+        initFreeCombo('group-item-category', 'category', 'Категория:', ITEM_CATEGORIES, ITEM_CATEGORIES[0]);
+        initFreeCombo('group-item-rarity', 'rarity', 'Редкость:', ITEM_RARITIES, ITEM_RARITIES[0]);
+        initFreeCombo('group-item-organization', 'organization', 'Организация:', ITEM_ORGANIZATIONS, ITEM_ORGANIZATIONS[0]);
 
-                    {/* Name */}
-                    <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Название <span className="text-rose-500">*</span>:
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={itemForm.name}
-                        onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
-                        placeholder="Название предмета..."
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
+        // Init Selects for Cards
+        populateSelectOptions('card-rarity', CARD_RARITIES, CARD_RARITIES[0]);
+        populateSelectOptions('card-school', CARD_SCHOOLS, CARD_SCHOOLS[0]);
+        populateSelectOptions('card-essence', CARD_ESSENCES, CARD_ESSENCES[0]);
+        populateSelectOptions('card-damage_type', CARD_DAMAGE_TYPES, CARD_DAMAGE_TYPES[0]);
+        populateSelectOptions('card-amplify', CARD_AMPLIFY_OPTIONS, CARD_AMPLIFY_OPTIONS[1]);
+        populateSelectOptions('card-creation', CARD_CREATION_OPTIONS, CARD_CREATION_OPTIONS[0]);
 
-                    {/* Category - Free Combo */}
-                    <FreeComboInput
-                      label="Категория:"
-                      value={itemForm.category}
-                      onChange={(val) => setItemForm({ ...itemForm, category: val })}
-                      options={ITEM_CATEGORIES}
-                    />
+        // Navigation listeners
+        document.getElementById('tab-btn-items').addEventListener('click', () => setTab('items'));
+        document.getElementById('tab-btn-cards').addEventListener('click', () => setTab('cards'));
 
-                    {/* Rarity - Free Combo */}
-                    <FreeComboInput
-                      label="Редкость:"
-                      value={itemForm.rarity}
-                      onChange={(val) => setItemForm({ ...itemForm, rarity: val })}
-                      options={ITEM_RARITIES}
-                    />
+        // Form Submit listeners
+        document.getElementById('form-item').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const vals = getFormItemValues();
+          if (!vals.name.trim()) return;
 
-                    {/* Cost */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Стоимость (Cost):
-                      </label>
-                      <input
-                        type="text"
-                        value={itemForm.cost}
-                        onChange={(e) => setItemForm({ ...itemForm, cost: e.target.value })}
-                        placeholder="0"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
+          if (editingItemIndex !== null) {
+            itemsBatch[editingItemIndex] = vals;
+          } else {
+            itemsBatch.push(vals);
+          }
 
-                    {/* Organization - Free Combo */}
-                    <FreeComboInput
-                      label="Организация:"
-                      value={itemForm.organization}
-                      onChange={(val) => setItemForm({ ...itemForm, organization: val })}
-                      options={ITEM_ORGANIZATIONS}
-                    />
+          resetItemForm();
+          saveCache();
+          renderItemsBatch();
+        });
 
-                    {/* Iconic Checkbox */}
-                    <div className="flex items-center gap-2 pt-4">
-                      <label className="relative flex items-center cursor-pointer gap-2 select-none">
-                        <input
-                          type="checkbox"
-                          checked={itemForm.iconic}
-                          onChange={(e) => setItemForm({ ...itemForm, iconic: e.target.checked })}
-                          className="w-5 h-5 rounded border-cyber-border bg-cyber-input text-cyber-accent focus:ring-0 focus:ring-offset-0"
-                        />
-                        <span className="text-xs sm:text-sm text-slate-200 font-medium">
-                          Культовый (iconic)
-                        </span>
-                      </label>
-                    </div>
+        document.getElementById('btn-item-cancel').addEventListener('click', () => {
+          resetItemForm();
+          renderItemsBatch();
+        });
 
-                    {/* Description / Effects */}
-                    <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Описание / Эффекты:
-                      </label>
-                      <textarea
-                        rows="3"
-                        value={itemForm.description}
-                        onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-                        placeholder="Подробное описание или свойства предмета..."
-                        className="bg-cyber-input border border-cyber-border rounded-lg p-3 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon resize-y"
-                      ></textarea>
-                    </div>
-                  </div>
+        document.getElementById('form-card').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const vals = getFormCardValues();
+          if (!vals.name.trim()) return;
 
-                  {/* Submit & Action Buttons */}
-                  <div className="pt-2 flex items-center gap-3">
-                    <button
-                      type="submit"
-                      className={`w-full sm:w-auto px-6 py-2.5 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${
-                        editingItemIndex !== null
-                          ? "bg-cyber-accent hover:bg-cyber-neon text-black shadow-cyber-accent/30"
-                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30"
-                      }`}
-                    >
-                      <i data-lucide={editingItemIndex !== null ? "check" : "plus-circle"} className="w-4 h-4"></i>
-                      {editingItemIndex !== null ? "Сохранить изменения" : "Добавить в пакет"}
-                    </button>
+          if (editingCardIndex !== null) {
+            cardsBatch[editingCardIndex] = vals;
+          } else {
+            cardsBatch.push(vals);
+          }
 
-                    {editingItemIndex !== null && (
-                      <button
-                        type="button"
-                        onClick={handleCancelEditItem}
-                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors text-sm font-medium"
-                      >
-                        Отмена
-                      </button>
-                    )}
-                  </div>
-                </form>
+          resetCardForm();
+          saveCache();
+          renderCardsBatch();
+        });
 
-                {/* BATCH ENGINE ACTIONS */}
-                <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      onClick={handleGenerateItemsSql}
-                      disabled={itemsBatch.length === 0}
-                      className="flex-1 sm:flex-none px-5 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-900/30 text-sm"
-                    >
-                      <i data-lucide="play" className="w-4 h-4"></i>
-                      Сгенерировать SQL
-                    </button>
+        document.getElementById('btn-card-cancel').addEventListener('click', () => {
+          resetCardForm();
+          renderCardsBatch();
+        });
 
-                    <button
-                      onClick={() => {
-                        setItemsBatch([]);
-                        setItemsSql("");
-                        handleCancelEditItem();
-                      }}
-                      disabled={itemsBatch.length === 0 && !itemsSql}
-                      className="px-4 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/40 text-rose-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
-                    >
-                      <i data-lucide="trash-2" className="w-4 h-4"></i>
-                      Очистить
-                    </button>
-                  </div>
+        // Batch Control listeners
+        document.getElementById('btn-item-generate').addEventListener('click', generateItemsSql);
+        document.getElementById('btn-item-clear').addEventListener('click', () => {
+          itemsBatch = [];
+          itemsSql = "";
+          resetItemForm();
+          saveCache();
+          renderItemsBatch();
+          document.getElementById('container-items-sql').classList.add('hidden');
+        });
 
-                  <div className="text-xs font-semibold text-cyber-gold bg-cyber-bg px-3 py-1.5 rounded-md border border-cyber-border w-full sm:w-auto text-center">
-                    📦 В пакете: {itemsBatch.length} {itemsBatch.length === 1 ? 'предмет' : 'предметов'}
-                  </div>
-                </div>
+        document.getElementById('btn-card-generate').addEventListener('click', generateCardsSql);
+        document.getElementById('btn-card-clear').addEventListener('click', () => {
+          cardsBatch = [];
+          cardsSql = "";
+          resetCardForm();
+          saveCache();
+          renderCardsBatch();
+          document.getElementById('container-cards-sql').classList.add('hidden');
+        });
 
-                {/* BATCH ITEMS LIST */}
-                {itemsBatch.length > 0 && (
-                  <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        Содержимое пакета (нажмите на элемент для редактирования):
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {itemsBatch.map((it, idx) => {
-                        const isEditing = editingItemIndex === idx;
-                        return (
-                          <div
-                            key={idx}
-                            onClick={() => handleEditItem(idx)}
-                            className={`bg-cyber-card border rounded-lg p-3 flex items-start justify-between gap-2 relative group cursor-pointer transition-all hover:bg-cyber-hover ${
-                              isEditing
-                                ? "border-cyber-neon ring-1 ring-cyber-neon/50 bg-cyber-hover"
-                                : "border-cyber-border hover:border-cyber-accent/50"
-                            }`}
-                          >
-                            <div className="space-y-1 overflow-hidden text-xs">
-                              <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
-                                <span>{it.name}</span>
-                                {it.iconic && (
-                                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
-                                    Iconic
-                                  </span>
-                                )}
-                                {isEditing && (
-                                  <span className="text-[10px] bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40 px-1 rounded font-normal">
-                                    Редактируется
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
-                                <span>Кат: {it.category}</span>
-                                <span>•</span>
-                                <span>Ред: {it.rarity}</span>
-                              </div>
-                              {it.id && (
-                                <div className="text-slate-500 font-mono text-[10px]">
-                                  ID: {it.id}
-                                </div>
-                              )}
-                              {it.tag && (
-                                <div className="text-slate-500 font-mono text-[10px]">
-                                  Tag: {it.tag}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={(e) => handleRemoveItem(idx, e)}
-                              className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
-                              title="Удалить"
-                            >
-                              <i data-lucide="x" className="w-4 h-4"></i>
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+        // Copy listeners
+        document.getElementById('btn-items-copy').addEventListener('click', () => {
+          handleCopy(itemsSql, 'txt-items-copy');
+        });
+        document.getElementById('btn-cards-copy').addEventListener('click', () => {
+          handleCopy(cardsSql, 'txt-cards-copy');
+        });
 
-                {/* SQL OUTPUT */}
-                {itemsSql && (
-                  <div className="bg-cyber-panel border border-cyber-accent/40 rounded-xl p-4 space-y-3 shadow-xl">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-cyber-neon uppercase tracking-wider flex items-center gap-2">
-                        <i data-lucide="code" className="w-4 h-4"></i>
-                        Сгенерированный SQL (Items)
-                      </h3>
-                      <button
-                        onClick={() => handleCopy(itemsSql)}
-                        className="px-3 py-1.5 bg-cyber-accent hover:bg-cyber-neon text-white hover:text-black font-semibold rounded-md text-xs transition-colors flex items-center gap-1.5"
-                      >
-                        <i data-lucide={copied ? "check" : "copy"} className="w-3.5 h-3.5"></i>
-                        {copied ? "Скопировано!" : "Скопировать SQL"}
-                      </button>
-                    </div>
-
-                    <textarea
-                      readOnly
-                      rows="10"
-                      value={itemsSql}
-                      className="w-full bg-cyber-bg font-mono text-xs sm:text-sm text-emerald-400 p-3 rounded-lg border border-cyber-border focus:outline-none focus:border-cyber-neon leading-relaxed resize-y"
-                    ></textarea>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* ================= CARDS TAB ================= */
-              <div className="space-y-6">
-                <form
-                  onSubmit={handleSaveCard}
-                  className={`bg-cyber-panel border rounded-xl p-4 sm:p-6 shadow-md space-y-4 transition-colors ${
-                    editingCardIndex !== null ? "border-cyber-neon" : "border-cyber-border"
-                  }`}
-                >
-                  <div className="flex items-center justify-between border-b border-cyber-border pb-3">
-                    <h2 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <i data-lucide={editingCardIndex !== null ? "edit-3" : "sliders"} className="w-4 h-4 text-cyber-accent"></i>
-                      {editingCardIndex !== null ? `Редактирование карты #${editingCardIndex + 1}` : "Конфигурация карты / базиса"}
-                    </h2>
-                    <span className="text-[11px] text-slate-500">
-                      ID генерируется автоматически БД, если оставлен пустым
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* ID */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        ID (опционально, авто БД):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.id}
-                        onChange={(e) => setCardForm({ ...cardForm, id: e.target.value })}
-                        placeholder="Оставьте пустым для авто-ID"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon placeholder:text-slate-600"
-                      />
-                    </div>
-
-                    {/* Tag */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Тег (ручной ввод):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.tag}
-                        onChange={(e) => setCardForm({ ...cardForm, tag: e.target.value })}
-                        placeholder="Например: card_fireball"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Name */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Название <span className="text-rose-500">*</span>:
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={cardForm.name}
-                        onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })}
-                        placeholder="Название карты..."
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Rarity */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Редкость:
-                      </label>
-                      <select
-                        value={cardForm.rarity}
-                        onChange={(e) => setCardForm({ ...cardForm, rarity: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      >
-                        {CARD_RARITIES.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Classes */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Классы (через запятую):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.classes}
-                        onChange={(e) => setCardForm({ ...cardForm, classes: e.target.value })}
-                        placeholder="Общие, Маг..."
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* School */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Школа:
-                      </label>
-                      <select
-                        value={cardForm.school}
-                        onChange={(e) => setCardForm({ ...cardForm, school: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      >
-                        {CARD_SCHOOLS.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Essence */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Сущность (essence):
-                      </label>
-                      <select
-                        value={cardForm.essence}
-                        onChange={(e) => setCardForm({ ...cardForm, essence: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      >
-                        {CARD_ESSENCES.map((ess) => (
-                          <option key={ess} value={ess}>
-                            {ess}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Params */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Параметры (params):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.params}
-                        onChange={(e) => setCardForm({ ...cardForm, params: e.target.value })}
-                        placeholder="Параметры..."
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Damage Type */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Тип урона:
-                      </label>
-                      <select
-                        value={cardForm.damage_type}
-                        onChange={(e) =>
-                          setCardForm({ ...cardForm, damage_type: e.target.value })
-                        }
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      >
-                        {CARD_DAMAGE_TYPES.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Distance */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Дистанция (distance):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.distance}
-                        onChange={(e) => setCardForm({ ...cardForm, distance: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Activation */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Срабатывание (activation):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.activation}
-                        onChange={(e) => setCardForm({ ...cardForm, activation: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Effects */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Эффекты (effects):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.effects}
-                        onChange={(e) => setCardForm({ ...cardForm, effects: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Test */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Испытание (test):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.test}
-                        onChange={(e) => setCardForm({ ...cardForm, test: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Amplify */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Усиление (amplify):
-                      </label>
-                      <select
-                        value={cardForm.amplify}
-                        onChange={(e) => setCardForm({ ...cardForm, amplify: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      >
-                        {CARD_AMPLIFY_OPTIONS.map((amp) => (
-                          <option key={amp} value={amp}>
-                            {amp}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Kronos */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Затраты Кроноса:
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.kronos}
-                        onChange={(e) => setCardForm({ ...cardForm, kronos: e.target.value })}
-                        placeholder="0"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Price Tali */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Цена (Тали):
-                      </label>
-                      <input
-                        type="text"
-                        value={cardForm.price_tali}
-                        onChange={(e) => setCardForm({ ...cardForm, price_tali: e.target.value })}
-                        placeholder="0"
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      />
-                    </div>
-
-                    {/* Creation */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Сотворение:
-                      </label>
-                      <select
-                        value={cardForm.creation}
-                        onChange={(e) => setCardForm({ ...cardForm, creation: e.target.value })}
-                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
-                      >
-                        {CARD_CREATION_OPTIONS.map((cr) => (
-                          <option key={cr} value={cr}>
-                            {cr}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Checkboxes */}
-                    <div className="flex items-center gap-6 sm:col-span-2 lg:col-span-3 pt-2">
-                      <label className="relative flex items-center cursor-pointer gap-2 select-none">
-                        <input
-                          type="checkbox"
-                          checked={cardForm.consumable}
-                          onChange={(e) =>
-                            setCardForm({ ...cardForm, consumable: e.target.checked })
-                          }
-                          className="w-5 h-5 rounded border-cyber-border bg-cyber-input text-cyber-accent focus:ring-0 focus:ring-offset-0"
-                        />
-                        <span className="text-xs sm:text-sm text-slate-200 font-medium">
-                          Consumable (Расходуется)
-                        </span>
-                      </label>
-
-                      <label className="relative flex items-center cursor-pointer gap-2 select-none">
-                        <input
-                          type="checkbox"
-                          checked={cardForm.iconic}
-                          onChange={(e) =>
-                            setCardForm({ ...cardForm, iconic: e.target.checked })
-                          }
-                          className="w-5 h-5 rounded border-cyber-border bg-cyber-input text-cyber-accent focus:ring-0 focus:ring-offset-0"
-                        />
-                        <span className="text-xs sm:text-sm text-slate-200 font-medium">
-                          Iconic (Культовое)
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Mechanics / Description */}
-                    <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
-                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
-                        Механика / Описание:
-                      </label>
-                      <textarea
-                        rows="3"
-                        value={cardForm.mechanics}
-                        onChange={(e) => setCardForm({ ...cardForm, mechanics: e.target.value })}
-                        placeholder="Подробная механика или описание карты..."
-                        className="bg-cyber-input border border-cyber-border rounded-lg p-3 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon resize-y"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  {/* Submit & Action Buttons */}
-                  <div className="pt-2 flex items-center gap-3">
-                    <button
-                      type="submit"
-                      className={`w-full sm:w-auto px-6 py-2.5 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${
-                        editingCardIndex !== null
-                          ? "bg-cyber-accent hover:bg-cyber-neon text-black shadow-cyber-accent/30"
-                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30"
-                      }`}
-                    >
-                      <i data-lucide={editingCardIndex !== null ? "check" : "plus-circle"} className="w-4 h-4"></i>
-                      {editingCardIndex !== null ? "Сохранить изменения" : "Добавить в пакет"}
-                    </button>
-
-                    {editingCardIndex !== null && (
-                      <button
-                        type="button"
-                        onClick={handleCancelEditCard}
-                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors text-sm font-medium"
-                      >
-                        Отмена
-                      </button>
-                    )}
-                  </div>
-                </form>
-
-                {/* BATCH ENGINE ACTIONS */}
-                <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      onClick={handleGenerateCardsSql}
-                      disabled={cardsBatch.length === 0}
-                      className="flex-1 sm:flex-none px-5 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-900/30 text-sm"
-                    >
-                      <i data-lucide="play" className="w-4 h-4"></i>
-                      Сгенерировать SQL
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setCardsBatch([]);
-                        setCardsSql("");
-                        handleCancelEditCard();
-                      }}
-                      disabled={cardsBatch.length === 0 && !cardsSql}
-                      className="px-4 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/40 text-rose-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
-                    >
-                      <i data-lucide="trash-2" className="w-4 h-4"></i>
-                      Очистить
-                    </button>
-                  </div>
-
-                  <div className="text-xs font-semibold text-cyber-gold bg-cyber-bg px-3 py-1.5 rounded-md border border-cyber-border w-full sm:w-auto text-center">
-                    📜 В пакете: {cardsBatch.length} {cardsBatch.length === 1 ? 'карта' : 'карт'}
-                  </div>
-                </div>
-
-                {/* BATCH CARDS LIST */}
-                {cardsBatch.length > 0 && (
-                  <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        Содержимое пакета (нажмите на элемент для редактирования):
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {cardsBatch.map((c, idx) => {
-                        const isEditing = editingCardIndex === idx;
-                        return (
-                          <div
-                            key={idx}
-                            onClick={() => handleEditCard(idx)}
-                            className={`bg-cyber-card border rounded-lg p-3 flex items-start justify-between gap-2 relative group cursor-pointer transition-all hover:bg-cyber-hover ${
-                              isEditing
-                                ? "border-cyber-neon ring-1 ring-cyber-neon/50 bg-cyber-hover"
-                                : "border-cyber-border hover:border-cyber-accent/50"
-                            }`}
-                          >
-                            <div className="space-y-1 overflow-hidden text-xs">
-                              <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
-                                <span>{c.name}</span>
-                                {c.iconic && (
-                                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
-                                    Iconic
-                                  </span>
-                                )}
-                                {isEditing && (
-                                  <span className="text-[10px] bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40 px-1 rounded font-normal">
-                                    Редактируется
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
-                                <span>Школа: {c.school}</span>
-                                <span>•</span>
-                                <span>Ред: {c.rarity}</span>
-                              </div>
-                              {c.id && (
-                                <div className="text-slate-500 font-mono text-[10px]">
-                                  ID: {c.id}
-                                </div>
-                              )}
-                              {c.tag && (
-                                <div className="text-slate-500 font-mono text-[10px]">
-                                  Tag: {c.tag}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={(e) => handleRemoveCard(idx, e)}
-                              className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
-                              title="Удалить"
-                            >
-                              <i data-lucide="x" className="w-4 h-4"></i>
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* SQL OUTPUT */}
-                {cardsSql && (
-                  <div className="bg-cyber-panel border border-cyber-accent/40 rounded-xl p-4 space-y-3 shadow-xl">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-cyber-neon uppercase tracking-wider flex items-center gap-2">
-                        <i data-lucide="code" className="w-4 h-4"></i>
-                        Сгенерированный SQL (Cards)
-                      </h3>
-                      <button
-                        onClick={() => handleCopy(cardsSql)}
-                        className="px-3 py-1.5 bg-cyber-accent hover:bg-cyber-neon text-white hover:text-black font-semibold rounded-md text-xs transition-colors flex items-center gap-1.5"
-                      >
-                        <i data-lucide={copied ? "check" : "copy"} className="w-3.5 h-3.5"></i>
-                        {copied ? "Скопировано!" : "Скопировать SQL"}
-                      </button>
-                    </div>
-
-                    <textarea
-                      readOnly
-                      rows="10"
-                      value={cardsSql}
-                      className="w-full bg-cyber-bg font-mono text-xs sm:text-sm text-emerald-400 p-3 rounded-lg border border-cyber-border focus:outline-none focus:border-cyber-neon leading-relaxed resize-y"
-                    ></textarea>
-                  </div>
-                )}
-              </div>
-            )}
-          </main>
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+        // Initial rendering
+        renderItemsBatch();
+        renderCardsBatch();
+      });
+    })();
   </script>
 </body>
 </html>
