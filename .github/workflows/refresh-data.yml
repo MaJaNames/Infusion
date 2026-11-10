@@ -1,7 +1,7 @@
 name: Обновить снимок базы
 on:
-  schedule: [{ cron: '0 3 * * *' }]   # раз в сутки
-  workflow_dispatch:                   # и вручную: вкладка Actions → Run workflow (доступно только владельцу репозитория)
+  schedule: [{ cron: '0 21 * * *' }]   # 21:00 UTC соответствует 04:00 UTC+11
+  workflow_dispatch:                   # и вручную: вкладка Actions → Run workflow
 permissions:
   contents: write
 jobs:
