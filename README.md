@@ -1,2 +1,2 @@
 Здесь обитают драконы.
-## https://majanames.github.io/#db
+## https://majanames.github.io/Infusion/#db
