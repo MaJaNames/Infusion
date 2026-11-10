@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Infusion SQL Generator</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              bg: '#0f1117',
+              panel: '#13161e',
+              card: '#171b24',
+              hover: '#262d3d',
+              accent: '#00a8cc',
+              neon: '#00d4ff',
+              gold: '#ffc832',
+              border: '#1f2430',
+              input: '#1c212d'
+            }
+          },
+          fontFamily: {
+            sans: ['Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
+            mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & Lucide Libraries -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f1117;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #262d3d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00a8cc;
+    }
+    /* Disable double-tap zoom on mobile inputs */
+    button, input, select, textarea {
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body class="bg-cyber-bg text-slate-200 font-sans antialiased min-h-screen selection:bg-cyber-accent selection:text-white pb-20 md:pb-6">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- PRESET DROPDOWN CONSTANTS ---
+    const ITEM_CATEGORIES = [
+      "Расходник", "Техник", "Аксессуар", "Имплант", "Кочевник", 
+      "Особое", "Контейнер", "Оружие", "Одежда", "Экзо-Синты", 
+      "Недвижимость", "Скрипт", "Транспорт", "Артефакт", "Граната", "Рокер", "Обвес"
+    ];
+
+    const ITEM_RARITIES = [
+      "Обычный", "Необычный", "Редкий", "Эпический", "Легендарный", "Культовый", "ГРА"
+    ];
+
+    const ITEM_ORGANIZATIONS = [
+      "Общедоступно", "Создание", "Чёрный Рынок", "Ацуши", "Хиллз", 
+      "Неизвестно", "Именной", "Гончие", "Икс-Экшен", "Синопсис", "ГРА"
+    ];
+
+    const CARD_RARITIES = [
+      "Обычный", "Необычный", "Редкий", "Эпический", "Легендарный"
+    ];
+
+    const CARD_SCHOOLS = [
+      "Трансгрессия", "Инкарнация", "Авангард", "Нейромантия", "Медикус", "Общие"
+    ];
+
+    const CARD_ESSENCES = [
+      "NULL", "Кроно", "Термо", "Кеми", "Крио", "Аква", "Электро", "Пси", "Хроно", "Радио", "Физик"
+    ];
+
+    const CARD_DAMAGE_TYPES = [
+      "NULL", "Кронотический", "Термический", "Криотический", "Химический", 
+      "Кинетический", "Электрический", "Радиоактивный", "Гидравлический", 
+      "Псионический", "Хронотопический", "Психический"
+    ];
+
+    const CARD_AMPLIFY_OPTIONS = [
+      "Да", "Нет", "АТК", "АВХ", "АВХ, АТК", "АТК, Каскад", "АТК, АВХ"
+    ];
+
+    const CARD_CREATION_OPTIONS = [
+      "Базис", "Модификатор"
+    ];
+
+    // --- DEFAULTS ---
+    const defaultItemForm = () => ({
+      id: "",
+      tag: "",
+      name: "",
+      description: "",
+      cost: "0",
+      category: "Расходник",
+      rarity: "Обычный",
+      organization: "Общедоступно",
+      iconic: false
+    });
+
+    const defaultCardForm = () => ({
+      id: "",
+      tag: "",
+      name: "",
+      rarity: "Обычный",
+      classes: "Общие",
+      school: "Трансгрессия",
+      essence: "NULL",
+      params: "",
+      damage_type: "NULL",
+      distance: "",
+      activation: "",
+      effects: "",
+      test: "",
+      amplify: "Нет",
+      kronos: "0",
+      price_tali: "0",
+      creation: "Базис",
+      consumable: false,
+      mechanics: "",
+      iconic: false
+    });
+
+    // Reusable Custom Combo/Select Field with Option to Switch to Free Input
+    function FreeComboInput({ label, value, onChange, options }) {
+      const [isCustom, setIsCustom] = useState(() => !options.includes(value) && value !== "");
+
+      return (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-slate-300 font-medium text-xs sm:text-sm">{label}</label>
+            <button
+              type="button"
+              onClick={() => setIsCustom(!isCustom)}
+              className="text-[11px] text-cyber-neon hover:underline focus:outline-none"
+            >
+              {isCustom ? "← Выбрать из списка" : "+ Своё значение"}
+            </button>
+          </div>
+
+          {isCustom ? (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Введите значение..."
+              className="w-full bg-cyber-input border border-cyber-accent/40 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+            />
+          ) : (
+            <select
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+            >
+              {options.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("items"); // 'items' | 'cards'
+      const [copied, setCopied] = useState(false);
+
+      // Items State
+      const [itemForm, setItemForm] = useState(defaultItemForm);
+      const [itemsBatch, setItemsBatch] = useState([]);
+      const [itemsSql, setItemsSql] = useState("");
+
+      // Cards State
+      const [cardForm, setCardForm] = useState(defaultCardForm);
+      const [cardsBatch, setCardsBatch] = useState([]);
+      const [cardsSql, setCardsSql] = useState("");
+
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [activeTab, itemsBatch, cardsBatch, itemsSql, cardsSql]);
+
+      // Copy text to clipboard using execCommand fallback
+      const handleCopy = (text) => {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand("copy");
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error("Failed to copy", err);
+        }
+        document.body.removeChild(textarea);
+      };
+
+      // --- ITEM ACTIONS ---
+      const handleAddItem = (e) => {
+        e.preventDefault();
+        if (!itemForm.name.trim()) return;
+
+        setItemsBatch([...itemsBatch, { ...itemForm }]);
+        setItemForm((prev) => ({
+          ...prev,
+          id: "",
+          tag: "",
+          name: "",
+          description: ""
+        }));
+      };
+
+      const handleRemoveItem = (index) => {
+        setItemsBatch(itemsBatch.filter((_, i) => i !== index));
+      };
+
+      const handleGenerateItemsSql = () => {
+        if (itemsBatch.length === 0) {
+          setItemsSql("");
+          return;
+        }
+
+        // Include ID ONLY if at least one item has a non-empty ID entered manually
+        const hasExplicitId = itemsBatch.some((it) => it.id && it.id.trim() !== "");
+        const hasTag = itemsBatch.some((it) => it.tag && it.tag.trim() !== "");
+
+        let cols = [];
+        if (hasExplicitId) cols.push("id");
+        if (hasTag) cols.push("tag");
+        cols.push("name", "description", "cost", "category", "rarity", "iconic", "organization");
+
+        const values = itemsBatch.map((it) => {
+          const descEsc = (it.description || "").replace(/'/g, "''");
+          const nameEsc = (it.name || "").replace(/'/g, "''");
+          const costVal = it.cost.trim() === "" ? "0" : it.cost.trim();
+
+          let parts = [];
+          if (hasExplicitId) {
+            parts.push(it.id && it.id.trim() !== "" ? `'${it.id.trim()}'` : "DEFAULT");
+          }
+          if (hasTag) {
+            parts.push(`'${(it.tag || "").replace(/'/g, "''")}'`);
+          }
+
+          parts.push(`'${nameEsc}'`);
+          parts.push(`'${descEsc}'`);
+          parts.push(costVal);
+          parts.push(`'${(it.category || "").replace(/'/g, "''")}'`);
+          parts.push(`'${(it.rarity || "").replace(/'/g, "''")}'`);
+          parts.push(it.iconic ? "true" : "false");
+          parts.push(`'${(it.organization || "").replace(/'/g, "''")}'`);
+
+          return `(${parts.join(", ")})`;
+        });
+
+        const colsStr = cols.map((c) => `"${c}"`).join(", ");
+        setItemsSql(`insert into items (${colsStr})\nvalues\n${values.join(",\n")};`);
+      };
+
+      // --- CARD ACTIONS ---
+      const handleAddCard = (e) => {
+        e.preventDefault();
+        if (!cardForm.name.trim()) return;
+
+        setCardsBatch([...cardsBatch, { ...cardForm }]);
+        setCardForm((prev) => ({
+          ...prev,
+          id: "",
+          tag: "",
+          name: "",
+          mechanics: ""
+        }));
+      };
+
+      const handleRemoveCard = (index) => {
+        setCardsBatch(cardsBatch.filter((_, i) => i !== index));
+      };
+
+      const handleGenerateCardsSql = () => {
+        if (cardsBatch.length === 0) {
+          setCardsSql("");
+          return;
+        }
+
+        // Include ID ONLY if at least one card has a non-empty ID entered manually
+        const hasExplicitId = cardsBatch.some((c) => c.id && c.id.trim() !== "");
+        const hasTag = cardsBatch.some((c) => c.tag && c.tag.trim() !== "");
+
+        let cols = [];
+        if (hasExplicitId) cols.push("id");
+        if (hasTag) cols.push("tag");
+
+        cols.push(
+          "name", "rarity", "classes", "school", "essence", "params",
+          "damage_type", "distance", "activation", "effects", "test", "amplify",
+          "kronos", "price_tali", "creation", "consumable", "mechanics", "iconic"
+        );
+
+        const values = cardsBatch.map((c) => {
+          const nameEsc = (c.name || "").replace(/'/g, "''");
+          const mechEsc = (c.mechanics || "").replace(/'/g, "''");
+
+          // Process PostgreSQL string array format
+          const classesArr = (c.classes || "")
+            .split(",")
+            .map((s) => `"${s.trim()}"`)
+            .join(",");
+          const classesFmt = `{${classesArr}}`;
+
+          const essenceFmt = c.essence === "NULL" ? "null" : `'${c.essence}'`;
+          const dmgFmt = c.damage_type === "NULL" ? "null" : `'${c.damage_type}'`;
+          const kronosVal = c.kronos.trim() === "" ? "0" : c.kronos.trim();
+          const taliVal = c.price_tali.trim() === "" ? "0" : c.price_tali.trim();
+
+          let parts = [];
+          if (hasExplicitId) {
+            parts.push(c.id && c.id.trim() !== "" ? `'${c.id.trim()}'` : "DEFAULT");
+          }
+          if (hasTag) {
+            parts.push(`'${(c.tag || "").replace(/'/g, "''")}'`);
+          }
+
+          parts.push(`'${nameEsc}'`);
+          parts.push(`'${c.rarity}'`);
+          parts.push(`'${classesFmt}'::text[]`);
+          parts.push(`'${c.school}'`);
+          parts.push(essenceFmt);
+          parts.push(`'${(c.params || "").replace(/'/g, "''")}'`);
+          parts.push(dmgFmt);
+          parts.push(`'${(c.distance || "").replace(/'/g, "''")}'`);
+          parts.push(`'${(c.activation || "").replace(/'/g, "''")}'`);
+          parts.push(`'${(c.effects || "").replace(/'/g, "''")}'`);
+          parts.push(`'${(c.test || "").replace(/'/g, "''")}'`);
+          parts.push(`'${c.amplify}'`);
+          parts.push(kronosVal);
+          parts.push(taliVal);
+          parts.push(`'${c.creation}'`);
+          parts.push(c.consumable ? "true" : "false");
+          parts.push(`'${mechEsc}'`);
+          parts.push(c.iconic ? "true" : "false");
+
+          return `(${parts.join(", ")})`;
+        });
+
+        const colsStr = cols.map((col) => `"${col}"`).join(", ");
+        setCardsSql(`insert into cards (${colsStr})\nvalues\n${values.join(",\n")};`);
+      };
+
+      return (
+        <div className="max-w-6xl mx-auto px-3 py-3 sm:px-6 sm:py-6">
+          {/* Header */}
+          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-cyber-panel border border-cyber-border rounded-xl p-4 mb-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-cyber-card border border-cyber-accent/30 rounded-lg text-cyber-neon">
+                <i data-lucide="terminal" className="w-6 h-6"></i>
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg font-bold text-cyber-neon tracking-wide flex items-center gap-2">
+                  <span>✦ INFUSION</span>
+                  <span className="text-xs font-mono font-normal px-2 py-0.5 rounded bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30">
+                    BATCH ENGINE
+                  </span>
+                </h1>
+                <p className="text-xs text-slate-400">
+                  Генератор SQL для базы данных (Предметы & Карты)
+                </p>
+              </div>
+            </div>
+
+            {/* Tab Controls */}
+            <div className="flex bg-cyber-bg p-1 rounded-lg border border-cyber-border self-start sm:self-center">
+              <button
+                onClick={() => setActiveTab("items")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
+                  activeTab === "items"
+                    ? "bg-cyber-accent text-white shadow-md shadow-cyber-accent/30"
+                    : "text-slate-400 hover:text-white hover:bg-cyber-hover"
+                }`}
+              >
+                <i data-lucide="package" className="w-4 h-4"></i>
+                Предметы
+                {itemsBatch.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-black/40 rounded-full text-cyber-gold">
+                    {itemsBatch.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab("cards")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs sm:text-sm font-semibold transition-all ${
+                  activeTab === "cards"
+                    ? "bg-cyber-accent text-white shadow-md shadow-cyber-accent/30"
+                    : "text-slate-400 hover:text-white hover:bg-cyber-hover"
+                }`}
+              >
+                <i data-lucide="scroll" className="w-4 h-4"></i>
+                Карты / Базисы
+                {cardsBatch.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-black/40 rounded-full text-cyber-gold">
+                    {cardsBatch.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="space-y-6">
+            {activeTab === "items" ? (
+              /* ================= ITEMS TAB ================= */
+              <div className="space-y-6">
+                <form
+                  onSubmit={handleAddItem}
+                  className="bg-cyber-panel border border-cyber-border rounded-xl p-4 sm:p-6 shadow-md space-y-4"
+                >
+                  <div className="flex items-center justify-between border-b border-cyber-border pb-3">
+                    <h2 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <i data-lucide="sliders" className="w-4 h-4 text-cyber-accent"></i>
+                      Конфигурация предмета
+                    </h2>
+                    <span className="text-[11px] text-slate-500">
+                      ID генерируется автоматически БД, если оставлен пустым
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* ID */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        ID (опционально, авто БД):
+                      </label>
+                      <input
+                        type="text"
+                        value={itemForm.id}
+                        onChange={(e) => setItemForm({ ...itemForm, id: e.target.value })}
+                        placeholder="Оставьте пустым для авто-ID"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon placeholder:text-slate-600"
+                      />
+                    </div>
+
+                    {/* Tag */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Тег (ручной ввод):
+                      </label>
+                      <input
+                        type="text"
+                        value={itemForm.tag}
+                        onChange={(e) => setItemForm({ ...itemForm, tag: e.target.value })}
+                        placeholder="Например: item_cyber_01"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Name */}
+                    <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Название <span className="text-rose-500">*</span>:
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={itemForm.name}
+                        onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+                        placeholder="Название предмета..."
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Category - Free Combo */}
+                    <FreeComboInput
+                      label="Категория:"
+                      value={itemForm.category}
+                      onChange={(val) => setItemForm({ ...itemForm, category: val })}
+                      options={ITEM_CATEGORIES}
+                    />
+
+                    {/* Rarity - Free Combo */}
+                    <FreeComboInput
+                      label="Редкость:"
+                      value={itemForm.rarity}
+                      onChange={(val) => setItemForm({ ...itemForm, rarity: val })}
+                      options={ITEM_RARITIES}
+                    />
+
+                    {/* Cost */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Стоимость (Cost):
+                      </label>
+                      <input
+                        type="text"
+                        value={itemForm.cost}
+                        onChange={(e) => setItemForm({ ...itemForm, cost: e.target.value })}
+                        placeholder="0"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Organization - Free Combo */}
+                    <FreeComboInput
+                      label="Организация:"
+                      value={itemForm.organization}
+                      onChange={(val) => setItemForm({ ...itemForm, organization: val })}
+                      options={ITEM_ORGANIZATIONS}
+                    />
+
+                    {/* Iconic Checkbox */}
+                    <div className="flex items-center gap-2 pt-4">
+                      <label className="relative flex items-center cursor-pointer gap-2 select-none">
+                        <input
+                          type="checkbox"
+                          checked={itemForm.iconic}
+                          onChange={(e) => setItemForm({ ...itemForm, iconic: e.target.checked })}
+                          className="w-5 h-5 rounded border-cyber-border bg-cyber-input text-cyber-accent focus:ring-0 focus:ring-offset-0"
+                        />
+                        <span className="text-xs sm:text-sm text-slate-200 font-medium">
+                          Культовый (iconic)
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Description / Effects */}
+                    <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Описание / Эффекты:
+                      </label>
+                      <textarea
+                        rows="3"
+                        value={itemForm.description}
+                        onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+                        placeholder="Подробное описание или свойства предмета..."
+                        className="bg-cyber-input border border-cyber-border rounded-lg p-3 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon resize-y"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
+                    >
+                      <i data-lucide="plus-circle" className="w-4 h-4"></i>
+                      Добавить в пакет
+                    </button>
+                  </div>
+                </form>
+
+                {/* BATCH ENGINE ACTIONS */}
+                <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={handleGenerateItemsSql}
+                      disabled={itemsBatch.length === 0}
+                      className="flex-1 sm:flex-none px-5 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-900/30 text-sm"
+                    >
+                      <i data-lucide="play" className="w-4 h-4"></i>
+                      Сгенерировать SQL
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setItemsBatch([]);
+                        setItemsSql("");
+                      }}
+                      disabled={itemsBatch.length === 0 && !itemsSql}
+                      className="px-4 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/40 text-rose-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
+                    >
+                      <i data-lucide="trash-2" className="w-4 h-4"></i>
+                      Очистить
+                    </button>
+                  </div>
+
+                  <div className="text-xs font-semibold text-cyber-gold bg-cyber-bg px-3 py-1.5 rounded-md border border-cyber-border w-full sm:w-auto text-center">
+                    📦 В пакете: {itemsBatch.length} {itemsBatch.length === 1 ? 'предмет' : 'предметов'}
+                  </div>
+                </div>
+
+                {/* BATCH ITEMS LIST */}
+                {itemsBatch.length > 0 && (
+                  <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Содержимое пакета предпросмотр:
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {itemsBatch.map((it, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-cyber-card border border-cyber-border rounded-lg p-3 flex items-start justify-between gap-2 relative group"
+                        >
+                          <div className="space-y-1 overflow-hidden text-xs">
+                            <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
+                              <span>{it.name}</span>
+                              {it.iconic && (
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
+                                  Iconic
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
+                              <span>Кат: {it.category}</span>
+                              <span>•</span>
+                              <span>Ред: {it.rarity}</span>
+                            </div>
+                            {it.id && (
+                              <div className="text-slate-500 font-mono text-[10px]">
+                                ID: {it.id}
+                              </div>
+                            )}
+                            {it.tag && (
+                              <div className="text-slate-500 font-mono text-[10px]">
+                                Tag: {it.tag}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleRemoveItem(idx)}
+                            className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
+                            title="Удалить"
+                          >
+                            <i data-lucide="x" className="w-4 h-4"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* SQL OUTPUT */}
+                {itemsSql && (
+                  <div className="bg-cyber-panel border border-cyber-accent/40 rounded-xl p-4 space-y-3 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-cyber-neon uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="code" className="w-4 h-4"></i>
+                        Сгенерированный SQL (Items)
+                      </h3>
+                      <button
+                        onClick={() => handleCopy(itemsSql)}
+                        className="px-3 py-1.5 bg-cyber-accent hover:bg-cyber-neon text-white hover:text-black font-semibold rounded-md text-xs transition-colors flex items-center gap-1.5"
+                      >
+                        <i data-lucide={copied ? "check" : "copy"} className="w-3.5 h-3.5"></i>
+                        {copied ? "Скопировано!" : "Скопировать SQL"}
+                      </button>
+                    </div>
+
+                    <textarea
+                      readOnly
+                      rows="10"
+                      value={itemsSql}
+                      className="w-full bg-cyber-bg font-mono text-xs sm:text-sm text-emerald-400 p-3 rounded-lg border border-cyber-border focus:outline-none focus:border-cyber-neon leading-relaxed resize-y"
+                    ></textarea>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ================= CARDS TAB ================= */
+              <div className="space-y-6">
+                <form
+                  onSubmit={handleAddCard}
+                  className="bg-cyber-panel border border-cyber-border rounded-xl p-4 sm:p-6 shadow-md space-y-4"
+                >
+                  <div className="flex items-center justify-between border-b border-cyber-border pb-3">
+                    <h2 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <i data-lucide="sliders" className="w-4 h-4 text-cyber-accent"></i>
+                      Конфигурация карты / базиса
+                    </h2>
+                    <span className="text-[11px] text-slate-500">
+                      ID генерируется автоматически БД, если оставлен пустым
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* ID */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        ID (опционально, авто БД):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.id}
+                        onChange={(e) => setCardForm({ ...cardForm, id: e.target.value })}
+                        placeholder="Оставьте пустым для авто-ID"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon placeholder:text-slate-600"
+                      />
+                    </div>
+
+                    {/* Tag */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Тег (ручной ввод):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.tag}
+                        onChange={(e) => setCardForm({ ...cardForm, tag: e.target.value })}
+                        placeholder="Например: card_fireball"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Name */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Название <span className="text-rose-500">*</span>:
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={cardForm.name}
+                        onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })}
+                        placeholder="Название карты..."
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Rarity */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Редкость:
+                      </label>
+                      <select
+                        value={cardForm.rarity}
+                        onChange={(e) => setCardForm({ ...cardForm, rarity: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      >
+                        {CARD_RARITIES.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Classes */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Классы (через запятую):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.classes}
+                        onChange={(e) => setCardForm({ ...cardForm, classes: e.target.value })}
+                        placeholder="Общие, Маг..."
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* School */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Школа:
+                      </label>
+                      <select
+                        value={cardForm.school}
+                        onChange={(e) => setCardForm({ ...cardForm, school: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      >
+                        {CARD_SCHOOLS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Essence */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Сущность (essence):
+                      </label>
+                      <select
+                        value={cardForm.essence}
+                        onChange={(e) => setCardForm({ ...cardForm, essence: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      >
+                        {CARD_ESSENCES.map((ess) => (
+                          <option key={ess} value={ess}>
+                            {ess}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Params */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Параметры (params):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.params}
+                        onChange={(e) => setCardForm({ ...cardForm, params: e.target.value })}
+                        placeholder="Параметры..."
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Damage Type */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Тип урона:
+                      </label>
+                      <select
+                        value={cardForm.damage_type}
+                        onChange={(e) =>
+                          setCardForm({ ...cardForm, damage_type: e.target.value })
+                        }
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      >
+                        {CARD_DAMAGE_TYPES.map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Distance */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Дистанция (distance):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.distance}
+                        onChange={(e) => setCardForm({ ...cardForm, distance: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Activation */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Срабатывание (activation):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.activation}
+                        onChange={(e) => setCardForm({ ...cardForm, activation: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Effects */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Эффекты (effects):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.effects}
+                        onChange={(e) => setCardForm({ ...cardForm, effects: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Test */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Испытание (test):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.test}
+                        onChange={(e) => setCardForm({ ...cardForm, test: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Amplify */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Усиление (amplify):
+                      </label>
+                      <select
+                        value={cardForm.amplify}
+                        onChange={(e) => setCardForm({ ...cardForm, amplify: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      >
+                        {CARD_AMPLIFY_OPTIONS.map((amp) => (
+                          <option key={amp} value={amp}>
+                            {amp}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Kronos */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Затраты Кроноса:
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.kronos}
+                        onChange={(e) => setCardForm({ ...cardForm, kronos: e.target.value })}
+                        placeholder="0"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Price Tali */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Цена (Тали):
+                      </label>
+                      <input
+                        type="text"
+                        value={cardForm.price_tali}
+                        onChange={(e) => setCardForm({ ...cardForm, price_tali: e.target.value })}
+                        placeholder="0"
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      />
+                    </div>
+
+                    {/* Creation */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Сотворение:
+                      </label>
+                      <select
+                        value={cardForm.creation}
+                        onChange={(e) => setCardForm({ ...cardForm, creation: e.target.value })}
+                        className="bg-cyber-input border border-cyber-border rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon"
+                      >
+                        {CARD_CREATION_OPTIONS.map((cr) => (
+                          <option key={cr} value={cr}>
+                            {cr}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Checkboxes */}
+                    <div className="flex items-center gap-6 sm:col-span-2 lg:col-span-3 pt-2">
+                      <label className="relative flex items-center cursor-pointer gap-2 select-none">
+                        <input
+                          type="checkbox"
+                          checked={cardForm.consumable}
+                          onChange={(e) =>
+                            setCardForm({ ...cardForm, consumable: e.target.checked })
+                          }
+                          className="w-5 h-5 rounded border-cyber-border bg-cyber-input text-cyber-accent focus:ring-0 focus:ring-offset-0"
+                        />
+                        <span className="text-xs sm:text-sm text-slate-200 font-medium">
+                          Consumable (Расходуется)
+                        </span>
+                      </label>
+
+                      <label className="relative flex items-center cursor-pointer gap-2 select-none">
+                        <input
+                          type="checkbox"
+                          checked={cardForm.iconic}
+                          onChange={(e) =>
+                            setCardForm({ ...cardForm, iconic: e.target.checked })
+                          }
+                          className="w-5 h-5 rounded border-cyber-border bg-cyber-input text-cyber-accent focus:ring-0 focus:ring-offset-0"
+                        />
+                        <span className="text-xs sm:text-sm text-slate-200 font-medium">
+                          Iconic (Культовое)
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Mechanics / Description */}
+                    <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
+                      <label className="text-slate-300 font-medium text-xs sm:text-sm">
+                        Механика / Описание:
+                      </label>
+                      <textarea
+                        rows="3"
+                        value={cardForm.mechanics}
+                        onChange={(e) => setCardForm({ ...cardForm, mechanics: e.target.value })}
+                        placeholder="Подробная механика или описание карты..."
+                        className="bg-cyber-input border border-cyber-border rounded-lg p-3 text-sm text-slate-100 focus:outline-none focus:border-cyber-neon resize-y"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
+                    >
+                      <i data-lucide="plus-circle" className="w-4 h-4"></i>
+                      Добавить в пакет
+                    </button>
+                  </div>
+                </form>
+
+                {/* BATCH ENGINE ACTIONS */}
+                <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={handleGenerateCardsSql}
+                      disabled={cardsBatch.length === 0}
+                      className="flex-1 sm:flex-none px-5 py-2.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-900/30 text-sm"
+                    >
+                      <i data-lucide="play" className="w-4 h-4"></i>
+                      Сгенерировать SQL
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setCardsBatch([]);
+                        setCardsSql("");
+                      }}
+                      disabled={cardsBatch.length === 0 && !cardsSql}
+                      className="px-4 py-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/40 text-rose-300 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
+                    >
+                      <i data-lucide="trash-2" className="w-4 h-4"></i>
+                      Очистить
+                    </button>
+                  </div>
+
+                  <div className="text-xs font-semibold text-cyber-gold bg-cyber-bg px-3 py-1.5 rounded-md border border-cyber-border w-full sm:w-auto text-center">
+                    📜 В пакете: {cardsBatch.length} {cardsBatch.length === 1 ? 'карта' : 'карт'}
+                  </div>
+                </div>
+
+                {/* BATCH CARDS LIST */}
+                {cardsBatch.length > 0 && (
+                  <div className="bg-cyber-panel border border-cyber-border rounded-xl p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Содержимое пакета предпросмотр:
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {cardsBatch.map((c, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-cyber-card border border-cyber-border rounded-lg p-3 flex items-start justify-between gap-2 relative group"
+                        >
+                          <div className="space-y-1 overflow-hidden text-xs">
+                            <div className="font-bold text-slate-100 truncate flex items-center gap-1.5">
+                              <span>{c.name}</span>
+                              {c.iconic && (
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 rounded">
+                                  Iconic
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-slate-400 text-[11px] flex flex-wrap gap-x-2">
+                              <span>Школа: {c.school}</span>
+                              <span>•</span>
+                              <span>Ред: {c.rarity}</span>
+                            </div>
+                            {c.id && (
+                              <div className="text-slate-500 font-mono text-[10px]">
+                                ID: {c.id}
+                              </div>
+                            )}
+                            {c.tag && (
+                              <div className="text-slate-500 font-mono text-[10px]">
+                                Tag: {c.tag}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleRemoveCard(idx)}
+                            className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-950/40 transition-colors"
+                            title="Удалить"
+                          >
+                            <i data-lucide="x" className="w-4 h-4"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* SQL OUTPUT */}
+                {cardsSql && (
+                  <div className="bg-cyber-panel border border-cyber-accent/40 rounded-xl p-4 space-y-3 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-cyber-neon uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="code" className="w-4 h-4"></i>
+                        Сгенерированный SQL (Cards)
+                      </h3>
+                      <button
+                        onClick={() => handleCopy(cardsSql)}
+                        className="px-3 py-1.5 bg-cyber-accent hover:bg-cyber-neon text-white hover:text-black font-semibold rounded-md text-xs transition-colors flex items-center gap-1.5"
+                      >
+                        <i data-lucide={copied ? "check" : "copy"} className="w-3.5 h-3.5"></i>
+                        {copied ? "Скопировано!" : "Скопировать SQL"}
+                      </button>
+                    </div>
+
+                    <textarea
+                      readOnly
+                      rows="10"
+                      value={cardsSql}
+                      className="w-full bg-cyber-bg font-mono text-xs sm:text-sm text-emerald-400 p-3 rounded-lg border border-cyber-border focus:outline-none focus:border-cyber-neon leading-relaxed resize-y"
+                    ></textarea>
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
