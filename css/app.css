@@ -36,6 +36,10 @@ details.row[open]{border-color:var(--rc,var(--c))}
 .tag{font-size:.75rem;border:1px solid var(--line);border-radius:4px;padding:0 .35rem;margin-right:.45rem;color:var(--mute);background:var(--bg)}
 .meta{color:var(--mute);font-size:.85rem}
 .price{text-align:right;white-space:nowrap}.price small{display:block;color:var(--mute)}
+.money{display:inline-flex;align-items:center;gap:.28rem;white-space:nowrap}
+.money img{width:1.05em;height:1.05em;object-fit:contain;flex:0 0 auto}
+.price .money{justify-content:flex-end}
+.price .sell{font-size:.75rem}
 .body{padding:.3rem .9rem .9rem;border-top:1px dashed var(--line)}
 .desc{white-space:pre-wrap;max-width:75ch;margin:.6rem 0}
 dl{display:grid;grid-template-columns:max-content 1fr;gap:.2rem 1rem;margin:.5rem 0 0;font-size:.9rem}dt{color:var(--mute)}dd{margin:0}
@@ -44,7 +48,9 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:.2rem 1rem;margin:.5re
 .chip.warn{border-color:var(--l);color:var(--l)}
 .ctl{display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;margin:.5rem 0;font-size:.9rem}
 .ctl input{width:6.5rem}
-.more{display:block;margin:1rem auto}
+.more{display:block;margin:0 auto;min-width:12rem}
+.more-wrap{display:flex;flex-direction:column;align-items:center;gap:.3rem;margin:1rem 0 .4rem}
+.page-info{text-align:center;margin:.35rem 0 .2rem}
 .empty,.miss{padding:1.2rem;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:8px}
 .c{--rc:var(--c)}.u{--rc:var(--u)}.r{--rc:var(--r)}.e{--rc:var(--e)}.l{--rc:var(--l)}.k{--rc:var(--k)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:.6rem}
@@ -154,6 +160,7 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 :root[data-ui=mobile] .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem}
 :root[data-ui=mobile] .row summary{flex-direction:column;gap:.2rem;padding:.5rem .6rem}
 :root[data-ui=mobile] .price{text-align:left}
+:root[data-ui=mobile] .price .money{justify-content:flex-start}
 :root[data-ui=mobile] .body{padding:.3rem .6rem .7rem}
 :root[data-ui=mobile] dl{grid-template-columns:1fr;gap:.1rem 0}
 :root[data-ui=mobile] dt{margin-top:.35rem}

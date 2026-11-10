@@ -7,6 +7,12 @@ export const label = (it) => `${it.tag ? `[${it.tag}] ` : ''}${it.name}`;
 export const RARITY_SHORT = Object.freeze({ 'Обычный': 'О', 'Необычный': 'Н', 'Редкий': 'Р', 'Эпический': 'Э', 'Легендарный': 'Л', 'Культовый': 'К' });
 export const optLabel = (it) => `${label(it)}${it.rarity ? ` [${RARITY_SHORT[it.rarity] || String(it.rarity).slice(0, 1)}]` : ''}${it.iconic && it.rarity !== 'Культовый' ? '*' : ''}`;
 export const uniq = (rows, key) => [...new Set(rows.map((r) => r[key]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+export const ICONS = Object.freeze({ tali: 'assets/icons/tali.webp', credits: 'assets/icons/croncred.webp' });
+// Цена с иконкой валюты: тали — карты, кредиты — предметы и суммы.
+export const money = (value, kind = 'credits') => {
+  const tali = kind === 'tali', src = tali ? ICONS.tali : ICONS.credits, name = tali ? 'тали' : 'кредиты';
+  return `<span class="money"><img src="${src}" alt="${name}" title="${name}" loading="lazy">${num(value)}</span>`;
+};
 export const opts = (rows, sel, text = (r) => r.name, val = (r) => r.id) =>
   rows.map((r) => `<option value="${esc(val(r))}"${String(val(r)) === String(sel) ? ' selected' : ''}>${esc(text(r))}</option>`).join('');
 export const set = (obj, path, value) => { const k = path.split('.'), last = k.pop(); k.reduce((a, x) => a[x], obj)[last] = value; };
