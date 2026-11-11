@@ -331,6 +331,18 @@ button.stat-card:hover{border-color:var(--mute)}
 :root[data-ui=mobile] .calc-check{grid-column:1/-1}
 :root[data-ui=mobile] .transport-slot>label{max-width:none;width:100%}
 body.drawer-open{overflow:hidden}
+.row-no{display:inline-block;margin-right:.45rem;font-size:.75rem;color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 .3rem;background:var(--bg);font-variant-numeric:tabular-nums}
+.chip.rar-c{border-color:var(--line);color:var(--mute);background:#fff}
+:root[data-theme=dark] .chip.rar-c{background:transparent;color:#fff;border-color:#fff}
+.chip.rar-r{border-color:var(--r);color:var(--r)}
+.chip.rar-l{border-color:var(--l);color:var(--l)}
+.robot-list{display:grid;gap:.5rem;margin-top:.6rem}
+.robot-card{border:1px solid var(--line);border-radius:8px;padding:.6rem .75rem;display:grid;gap:.35rem;background:var(--panel)}
+.robot-card.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.robot-head{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.robot-use{display:flex;gap:.35rem;align-items:center;font-size:.85rem}
+.robot-hp{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;font-size:.85rem}
+.robot-hp input{width:6.5rem}
 
 /* Телефон в ландшафте: места больше, поля не растягиваются на всю ширину. */
 @media(min-width:700px){

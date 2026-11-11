@@ -19,6 +19,8 @@ function slotUsage(ids, limits, d, gear, extraTags = []) {
     const combo = !gear && d.implant_combos.find((x) => flat(x.name) === flat(`[${it.tag}]${it.name}`));
     if (combo) { for (const [t, n] of Object.entries(combo.uses)) used.set(norm(t), (used.get(norm(t)) || 0) + n); continue; }
     let t = norm(it.tag);
+    // Модули Техника в Модульном скелете надеваются как аксессуары.
+    if (gear && t === 'mod') t = 'acs';
     if (gear && !GEAR.includes(t)) t = 'we';
     if (used.has(t)) used.set(t, used.get(t) + 1);
   }

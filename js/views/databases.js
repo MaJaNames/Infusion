@@ -24,7 +24,7 @@ const RULE_GROUP_RANK = new Map(RULE_GROUPS.map((g, i) => [g, i]));
 const RULE_SUB_RANK = new Map([['Ранги', 0], ['Сущности', 1], ['Способности', 2], ['Мутации', 3], ['Черты', 4]]);
 
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${title}<div class="meta">${meta}</div></div>${o.badge || ''}<span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}</div></div>${o.badge || ''}<span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 const credits = (n) => money(n, 'credits');
 const tali = (n) => money(n, 'tali');
@@ -185,14 +185,14 @@ function rulesRows(d) {
   d.ranks.forEach((x) => rows.push({ id: `rank-${x.level}`, group: 'Константы', sub: 'Ранги', type: 'Ранг', name: `${x.level}. ${x.name}`, sortName: `${String(x.level).padStart(3, '0')} ${x.name}`, rarity: '', detail: `Уровень ${x.level}`, description: `ОЗ ${x.hp_base}, Кронос ${x.kronos_max}` }));
   d.essences.forEach((x) => rows.push({ id: `essence-${x.id}`, group: 'Константы', sub: 'Сущности', type: 'Сущность', name: x.name, rarity: '', detail: x.full_name || '', description: x.description }));
   d.abilities.forEach((x) => rows.push({ id: `ability-${x.id}`, group: 'Способности', sub: x.kind === 'mutation' ? 'Мутации' : 'Способности', type: x.kind === 'mutation' ? 'Мутация' : 'Способность', name: x.name, rarity: '', detail: x.class_requirement || '', description: x.description }));
-  d.beasts.forEach((x) => rows.push({ id: `beast-${x.id}`, group: 'Зверь', sub: x.group_name || 'Без группы', type: 'Зверь', name: x.name, rarity: x.rarity || '', detail: x.group_name || '', description: x.description }));
+  d.beasts.forEach((x) => rows.push({ id: `beast-${x.id}`, group: 'Зверь', sub: x.group_name || 'Без группы', type: 'Зверь', name: x.name, rarity: x.rarity || '', detail: x.group_name || '', description: x.description, rc: RC[x.rarity] }));
   d.traits.forEach((x) => rows.push({ id: `trait-${x.id}`, group: 'Черта', sub: 'Черты', type: 'Черта', name: x.name, rarity: '', detail: '', description: x.description }));
   d.skills.forEach((x) => rows.push({ id: `skill-${x.id}`, group: 'Навыки', sub: d.statMap.get(x.stat)?.name || x.stat, type: 'Навык', name: x.name, rarity: x.rarity || '', detail: `${d.statMap.get(x.stat)?.name || x.stat} ${x.tier}`, description: x.description }));
   return rows;
 }
 
 const RULE_COLOR = { 'Ранг': 'c', 'Сущность': 'e', 'Способность': 'u', 'Мутация': 'u', 'Зверь': 'r', 'Черта': 'l', 'Навык': 'c' };
-const ruleRow = (r) => row(RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
+const ruleRow = (r) => row(r.rc || RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
   `${esc(r.group)}${r.detail ? ' · ' + esc(r.detail) : ''}${r.rarity ? ' · ' + esc(r.rarity) : ''}`, '',
   `<p class="desc">${esc(r.description)}</p>`);
 
@@ -254,15 +254,17 @@ const matches = (row, f) => Object.entries(f).every(([k, v]) => {
 // Собирает отфильтрованный и отсортированный список для текущей вкладки.
 function collect(d) {
   const q = S.q.trim(), f = S.filters[S.tab] || {};
-  let rows, draw, sortKind = null, scores = null;
+  let rows, draw, sortKind = null, scores = null, ord = null;
   if (S.tab === 'items') {
     ({ rows, scores } = fuzzyFilter(d.items.filter((i) => matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f)),
       q, (i) => `${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`));
     draw = itemRow; sortKind = 'items';
+    ord = new Map(d.items.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'cards') {
     ({ rows, scores } = fuzzyFilter(d.cards.filter((c) => matches({ rar: c.rarity, classes: c.classes, school: c.school, essence: c.essence, creation: c.creation, consumable: c.consumable ? '1' : '0', iconic: c.iconic ? '1' : '0' }, f)),
       q, (c) => `${c.name} ${c.mechanics} ${c.school} ${arr(c.classes)} ${c.essence || ''}`));
     draw = cardRow; sortKind = 'cards';
+    ord = new Map(d.cards.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'parts') {
     ({ rows, scores } = fuzzyFilter(partsOf(d).filter((p) => matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f)),
       q, (p) => `${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`));
@@ -274,10 +276,10 @@ function collect(d) {
   }
   // При поиске первична точность совпадения, выбранная сортировка — вторична.
   if (sortKind) rows = sortRows(sortKind, rows, scores);
-  return { rows, draw };
+  return { rows, draw, ord };
 }
 
-const renderRows = (rows, draw) => rows.map((r) => draw(r)).join('');
+const renderRows = (rows, draw, ord = null) => rows.map((r) => (ord ? draw(r, '', { ord: ord.get(r) }) : draw(r))).join('');
 
 function moreInner(kind, shown, total) {
   if (shown >= total) return `<p class="page-info meta">Показаны все ${num(total)}</p>`;
@@ -289,12 +291,12 @@ function moreInner(kind, shown, total) {
 const moreBlock = (kind, shown, total) => (total ? `<div class="more-wrap" data-more-sentinel>${moreInner(kind, shown, total)}</div>` : '');
 
 function results(d) {
-  const { rows, draw } = collect(d);
+  const { rows, draw, ord } = collect(d);
   const kind = S.tab, total = rows.length;
   const limit = Math.min(shownCount(kind), total);
   S.shown[kind] = limit;
   const list = total
-    ? `<div class="list">${renderRows(rows.slice(0, limit), draw)}</div>`
+    ? `<div class="list">${renderRows(rows.slice(0, limit), draw, ord)}</div>`
     : '<div class="empty">Ничего не найдено. Сбросьте часть фильтров.</div>';
   return `<p class="meta">Найдено: ${num(total)}</p>${list}${moreBlock(kind, limit, total)}`;
 }
@@ -303,13 +305,13 @@ function results(d) {
 function appendMore(root, ctx) {
   const resEl = root.querySelector('#res');
   if (!resEl) return;
-  const { rows, draw } = collect(ctx.data);
+  const { rows, draw, ord } = collect(ctx.data);
   const kind = S.tab, total = rows.length, start = Math.min(shownCount(kind), total);
   if (start >= total) return;
   const list = resEl.querySelector('.list');
   if (!list) return;
   const next = rows.slice(start, start + (BATCH[kind] || 40));
-  list.insertAdjacentHTML('beforeend', renderRows(next, draw));
+  list.insertAdjacentHTML('beforeend', renderRows(next, draw, ord));
   S.shown[kind] = start + next.length;
   const sentinel = root.querySelector('[data-more-sentinel]');
   if (sentinel) sentinel.innerHTML = moreInner(kind, S.shown[kind], total);

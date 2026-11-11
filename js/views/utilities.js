@@ -1,4 +1,5 @@
 import * as shop from '../modules/autoshop/view.js';
+import * as robots from '../modules/robots/view.js';
 import { esc } from '../core/util.js';
 import { probability, percent, MODES, targetFromVer, verFromTarget } from '../core/probability.js';
 
@@ -9,9 +10,7 @@ const S = {
   // Значения по умолчанию — как в строке 2 листа «Калькулятор».
   calc: { stat: 7, bonus: 0, target: 81, mode: 'none' },
 };
-const SOON = {
-  robots: '<p>Заготовка под будущий конструктор роботов. Он появится, когда будут готовы правила и таблицы деталей.</p>',
-};
+
 
 function calcCards() {
   const r = probability(S.calc);
@@ -41,11 +40,12 @@ function calcPanel() {
 export function render(ctx) {
   return `<div class="tabs util-tabs">${TABS.map(([id, t]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${t}</button>`).join('')}</div>
     <select class="tabs-select" data-tab-select="1" aria-label="Раздел утилит">${TABS.map(([id, t]) => `<option value="${id}"${S.tab === id ? ' selected' : ''}>${t}</option>`).join('')}</select>
-    ${S.tab === 'shop' ? shop.render(ctx) : S.tab === 'calc' ? calcPanel() : `<section class="panel">${SOON[S.tab] || ''}</section>`}`;
+    ${S.tab === 'shop' ? shop.render(ctx) : S.tab === 'robots' ? robots.render(ctx) : calcPanel()}`;
 }
 
 export function bind(root, ctx) {
   if (S.tab === 'shop') shop.bind(root, ctx);
+  else if (S.tab === 'robots') robots.bind(root, ctx);
   const innerInput = root.oninput;
   root.oninput = (e) => {
     if (e.target.dataset.calc !== undefined) {

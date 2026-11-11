@@ -1,10 +1,18 @@
-import { esc, num, label, opts, set, fieldValue, RARITIES, optLabel, money } from '../core/util.js';
+import { esc, num, label, opts, set, fieldValue, RARITIES, RC, optLabel, money } from '../core/util.js';
 import { derive, sellPrice, skillLimit } from '../character/derive.js';
-import { RULES, allowedClasses } from '../character/rules.js';
+import {
+  RULES, allowedClasses, RO_FACTIONS, RO_VALUES, blankRO, bmetLimit,
+  BEAST_SLOTS, BEAST_RARITIES, BEAST_EXTRA_L_ABILITY, ROBOT_IMPLANTS,
+} from '../character/rules.js';
 import { itemRow, cardRow } from './databases.js';
 import { G, partCount } from '../modules/autoshop/store.js';
 import { partsOf } from '../modules/autoshop/parts.js';
 import { summarize } from '../modules/autoshop/aggregate.js';
+import { R, saveRobots } from '../modules/robots/store.js';
+import {
+  isBmet, isSkeleton, isRobotModule, skeletonSlots, robotBase, robotKind, robotKindLabel,
+  robotStats, robotRequirement, availableCount, hasImplant,
+} from '../modules/robots/parts.js';
 import { comboList, groupedRows, closeCombos, openCombo, comboKeydown, installComboClose } from '../core/combo.js';
 import { fuzzyScore } from '../core/fuzzy.js';
 
@@ -195,8 +203,46 @@ function findBeastByName(name, d) {
 const beastPrereqs = (b, d) => beastPrereqNames(b).map((name) => findBeastByName(name, d) || { name, id: null });
 const beastMissing = (b, chosen, d) => beastPrereqs(b, d).filter((p) => !p.id || !chosen.has(p.id));
 
+const BEAST_RARITY_CLASS = { 'Обычный': 'c', 'Редкий': 'r', 'Легендарный': 'l' };
+const BEAST_RARITY_SHORT = { 'Обычный': 'О', 'Редкий': 'Р', 'Легендарный': 'Л' };
+const beastRarity = (b) => (BEAST_RARITIES.includes(b?.rarity) ? b.rarity : 'Обычный');
+const beastTotal = (x) => BEAST_RARITIES.reduce((a, r) => a + (x[r] || 0), 0);
+
+// Лимиты слотов зависят от ранга; «Я Особенный» добавляет один слот Л.
+function beastSlotLimits(c, d) {
+  const level = Math.min(10, Math.max(1, d.rankMap.get(Number(c.rank))?.level || d.ranks[0]?.level || 1));
+  const base = BEAST_SLOTS[level] || BEAST_SLOTS[10];
+  const extraL = (c.abilities || []).some((id) => d.abilityMap.get(id)?.name === BEAST_EXTRA_L_ABILITY) ? 1 : 0;
+  return { 'Обычный': base['Обычный'], 'Редкий': base['Редкий'], 'Легендарный': base['Легендарный'] + extraL, extraL };
+}
+
+function beastUsage(c, d) {
+  const usage = { 'Обычный': 0, 'Редкий': 0, 'Легендарный': 0 };
+  for (const id of c.beasts || []) {
+    const b = d.beasts.find((x) => x.id === id);
+    if (b) usage[beastRarity(b)]++;
+  }
+  return usage;
+}
+
+// Более высокий слот занимает более низкую редкость: Л — О/Р/Л, Р — О/Р, О — только О.
+function beastFits(limits, usage, rarity) {
+  if (rarity === 'Обычный') return beastTotal(usage) < beastTotal(limits);
+  if (rarity === 'Редкий') return usage['Редкий'] + usage['Легендарный'] < limits['Редкий'] + limits['Легендарный'];
+  return usage['Легендарный'] < limits['Легендарный'];
+}
+
+function beastOverflow(limits, usage) {
+  const out = [];
+  if (beastTotal(usage) > beastTotal(limits)) out.push('О');
+  if (usage['Редкий'] + usage['Легендарный'] > limits['Редкий'] + limits['Легендарный']) out.push('Р');
+  if (usage['Легендарный'] > limits['Легендарный']) out.push('Л');
+  return out;
+}
+
 // Добавлять можно способности выбранного пути и «Общие»; корень пути уже взят.
 function beastAdderRows(c, d) {
+  const limits = beastSlotLimits(c, d), usage = beastUsage(c, d);
   const path = beastPathOf(c, d);
   const chosen = new Set(Array.isArray(c.beasts) ? c.beasts : []);
   return d.beasts
@@ -204,12 +250,13 @@ function beastAdderRows(c, d) {
     .filter((b) => !chosen.has(b.id) && !isPathBeast(b))
     .map((b) => {
       const missing = beastMissing(b, chosen, d);
+      const rarity = beastRarity(b), free = beastFits(limits, usage, rarity);
       return {
         id: b.id,
-        text: `${b.name}${missing.length ? ` · нужно: ${missing.map((p) => p.name).join(', ')}` : ''}`,
+        text: `${b.name} · ${BEAST_RARITY_SHORT[rarity]}${missing.length ? ` · нужно: ${missing.map((p) => p.name).join(', ')}` : ''}${free ? '' : ' · сверх лимита'}`,
         group: b.group_name || 'Без группы',
         rank: b.group_name === path ? 0 : 1,
-        search: b.description || '',
+        search: `${b.description || ''} ${b.rarity || ''}`,
       };
     });
 }
@@ -218,10 +265,12 @@ function beastRow(b, i, chosen, d) {
   const root = isPathBeast(b);
   const prereqs = root ? [] : beastPrereqs(b, d);
   const missing = root ? [] : beastMissing(b, chosen, d);
+  const rarity = beastRarity(b), short = BEAST_RARITY_SHORT[rarity];
   const reqText = prereqs.length
     ? `<p class="meta">Требует: ${prereqs.map((p) => esc(p.name)).join(', ')}</p>` : '';
   return `<details class="line beast${missing.length ? ' badline' : ''}" data-beast-row="${esc(b.id)}">
     <summary><span class="grow"><b>${esc(b.name)}</b> <span class="meta">${esc(b.group_name || 'Без группы')}${missing.length ? ` · не хватает: ${missing.map((p) => esc(p.name)).join(', ')}` : ''}</span></span>
+      <span class="chip rar-${BEAST_RARITY_CLASS[rarity]}" title="${esc(rarity)}">${short}</span>
       ${root ? '<span class="chip">путь</span>' : '<span class="chip">взято</span>'}</summary>
     <div class="body"><p class="desc">${esc(b.description || 'Описание пока не заполнено.')}</p>${reqText}
       ${root
@@ -437,11 +486,16 @@ function inventoryPanel(c, d, r, race) {
       const picked = all.filter((b) => chosen.has(b.id)).length;
       return `<button type="button" role="tab" aria-selected="${path === g}" class="beast-path${path === g ? ' on' : ''}" data-beast-path="${esc(g)}">${esc(g)}<span class="tabcount">${picked}/${all.length}</span></button>`;
     }).join('');
+    const limits = beastSlotLimits(c, d), usage = beastUsage(c, d), overflow = beastOverflow(limits, usage);
+    const slotsText = BEAST_RARITIES.map((x) => `${BEAST_RARITY_SHORT[x]} ${limits[x]}`).join(' · ');
+    const usedText = BEAST_RARITIES.map((x) => `${BEAST_RARITY_SHORT[x]} ${usage[x]}`).join(' · ');
     body = `<div class="beast-paths" role="tablist" aria-label="Путь зверя">${pathButtons}</div>
       <p class="meta beast-path-note">${path
         ? `Путь: <b>${esc(path)}</b>. В меню — способности этого пути и «Общие»; способность пути берётся автоматически. Требования указаны у каждой способности, недостающие подсвечиваются.`
         : 'Выберите путь: от него зависит список способностей. «Общие» доступны всегда.'}</p>
-      <div class="chips"><span class="chip">Взято способностей: ${chosen.size}</span><span class="chip">n для расчётов: ${chosen.size}</span></div>
+      <div class="chips"><span class="chip">Слоты: ${slotsText}${limits.extraL ? ` (в т.ч. +${limits.extraL} Л от «${esc(BEAST_EXTRA_L_ABILITY)}»)` : ''}</span><span class="chip">Взято: ${usedText}</span><span class="chip">Взято способностей: ${chosen.size}</span><span class="chip">n для расчётов: ${chosen.size}</span></div>
+      <p class="meta">Высший слот может занимать низшую редкость: Л — О/Р/Л, Р — О/Р. Корень пути тоже занимает слот.</p>
+      ${overflow.length ? `<p class="bad">Превышен лимит слотов: ${overflow.join(', ')}. Можно продолжать, но набор будет сверх лимита.</p>` : ''}
       <div class="inv-tools">${adder('beasts', path ? 'Найти способность…' : 'Сначала выберите путь', c, d, !path)}</div>
       <div class="list" data-beast-list>${beastList(c, d)}</div>`;
   }
@@ -462,8 +516,89 @@ function inventoryPanel(c, d, r, race) {
   </section>`;
 }
 
+const stockItems = (c, d, predicate) => {
+  const found = new Map();
+  for (const e of c.pockets || []) {
+    const it = d.itemMap.get(e.id);
+    if (it && (!predicate || predicate(it))) found.set(it.id, it);
+  }
+  return [...found.values()];
+};
+
+function roPanel(c) {
+  const ro = { ...blankRO(), ...(c.ro || {}) };
+  return `<section class="panel ro-panel"><h2>РО — репутация организаций</h2>
+    <p class="meta">Для каждой фракции свой уровень. Для лимита БМЕТов используется РО «Ацуши», но не меньше 1.</p>
+    <div class="grid ro-grid">${RO_FACTIONS.map((f) => `<label>${esc(f)}<select data-p="ro.${esc(f)}" data-n="1">${RO_VALUES.map((v) => `<option value="${v}"${Number(ro[f]) === v ? ' selected' : ''}>${v > 0 ? '+' : ''}${v}</option>`).join('')}</select></label>`).join('')}</div>
+    <div class="chips"><span class="chip total">Лимит БМЕТ: ${num(bmetLimit(ro))}</span></div>
+  </section>`;
+}
+
+function robotPanel(c, d) {
+  if (c.class !== 'Техник') return '';
+  const robots = R.robots.filter((r) => r.base);
+  if (!robots.length) {
+    return `<section class="panel"><h2>Роботы Техника</h2><p class="meta">Роботов пока нет. Соберите их в «Утилитах» → «Мастерская техники».</p></section>`;
+  }
+  const active = new Set(Array.isArray(c.robots) ? c.robots : []);
+  const limit = bmetLimit(c.ro);
+  const bmetsActive = robots.filter((r) => active.has(r.id) && isBmet(robotBase(r, d))).length;
+  const cards = robots.map((r) => {
+    const base = robotBase(r, d), kind = robotKind(base);
+    const full = robotStats(r, d), stats = full.total;
+    const req = robotRequirement(r, d, c);
+    const on = active.has(r.id);
+    const wouldExceed = kind === 'bmet' && !on && bmetsActive >= limit;
+    const disabled = !on && (!req.ok || wouldExceed);
+    const why = !req.ok ? (req.reason || `Нужен имплант: ${req.needs.join(', ')}`) : wouldExceed ? 'Лимит БМЕТ по РО «Ацуши» исчерпан' : '';
+    const gear = kind === 'bmet' ? [] : [...r.weapons, ...r.modules].map((id) => d.itemMap.get(id)).filter(Boolean);
+    return `<article class="robot-card${on ? ' on' : ''}">
+      <div class="robot-head"><label class="robot-use"><input type="checkbox" data-robot-use="${esc(r.id)}"${on ? ' checked' : ''}${disabled ? ' disabled' : ''}> Надеть</label><b>${esc(r.name)}</b><span class="meta">${esc(robotKindLabel[kind] || 'без основы')}</span></div>
+      <div class="chips"><span class="chip">ОЗ: ${r.currentHp != null ? `${num(r.currentHp)} / ${num(stats.hp)}` : num(stats.hp)}</span>${stats.defP ? `<span class="chip">ДЕФ.П ${num(stats.defP)}</span>` : ''}${stats.defA ? `<span class="chip">ДЕФ.А ${num(stats.defA)}</span>` : ''}${stats.evasion ? `<span class="chip">УКЛ ${num(stats.evasion)}</span>` : ''}${stats.atk ? `<span class="chip">АТК ${num(stats.atk)}</span>` : ''}${on ? '<span class="chip total">надет</span>' : ''}</div>
+      <label class="robot-hp">Текущее ОЗ <input type="number" min="0" data-robot-hp="${esc(r.id)}" value="${r.currentHp ?? ''}" placeholder="${num(stats.hp)}"><span class="meta">/ ${num(stats.hp)}</span></label>
+      ${gear.length ? `<div class="chips">${gear.map((it) => `<span class="chip">${esc(label(it))}</span>`).join('')}</div>` : `<p class="meta">${kind === 'bmet' ? 'У БМЕТ нет слотов оружия и модулей.' : 'Оружие и модули не установлены.'}</p>`}
+      ${full.unique ? `<p class="desc meta">${esc(full.unique)}</p>` : ''}
+      ${r.notes ? `<p class="desc meta">${esc(r.notes)}</p>` : ''}
+      ${why ? `<p class="meta">${esc(why)}</p>` : ''}
+    </article>`;
+  }).join('');
+  return `<section class="panel"><h2>Роботы Техника</h2>
+    <div class="chips"><span class="chip${bmetsActive > limit ? ' bad' : ''}">БМЕТ: ${num(bmetsActive)} / ${num(limit)}</span><span class="chip">Надето роботов: ${num(robots.filter((r) => active.has(r.id)).length)}</span></div>
+    <p class="meta">Собранные роботы можно надевать при наличии нужного импланта. БМЕТ ограничены РО «Ацуши»; Призмы и Ядра — без отдельного лимита.</p>
+    <div class="robot-list">${cards}</div>
+  </section>`;
+}
+
+function skeletonPanel(c, d) {
+  if (c.class !== 'Техник') return '';
+  const equipment = Array.isArray(c.equipment) ? c.equipment : [];
+  const current = equipment.map((id) => d.itemMap.get(id)).find(isSkeleton) || null;
+  const skeletons = stockItems(c, d, isSkeleton);
+  if (current && !skeletons.some((it) => it.id === current.id)) skeletons.unshift(current);
+  const modules = equipment.map((id) => d.itemMap.get(id)).filter(isRobotModule);
+  const slots = current ? skeletonSlots(current) : 0;
+  const allowed = hasImplant(c, d, ROBOT_IMPLANTS.skeleton);
+  const mods = stockItems(c, d, isRobotModule);
+  const moduleOptions = (i) => {
+    const cur = modules[i]?.id || '';
+    const list = mods.filter((it) => it.id === cur || availableCount(c, R.robots, it.id) + (it.id === cur ? 1 : 0) > 0);
+    const chosen = cur && !list.some((it) => it.id === cur) ? d.itemMap.get(cur) : null;
+    if (chosen) list.unshift(chosen);
+    return `<select data-skel-mod="${i}"><option value="">—</option>${opts(list, cur, (it) => optLabel(it), (it) => it.id)}</select>`;
+  };
+  return `<section class="panel"><h2>Модульный скелет</h2>
+    <p class="meta">Скелет — броня в слоте [Exo], его модули занимают слоты [Acs]. Модули берутся из инвентаря и не могут использоваться дважды без второй копии.</p>
+    <div class="grid"><label>Скелет<select data-skel><option value="">— не выбран —</option>${opts(skeletons, current?.id || '', (it) => optLabel(it), (it) => it.id)}</select></label></div>
+    ${current ? `<p class="meta">Модулей: ${modules.length} / ${slots}. ${allowed ? '' : `Для использования нужен имплант: ${esc(ROBOT_IMPLANTS.skeleton.map((id) => d.itemMap.get(id)?.name || id).join(', '))}.`}</p>
+      <div class="grid">${Array.from({ length: slots }, (_, i) => `<label>Модуль ${i + 1}${moduleOptions(i)}</label>`).join('')}</div>` : '<p class="meta">Выберите модульный скелет из инвентаря.</p>'}
+  </section>`;
+}
+
 export function render(ctx) {
   const c = ctx.char, d = ctx.data;
+  if (!c.ro) c.ro = blankRO();
+  else c.ro = { ...blankRO(), ...c.ro };
+  if (!Array.isArray(c.robots)) c.robots = [];
   const race = d.raceMap.get(c.race), trait = d.traitMap.get(c.trait);
   const isNovus = race?.name === 'Новуссит';
   if (!isNovus && c.essence) c.essence = null;
@@ -503,16 +638,22 @@ export function render(ctx) {
         ${full ? `<p class="meta bad">Лимит навыков: ${r.skillLimit} (4 × ранг ${r.rankLevel}).</p>` : ''}
         ${r.skills.map((s) => skillRow(s, d)).join('') || '<p class="meta">Навыки не выбраны.</p>'}</section>
       <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d, c.class)).join('')}</section>
+      ${roPanel(c)}
     </div>
     <div class="char-col">
       ${inventoryPanel(c, d, r, race)}
+      ${robotPanel(c, d)}
+      ${skeletonPanel(c, d)}
       <section class="panel"><h2>Заметки</h2><textarea data-p="notes" rows="4" style="width:100%">${esc(c.notes)}</textarea></section>
     </div>
   </div>`;
 }
 
 export function bind(root, ctx) {
-  const c = ctx.char, done = () => { ctx.save(); ctx.rerender(); };
+  const c = ctx.char, d = ctx.data, done = () => { ctx.save(); ctx.rerender(); };
+  if (!c.ro) c.ro = blankRO();
+  if (!Array.isArray(c.robots)) c.robots = [];
+  if (!Array.isArray(c.equipment)) c.equipment = [];
   root.oninput = (e) => {
     const comboKind = e.target.dataset.comboSearch;
     if (comboKind) {
@@ -546,12 +687,51 @@ export function bind(root, ctx) {
       done();
       return;
     }
+    if (e.target.dataset.robotUse !== undefined) {
+      const id = e.target.dataset.robotUse;
+      if (e.target.checked) { if (!c.robots.includes(id)) c.robots.push(id); }
+      else c.robots = c.robots.filter((x) => x !== id);
+      done();
+      return;
+    }
+    if (e.target.dataset.robotHp !== undefined) {
+      const robot = R.robots.find((x) => x.id === e.target.dataset.robotHp);
+      if (robot) {
+        robot.currentHp = e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value) || 0));
+        saveRobots(R);
+        done();
+      }
+      return;
+    }
+    if (e.target.dataset.skel !== undefined) {
+      const id = e.target.value || null;
+      c.equipment = c.equipment.filter((x) => !isSkeleton(d.itemMap.get(x)));
+      if (id && isSkeleton(d.itemMap.get(id))) c.equipment.push(id);
+      done();
+      return;
+    }
+    if (e.target.dataset.skelMod !== undefined) {
+      const i = Number(e.target.dataset.skelMod) || 0;
+      const current = c.equipment.map((id) => d.itemMap.get(id)).filter(isRobotModule);
+      const old = current[i];
+      if (old) {
+        const idx = c.equipment.indexOf(old.id);
+        if (idx >= 0) c.equipment.splice(idx, 1);
+      }
+      if (e.target.value) c.equipment.push(e.target.value);
+      done();
+      return;
+    }
     if (e.target.dataset.p) {
       const path = e.target.dataset.p;
       set(c, path, e.target.type === 'checkbox' ? e.target.checked : fieldValue(e.target));
       if (path.startsWith('stats.')) {
         const key = path.slice(6), max = ctx.data.statMap.get(key)?.max || 10;
         c.stats[key] = Math.min(max, Math.max(1, Math.round(Number(c.stats[key]) || 1)));
+      }
+      if (path.startsWith('ro.')) {
+        const faction = path.slice(3), value = Number(c.ro?.[faction]);
+        c.ro[faction] = RO_VALUES.includes(value) ? value : 0;
       }
       if (path === 'race') {
         const allowed = allowedClasses(c.race, ctx.data.classes);
