@@ -6,6 +6,7 @@ import { G, partCount } from '../modules/autoshop/store.js';
 import { partsOf } from '../modules/autoshop/parts.js';
 import { summarize } from '../modules/autoshop/aggregate.js';
 import { comboList, groupedRows, closeCombos, openCombo, comboKeydown, installComboClose } from '../core/combo.js';
+import { fuzzyScore } from '../core/fuzzy.js';
 
 const OPEN = new Set(); // раскрытые описания навыков, чтобы состояние переживало перерисовку
 const OPEN_ROWS = new Set(); // раскрытые карточки предметов и карт
@@ -52,6 +53,9 @@ const slots = (rows) => `<div class="chips">${rows.map((s) => `<span class="lim 
 const optionLabel = (it) => optLabel(it);
 const abilityText = (a) => `${a.kind === 'mutation' ? 'Мутация' : 'Способность'}: ${a.name}${a.class_requirement ? ' (' + a.class_requirement + ')' : ''}`;
 const abilityRows = (d) => d.abilities.map((a) => ({ id: a.id, text: abilityText(a), group: a.kind === 'mutation' ? 'Мутации' : 'Способности' }));
+// На телефоне нативный select тоже получает группы, как выпадающий список на ПК.
+const abilityOptions = (d, id) => groupedRows(abilityRows(d)).map(([g, list]) =>
+  `<optgroup label="${esc(g)}">${list.map((r) => `<option value="${esc(r.id)}"${r.id === id ? ' selected' : ''}>${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
 const comboRows = (kind, c, d) => (kind.startsWith('abilities.') ? abilityRows(d) : adderRows(kind, c, d));
 
 // Состояние подвкладок и сортировки переживает перерисовку, как и OPEN у навыков.
@@ -71,6 +75,7 @@ const sdef = (name, get, cmp = cmpText) => ({ name, get, cmp });
 
 function adderRows(kind, c, d) {
   if (kind === 'skills') return d.skills.map((s) => ({ id: s.id, text: `${s.name} · ${d.statMap.get(s.stat)?.name || s.stat} ${s.tier}`, group: d.statMap.get(s.stat)?.name || 'Навыки' }));
+  if (kind === 'beasts') return beastAdderRows(c, d);
   if (kind === 'pockets') return d.items.map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
   if (kind === 'repository') return d.cards.map((x) => {
     const own = c.class && x.classes.includes(c.class), general = x.classes.includes('Общие');
@@ -134,11 +139,92 @@ const cardSortDefs = () => ({
   id: sdef('ID', (x) => x.cd?.id || ''),
 });
 
-const beastSortDefs = () => ({
-  name: sdef('Название', (x) => x.b?.name || ''),
-  group: sdef('Группа', (x) => x.b?.group_name || 'Без группы'),
-  id: sdef('ID', (x) => x.b?.id || ''),
-});
+const BEAST_GENERAL = 'Общие';
+const isPathBeast = (b) => /^Путь(?:\s|$)/i.test(String(b?.name || ''));
+const beastPaths = (d) => [...new Set(d.beasts.map((b) => b.group_name).filter((g) => g && g !== BEAST_GENERAL))];
+
+// Путь берём из сохранённого выбора, а у старых карточек — из взятой способности «Путь …».
+function beastPathOf(c, d) {
+  const paths = beastPaths(d);
+  if (paths.includes(c.beastPath)) return c.beastPath;
+  const chosen = new Set(Array.isArray(c.beasts) ? c.beasts : []);
+  const root = d.beasts.find((b) => chosen.has(b.id) && isPathBeast(b));
+  return root && paths.includes(root.group_name) ? root.group_name : '';
+}
+
+const beastNameKey = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, '');
+
+// Из строки «ТРЕБ: …» достаём названия способностей, которые нужно взять заранее.
+function beastPrereqNames(b) {
+  const line = (String(b.description || '').match(/ТРЕБ[^\n]*/i) || [''])[0];
+  if (!line) return [];
+  return line.split(/[;,.]/).map((part) => {
+    const m = part.match(/способност\S*\s*[-–—]\s*(.+)/i);
+    return m ? m[1].replace(/\s+/g, ' ').trim() : '';
+  }).filter(Boolean);
+}
+
+// В описаниях встречаются опечатки («исскуство») и разный регистр — сверяем нечётко.
+function findBeastByName(name, d) {
+  const key = beastNameKey(name);
+  const exact = d.beasts.find((b) => beastNameKey(b.name) === key);
+  if (exact) return exact;
+  let best = null, score = 0;
+  for (const b of d.beasts) {
+    const s = fuzzyScore(name, b.name);
+    if (s > score) { score = s; best = b; }
+  }
+  return score >= 0.6 ? best : null;
+}
+
+const beastPrereqs = (b, d) => beastPrereqNames(b).map((name) => findBeastByName(name, d) || { name, id: null });
+const beastMissing = (b, chosen, d) => beastPrereqs(b, d).filter((p) => !p.id || !chosen.has(p.id));
+
+// Добавлять можно способности выбранного пути и «Общие»; корень пути уже взят.
+function beastAdderRows(c, d) {
+  const path = beastPathOf(c, d);
+  const chosen = new Set(Array.isArray(c.beasts) ? c.beasts : []);
+  return d.beasts
+    .filter((b) => b.group_name === BEAST_GENERAL || (path && b.group_name === path))
+    .filter((b) => !chosen.has(b.id) && !isPathBeast(b))
+    .map((b) => {
+      const missing = beastMissing(b, chosen, d);
+      return {
+        id: b.id,
+        text: `${b.name}${missing.length ? ` · нужно: ${missing.map((p) => p.name).join(', ')}` : ''}`,
+        group: b.group_name || 'Без группы',
+        rank: b.group_name === path ? 0 : 1,
+        search: b.description || '',
+      };
+    });
+}
+
+function beastRow(b, i, chosen, d) {
+  const root = isPathBeast(b);
+  const prereqs = root ? [] : beastPrereqs(b, d);
+  const missing = root ? [] : beastMissing(b, chosen, d);
+  const reqText = prereqs.length
+    ? `<p class="meta">Требует: ${prereqs.map((p) => esc(p.name)).join(', ')}</p>` : '';
+  return `<details class="line beast${missing.length ? ' badline' : ''}" data-beast-row="${esc(b.id)}">
+    <summary><span class="grow"><b>${esc(b.name)}</b> <span class="meta">${esc(b.group_name || 'Без группы')}${missing.length ? ` · не хватает: ${missing.map((p) => esc(p.name)).join(', ')}` : ''}</span></span>
+      ${root ? '<span class="chip">путь</span>' : '<span class="chip">взято</span>'}</summary>
+    <div class="body"><p class="desc">${esc(b.description || 'Описание пока не заполнено.')}</p>${reqText}
+      ${root
+        ? '<p class="meta">Способность пути меняется вместе с выбранным путём.</p>'
+        : `<div class="ctl">${del('beasts', i)}</div>`}</div>
+  </details>`;
+}
+
+function beastList(c, d) {
+  const chosen = new Set(Array.isArray(c.beasts) ? c.beasts : []);
+  const rows = (Array.isArray(c.beasts) ? c.beasts : []).map((id, i) => {
+    const b = d.beasts.find((x) => x.id === id);
+    return b ? beastRow(b, i, chosen, d) : missing('beasts', i, id);
+  });
+  return rows.length
+    ? rows.join('')
+    : '<div class="empty">Способности не выбраны. Добавьте первую из меню выше.</div>';
+}
 
 function sortRows(kind, rows, defs) {
   const st = UI.sort[kind] || [];
@@ -207,17 +293,8 @@ function inventoryTabs(c, race) {
     { id: 'equipment', label: 'Экипировка', ok: true, count: c.equipment.length + (isKochevnik(c) && c.transport ? 1 : 0) },
     { id: 'implants', label: 'Импланты', ok: !!race?.implants_allowed, hint: 'только Поляриец и Новуссит', count: c.implants.length },
     { id: 'repository', label: 'Репозиторий', ok: race?.name === 'Новуссит', hint: 'только Новуссит', count: qty(c.repository) },
-    { id: 'beasts', label: 'Способности Зверя', ok: race?.name === 'Хуманиец' && c.class === 'Зверь', hint: 'Хуманиец с классом Зверь', wip: true, count: Array.isArray(c.beasts) ? c.beasts.length : 0 },
+    { id: 'beasts', label: 'Способности Зверя', ok: race?.name === 'Хуманиец' && c.class === 'Зверь', hint: 'Хуманиец с классом Зверь', count: Array.isArray(c.beasts) ? c.beasts.length : 0 },
   ];
-}
-
-function beastRow(b, chosen) {
-  const selected = chosen.has(b.id);
-  return `<details class="line beast${selected ? ' picked' : ''}">
-    <summary><span class="grow"><b>${esc(b.name)}</b> <span class="meta">${esc(b.group_name || 'Без группы')}</span></span>${selected ? '<span class="chip">взято</span>' : ''}</summary>
-    <div class="body"><label class="pick"><input type="checkbox" data-beast="${esc(b.id)}"${selected ? ' checked' : ''}> Взять способность</label>
-      <p class="desc">${esc(b.description || 'Описание пока не заполнено.')}</p></div>
-  </details>`;
 }
 
 const skillRow = (s, d) => {
@@ -234,7 +311,7 @@ const skillRow = (s, d) => {
 
 function abilityCombo(id, i, d) {
   const chosen = id ? d.abilityMap.get(id) : null, key = `abilities.${i}`, hint = `Слот ${i + 1}: пусто`;
-  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${opts(d.abilities, id, abilityText)}</select>
+  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${abilityOptions(d, id)}</select>
     <div class="combo grow" data-combo="${key}" data-combo-target="${key}">
       <button type="button" class="combo-btn" data-combo-btn="${key}" aria-haspopup="listbox" aria-expanded="false"><span data-combo-label="${key}">${esc(chosen ? abilityText(chosen) : hint)}</span><span class="combo-caret" aria-hidden="true">▾</span></button>
       <div class="combo-pop" data-combo-pop="${key}" hidden>
@@ -330,13 +407,28 @@ function inventoryPanel(c, d, r, race) {
     body = `<div class="inv-tools">${adder('repository', 'Найти карту…', c, d)}${sortBar('repository', defs)}</div>
       <div class="list">${rows.map(cardEntry).join('') || '<div class="empty">Репозиторий пуст. Добавьте первую карту.</div>'}</div>`;
   } else {
+    const path = beastPathOf(c, d);
+    if (path && c.beastPath !== path) c.beastPath = path;
     const chosen = new Set(Array.isArray(c.beasts) ? c.beasts : []);
-    const defs = beastSortDefs();
-    const rows = sortRows('beasts', d.beasts.map((b) => ({ b })), defs);
-    body = `<div class="wip-note"><span class="chip warn">WIP</span><span class="meta">Раздел в разработке: правила способностей Зверя ещё уточняются.</span></div>
+    // Способность пути берётся автоматически, даже если карточка старая и её ещё нет в списке.
+    const pathRoot = d.beasts.find((b) => b.group_name === path && isPathBeast(b));
+    if (pathRoot && !chosen.has(pathRoot.id)) {
+      c.beasts = [pathRoot.id, ...(Array.isArray(c.beasts) ? c.beasts : [])];
+      chosen.add(pathRoot.id);
+    }
+    const paths = beastPaths(d);
+    const pathButtons = paths.map((g) => {
+      const all = d.beasts.filter((b) => b.group_name === g);
+      const picked = all.filter((b) => chosen.has(b.id)).length;
+      return `<button type="button" role="tab" aria-selected="${path === g}" class="beast-path${path === g ? ' on' : ''}" data-beast-path="${esc(g)}">${esc(g)}<span class="tabcount">${picked}/${all.length}</span></button>`;
+    }).join('');
+    body = `<div class="beast-paths" role="tablist" aria-label="Путь зверя">${pathButtons}</div>
+      <p class="meta beast-path-note">${path
+        ? `Путь: <b>${esc(path)}</b>. В меню — способности этого пути и «Общие»; способность пути берётся автоматически. Требования указаны у каждой способности, недостающие подсвечиваются.`
+        : 'Выберите путь: от него зависит список способностей. «Общие» доступны всегда.'}</p>
       <div class="chips"><span class="chip">Взято способностей: ${chosen.size}</span><span class="chip">n для расчётов: ${chosen.size}</span></div>
-      <div class="inv-tools">${sortBar('beasts', defs)}</div>
-      <div class="list">${rows.map(({ b }) => beastRow(b, chosen)).join('') || '<div class="empty">В базе пока нет способностей зверя.</div>'}</div>`;
+      <div class="inv-tools">${adder('beasts', path ? 'Найти способность…' : 'Сначала выберите путь', c, d, !path)}</div>
+      <div class="list" data-beast-list>${beastList(c, d)}</div>`;
   }
 
   return `<section class="panel inventory">
@@ -412,7 +504,7 @@ export function bind(root, ctx) {
       const box = e.target.closest('[data-combo]');
       if (!box) return;
       const q = e.target.value.trim().toLowerCase();
-      const rows = comboRows(comboKind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group}`.toLowerCase().includes(q));
+      const rows = comboRows(comboKind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group || ''} ${r.search || ''}`.toLowerCase().includes(q));
       box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
       return;
     }
@@ -421,7 +513,7 @@ export function bind(root, ctx) {
     const box = e.target.closest('[data-addbox]'), select = box?.querySelector(`[data-in="${kind}"]`);
     if (!select) return;
     const q = e.target.value.trim().toLowerCase();
-    const rows = adderRows(kind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group}`.toLowerCase().includes(q));
+    const rows = adderRows(kind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group || ''} ${r.search || ''}`.toLowerCase().includes(q));
     const hint = box.dataset.hint || 'Выберите…';
     select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
@@ -454,18 +546,16 @@ export function bind(root, ctx) {
       if ((path === 'race' || path === 'class') && !isKochevnik(c)) c.transport = null;
       done(); return;
     }
-    if (e.target.dataset.itabSelect !== undefined) { UI.tab = e.target.value; ctx.rerender(); return; }
+    if (e.target.dataset.itabSelect !== undefined) {
+      UI.tab = e.target.value;
+      ctx.route?.(UI.tab);
+      ctx.rerender();
+      return;
+    }
     if (e.target.dataset.sort) {
       const kind = e.target.dataset.sort, prev = UI.sort[kind] || ['name', 1];
       UI.sort[kind] = [e.target.value, prev[1] === -1 ? -1 : 1];
       ctx.rerender(); return;
-    }
-    if (e.target.dataset.beast) {
-      const id = e.target.dataset.beast;
-      if (!Array.isArray(c.beasts)) c.beasts = [];
-      if (e.target.checked) { if (!c.beasts.includes(id)) c.beasts.push(id); }
-      else c.beasts = c.beasts.filter((x) => x !== id);
-      done();
     }
   };
   root.onclick = (e) => {
@@ -490,8 +580,25 @@ export function bind(root, ctx) {
       return;
     }
     if (!e.target.closest('[data-combo]')) closeCombos(root);
+    const beastPath = e.target.closest('[data-beast-path]');
+    if (beastPath) {
+      const path = beastPath.dataset.beastPath;
+      if (path !== c.beastPath) {
+        const general = new Set(ctx.data.beasts.filter((b) => b.group_name === BEAST_GENERAL).map((b) => b.id));
+        const rootBeast = ctx.data.beasts.find((b) => b.group_name === path && isPathBeast(b));
+        c.beastPath = path;
+        c.beasts = [...new Set([...(Array.isArray(c.beasts) ? c.beasts : []).filter((id) => general.has(id)), ...(rootBeast ? [rootBeast.id] : [])])];
+        done();
+      }
+      return;
+    }
     const itab = e.target.closest('[data-itab]');
-    if (itab) { UI.tab = itab.dataset.itab; ctx.rerender(); return; }
+    if (itab) {
+      UI.tab = itab.dataset.itab;
+      ctx.route?.(UI.tab);
+      ctx.rerender();
+      return;
+    }
     const dir = e.target.closest('[data-dir]');
     if (dir) {
       const kind = dir.dataset.dir, prev = UI.sort[kind] || ['name', 1];
@@ -519,6 +626,7 @@ export function bind(root, ctx) {
       c.skills.push({ id, level: 5 });
     }
     else if (kind === 'pockets' || kind === 'repository') { const e2 = c[kind].find((x) => x.id === id); if (e2) e2.qty++; else c[kind].push({ id, qty: 1 }); }
+    else if (kind === 'beasts') { if (!Array.isArray(c.beasts)) c.beasts = []; if (!c.beasts.includes(id)) c.beasts.push(id); }
     else c[kind].push(id);
     done();
   };
@@ -544,4 +652,14 @@ export function bind(root, ctx) {
     root.addEventListener('keydown', root._comboKeys);
   }
   installComboClose();
+}
+
+// Подссылки вида #char/beasts открывают нужную вкладку инвентаря.
+const TAB_IDS = new Set(['pockets', 'equipment', 'implants', 'repository', 'beasts']);
+export function setRoute(sub) {
+  if (TAB_IDS.has(sub)) UI.tab = sub;
+  else if (!sub) UI.tab = 'pockets';
+}
+export function currentRoute() {
+  return UI.tab;
 }

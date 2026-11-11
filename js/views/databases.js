@@ -1,4 +1,5 @@
 import { esc, num, RC, RARITIES, label, uniq, money } from '../core/util.js';
+import { fuzzyFilter } from '../core/fuzzy.js';
 import { RULES } from '../character/rules.js';
 import { partsOf, KIND_LABEL, STAT_LABEL, statChips, droneChips } from '../modules/autoshop/parts.js';
 
@@ -165,11 +166,18 @@ function sortBar(kind) {
     <button type="button" class="sortdir" data-dir="${kind}" title="Направление: ${dir > 0 ? 'по возрастанию' : 'по убыванию'}" aria-label="Направление сортировки: ${dir > 0 ? 'по возрастанию' : 'по убыванию'}">${dir > 0 ? '↑' : '↓'}</button></div>`;
 }
 
-function sortRows(kind, rows) {
+function sortRows(kind, rows, scores = null) {
   const defs = sortDefs(kind), st = S.sort[kind] || [];
   const key = defs[st[0]] ? st[0] : (defs.id ? 'id' : Object.keys(defs)[0]);
   const def = defs[key], sign = st[1] === -1 ? -1 : 1;
-  return [...rows].sort((a, b) => sign * def.cmp(def.get(a), def.get(b)));
+  return [...rows].sort((a, b) => {
+    // При поиске сначала идут самые точные совпадения, затем — выбранная сортировка.
+    if (scores) {
+      const byScore = (scores.get(b) || 0) - (scores.get(a) || 0);
+      if (byScore) return byScore;
+    }
+    return sign * def.cmp(def.get(a), def.get(b));
+  });
 }
 
 function rulesRows(d) {
@@ -245,27 +253,27 @@ const matches = (row, f) => Object.entries(f).every(([k, v]) => {
 
 // Собирает отфильтрованный и отсортированный список для текущей вкладки.
 function collect(d) {
-  const q = S.q.trim().toLowerCase(), f = S.filters[S.tab] || {};
-  const hit = (text) => !q || String(text ?? '').toLowerCase().includes(q);
-  let rows, draw, sortKind = null;
+  const q = S.q.trim(), f = S.filters[S.tab] || {};
+  let rows, draw, sortKind = null, scores = null;
   if (S.tab === 'items') {
-    rows = d.items.filter((i) => hit(`${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`)
-      && matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f));
+    ({ rows, scores } = fuzzyFilter(d.items.filter((i) => matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f)),
+      q, (i) => `${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`));
     draw = itemRow; sortKind = 'items';
   } else if (S.tab === 'cards') {
-    rows = d.cards.filter((c) => hit(`${c.name} ${c.mechanics} ${c.school} ${arr(c.classes)} ${c.essence || ''}`)
-      && matches({ rar: c.rarity, classes: c.classes, school: c.school, essence: c.essence, creation: c.creation, consumable: c.consumable ? '1' : '0', iconic: c.iconic ? '1' : '0' }, f));
+    ({ rows, scores } = fuzzyFilter(d.cards.filter((c) => matches({ rar: c.rarity, classes: c.classes, school: c.school, essence: c.essence, creation: c.creation, consumable: c.consumable ? '1' : '0', iconic: c.iconic ? '1' : '0' }, f)),
+      q, (c) => `${c.name} ${c.mechanics} ${c.school} ${arr(c.classes)} ${c.essence || ''}`));
     draw = cardRow; sortKind = 'cards';
   } else if (S.tab === 'parts') {
-    rows = partsOf(d).filter((p) => hit(`${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`)
-      && matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f));
+    ({ rows, scores } = fuzzyFilter(partsOf(d).filter((p) => matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f)),
+      q, (p) => `${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`));
     draw = partRow; sortKind = 'parts';
   } else {
-    rows = rulesRows(d).filter((r) => hit(`${r.name} ${r.description} ${r.detail} ${r.group} ${r.sub}`)
-      && matches({ group: r.group, sub: r.sub, rar: r.rarity }, f));
+    ({ rows, scores } = fuzzyFilter(rulesRows(d).filter((r) => matches({ group: r.group, sub: r.sub, rar: r.rarity }, f)),
+      q, (r) => `${r.name} ${r.description} ${r.detail} ${r.group} ${r.sub}`));
     draw = ruleRow; sortKind = 'rules';
   }
-  if (sortKind) rows = sortRows(sortKind, rows);
+  // При поиске первична точность совпадения, выбранная сортировка — вторична.
+  if (sortKind) rows = sortRows(sortKind, rows, scores);
   return { rows, draw };
 }
 
@@ -357,6 +365,7 @@ export function bind(root, ctx) {
     resetShown(id);
     const f = S.filters[id];
     if (f) for (const k of Object.keys(f)) f[k] = '';
+    ctx.route?.(id);
     ctx.rerender();
     if (typeof window !== 'undefined') window.scrollTo(0, 0);
   };
@@ -410,4 +419,14 @@ export function bind(root, ctx) {
   };
   observeMore();
   root._dbObserver = io;
+}
+
+// Подссылки вида #db/cards: раздел базы открывается напрямую.
+const TAB_IDS = new Set(TABS.map(([id]) => id));
+export function setRoute(sub) {
+  if (TAB_IDS.has(sub)) S.tab = sub;
+  else if (!sub) S.tab = TABS[0][0];
+}
+export function currentRoute() {
+  return S.tab;
 }

@@ -2,7 +2,7 @@ const KEY = 'infusion.char';
 export const blankChar = () => ({
   v: 1, name: '', player: '', race: '0x002', rank: 1, class: 'Соло', trait: null, essence: null,
   stats: { strength: 5, dexterity: 5, intelligence: 5, will: 5, charisma: 5, perception: 5, technique: 5, luck: 5, constitution: 5 },
-  skills: [], abilities: [], pockets: [], equipment: [], implants: [], repository: [], beasts: [], storage: null, notes: '', clinicImplants: [],
+  skills: [], abilities: [], pockets: [], equipment: [], implants: [], repository: [], beasts: [], beastPath: null, storage: null, notes: '', clinicImplants: [],
   transport: null,
   overrides: { freePoints: null, hpMax: null, kronosMax: null, shards: {} },
 });

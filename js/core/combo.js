@@ -20,8 +20,11 @@ export function groupedRows(rows) {
 
 export function comboList(rows) {
   if (!rows.length) return '<p class="combo-empty">Ничего не найдено</p>';
+  const opt = (r) => `<button type="button" class="combo-opt" role="option" data-combo-opt="${esc(r.id)}">${esc(r.text)}</button>`;
+  // Плоский режим: строки без группы выводятся в исходном порядке (детали Кочевника — по ID).
+  if (rows.every((r) => !r.group)) return rows.map(opt).join('');
   return groupedRows(rows).map(([g, list]) =>
-    `<div class="combo-group"><div class="combo-group-name">${esc(g)}</div>${list.map((r) => `<button type="button" class="combo-opt" role="option" data-combo-opt="${esc(r.id)}">${esc(r.text)}</button>`).join('')}</div>`).join('');
+    `<div class="combo-group"><div class="combo-group-name">${esc(g)}</div>${list.map(opt).join('')}</div>`).join('');
 }
 
 export function closeComboPop(pop) {

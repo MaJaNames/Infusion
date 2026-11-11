@@ -73,7 +73,7 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:.2rem 1rem;margin:.5re
 .combo-search{width:100%;min-width:0}
 .combo-list{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:.1rem}
 .combo-group-name{padding:.35rem .45rem .1rem;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
-.combo-opt{display:block;width:100%;min-height:0;padding:.4rem .45rem;text-align:left;background:none;border:0;border-radius:5px;cursor:pointer}
+.combo-opt{display:block;width:100%;flex:0 0 auto;min-height:0;padding:.4rem .45rem;text-align:left;background:none;border:0;border-radius:5px;cursor:pointer}
 .combo-opt:hover,.combo-opt:focus-visible{background:var(--bg)}
 .combo-empty{margin:0;padding:.6rem .45rem;color:var(--mute);font-size:.85rem}
 .line .combo{max-width:44rem}
@@ -148,6 +148,24 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .row summary .clinic-toggle input{width:auto;min-height:0}
 .beast.picked{border-color:var(--acc)}
 .beast.picked>summary{background:var(--bg)}
+.beast-paths{display:flex;gap:.35rem;flex-wrap:wrap;margin:.2rem 0 .55rem}
+.beast-path{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .7rem;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--mute);cursor:pointer}
+.beast-path:hover{border-color:var(--mute)}
+.beast-path.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+.beast-path .tabcount{font-size:.72rem;opacity:.8;border:1px solid currentColor;border-radius:99px;padding:0 .35rem;line-height:1.3}
+.beast-path-note{margin:.1rem 0 .45rem}
+.beast-search{max-width:32rem}
+
+/* ===== Калькулятор вероятностей ===== */
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(160px,100%),1fr));gap:.6rem;margin:.2rem 0 .8rem;align-items:end}
+.calc-grid label{display:grid;gap:.2rem;font-size:.85rem;color:var(--mute);min-width:0}
+.calc-grid input,.calc-grid select{width:100%}
+.calc-check{display:flex!important;align-items:center;gap:.5rem;padding:.45rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer;min-height:2.5rem}
+.calc-check input{width:auto;flex:0 0 auto}
+.calc-out{margin:.3rem 0 .5rem}
+.calc-modes{margin:.5rem 0 .2rem}
+.calc-modes .chip.total{border-color:var(--acc);color:var(--acc);font-weight:600}
+.calc-note{max-width:80ch}
 
 /* ===== Автомастерская: гараж, сборка и итоги ===== */
 .garage-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap}
@@ -309,6 +327,8 @@ button.stat-card:hover{border-color:var(--mute)}
 :root[data-ui=mobile] .part-card .price{text-align:left}
 :root[data-ui=mobile] .garage-notes{width:100%}
 :root[data-ui=mobile] .garage-picks{grid-template-columns:1fr;gap:.5rem}
+:root[data-ui=mobile] .calc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+:root[data-ui=mobile] .calc-check{grid-column:1/-1}
 :root[data-ui=mobile] .transport-slot>label{max-width:none;width:100%}
 body.drawer-open{overflow:hidden}
 

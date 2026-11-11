@@ -1,4 +1,4 @@
-import { esc, num, label, opts, set, fieldValue, optLabel, money, RC, RARITIES } from '../../core/util.js';
+import { esc, num, label, opts, set, fieldValue, optLabel, money, RC } from '../../core/util.js';
 import { partsOf, KIND_LABEL, statChips, droneChips } from './parts.js';
 import { summarize } from './aggregate.js';
 import { G, MAX_NAME, blankBuild as blank, newId, currentVehicle as current, partCount, saveGarage, exportGarage, importGarage } from './store.js';
@@ -20,8 +20,9 @@ const itemsForPath = (path, data, build) => {
   const items = parts.filter((p) => p.stats.kind === kind);
   return kind === 'wheels' ? items.filter((p) => wheelFits(parts, build, p)) : items;
 };
+// Детали в меню идут в порядке базы (по ID), без группировки по редкости.
 const rowsForPath = (path, data, build) => itemsForPath(path, data, build).map((p) => ({
-  id: p.item.id, text: optLabel(p.item), group: p.item.rarity || 'Без редкости', rank: Math.max(0, RARITIES.indexOf(p.item.rarity)),
+  id: p.item.id, text: optLabel(p.item),
 }));
 const fixWheels = (build, data) => {
   const parts = partsOf(data);
@@ -131,7 +132,7 @@ export function render(ctx) {
       <button type="button" class="danger" data-del-vehicle${G.vehicles.length <= 1 ? ' disabled' : ''}>Удалить транспорт</button>
     </div>
     <label class="garage-notes">Заметки
-      <textarea rows="3" data-vehicle-notes placeholder="Эффекты, повреждения, договорённости…">${esc(v.notes || '')}</textarea>
+      <textarea rows="3" data-vehicle-notes placeholder="Эффекты, повреждения, любой другой текст...">${esc(v.notes || '')}</textarea>
     </label>
   </section>
   <section class="panel">
@@ -229,7 +230,7 @@ export function bind(root, ctx) {
       const box = e.target.closest('[data-combo]');
       if (!box) return;
       const q = e.target.value.trim().toLowerCase();
-      const rows = rowsForPath(comboPath, ctx.data, current().build).filter((r) => !q || `${r.text} ${r.group}`.toLowerCase().includes(q));
+      const rows = rowsForPath(comboPath, ctx.data, current().build).filter((r) => !q || r.text.toLowerCase().includes(q));
       box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
       return;
     }

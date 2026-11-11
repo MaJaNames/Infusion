@@ -1,6 +1,8 @@
 // node tests/smoke.test.mjs — рисует все вкладки на данных data.json и проверяет расчёты персонажа.
 import { readFileSync } from 'node:fs';
 import { indexData, optLabel, num, esc } from '../js/core/util.js';
+import { fuzzyScore } from '../js/core/fuzzy.js';
+import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
 import { blankChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
 import { classAllowed, RULES } from '../js/character/rules.js';
@@ -8,6 +10,7 @@ import { helpBlock } from '../js/core/help.js';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
+import * as settings from '../js/views/settings.js';
 import * as shop from '../js/modules/autoshop/view.js';
 import { partsOf } from '../js/modules/autoshop/parts.js';
 import { summarize } from '../js/modules/autoshop/aggregate.js';
@@ -62,6 +65,8 @@ check('инвентарь: комбобокс с поиском внутри', i
 const comboTexts = [...invHtml.matchAll(/data-combo-opt="[^"]*">([^<]*)<\/button>/g)].map((m) => m[1]);
 check('комбобокс: список не дублируется в HTML', comboTexts.length === 0);
 check('способности: комбобокс с поиском', invHtml.includes('data-combo="abilities.0"') && invHtml.includes('class="grow ability-native" data-p="abilities.0"') && invHtml.includes(`Способность: ${d.abilities[0].name}`));
+const abilitySelect = invHtml.match(/<select class="grow ability-native"[\s\S]*?<\/select>/)?.[0] || '';
+check('способности: нативный список с группами', abilitySelect.includes('<optgroup label="Способности">') && abilitySelect.includes('<optgroup label="Мутации">'));
 check('инвентарь: мобильные подвкладки', invHtml.includes('data-itab-select'));
 check('хранилище: слот [K], база 20 и счётчик позиций', blankChar().storage === null && RULES.pocketLimit === 20 && invHtml.includes('data-p="storage"') && invHtml.includes('Позиций: 12 / 20'));
 const storageItem = d.items.find((i) => i.tag === 'K' && /вер\. 1$/.test(i.name));
@@ -159,6 +164,38 @@ dbRoot.onchange({ target: { dataset: { k: 'organization' }, value: 'Хиллз' 
 const hillz = d.items.filter((i) => i.organization === 'Хиллз').length;
 check('база: фильтр по организации работает', dbRes.innerHTML.includes(`Найдено: ${hillz}`), hillz);
 check('база: в описании нет порядкового номера строки', !/<div class="body">\s*\d/.test(dbRes.innerHTML), dbRes.innerHTML.match(/<div class="body">\s*\d/)?.[0]);
+
+// Нечёткий поиск: часть слова, опечатка и порядок по точности.
+check('fuzzy: часть слова, опечатка и отсутствие совпадений', fuzzyScore('рем', 'D.P.L Рем-перчатка') > 0 && fuzzyScore('перчатко', 'D.P.L Рем-перчатка') > 0 && fuzzyScore('xyz', 'D.P.L Рем-перчатка') === 0);
+check('fuzzy: дефис и точки в запросе', fuzzyScore('рем-перчатка', 'D.P.L Рем-перчатка') > 0 && fuzzyScore('D.P.L', 'D.P.L Рем-перчатка') === 1 && fuzzyScore('-', 'D.P.L Рем-перчатка') === 0);
+clickDbTab('items');
+dbRoot.oninput({ target: { dataset: { k: 'q' }, value: 'рем' } });
+check('база: нечёткий поиск находит «Рем-перчатку»', dbRes.innerHTML.includes('Рем-перчатка'));
+const firstHit = (dbRes.innerHTML.match(/<b>([^<]+)<\/b>/g) || [])[0] || '';
+check('база: лучшие совпадения идут первыми', /Рем-перчатка/.test(firstHit), firstHit);
+dbRoot.oninput({ target: { dataset: { k: 'q' }, value: 'перчатко' } });
+check('база: нечёткий поиск прощает опечатку', dbRes.innerHTML.includes('Рем-перчатка'));
+dbRoot.oninput({ target: { dataset: { k: 'q' }, value: '' } });
+
+// Калькулятор вероятностей: строка 2 из xlsx.
+const calcBase = probability({ stat: 7, bonus: 0, target: 81, mode: 'none' });
+const calcAdv = probability({ stat: 7, bonus: 0, target: 81, mode: 'adv' });
+const calcDis = probability({ stat: 7, bonus: 0, target: 81, mode: 'dis' });
+check('калькулятор: пример из таблицы — 68 и 33%', calcBase.result === 68 && Math.abs(calcBase.chance - 0.33) < 1e-9, `${calcBase.result}/${calcBase.chance}`);
+check('калькулятор: преимущество и помеха', Math.abs(calcAdv.chance - (1 - 0.67 ** 2)) < 1e-9 && Math.abs(calcDis.chance - 0.33 ** 2) < 1e-9, `${calcAdv.chance}/${calcDis.chance}`);
+check('калькулятор: вер 15 = цель 86', targetFromVer(15) === 86 && verFromTarget(86) === 15);
+utilities.setRoute('calc');
+const calcHtml = utilities.render(ctx);
+check('утилиты: калькулятор с полем «Вер» и без «Атаки»', ['data-calc="stat"', 'data-calc="bonus"', 'data-calc="target"', 'data-calc="ver"', 'data-calc="mode"', 'data-calc-out', 'Результат D100'].every((x) => calcHtml.includes(x)) && !calcHtml.includes('data-calc="attack"') && !calcHtml.includes('Формула'));
+check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
+utilities.setRoute('shop');
+databases.setRoute('cards');
+check('подссылки: #db/cards', databases.currentRoute() === 'cards');
+databases.setRoute('items');
+character.setRoute('repository');
+check('подссылки: #char/repository', character.currentRoute() === 'repository');
+character.setRoute('pockets');
+
 check('утилиты: мобильные вкладки', utilities.render(ctx).includes('data-tab-select'));
 
 // Автомастерская: несколько Кочевников в гараже.
@@ -169,6 +206,10 @@ check('автомастерская: гараж и переключение ма
 check('автомастерская: у последней машины удаление недоступно', /data-del-vehicle disabled/.test(shopHtml));
 check('автомастерская: группы деталей и карточки итогов', ['Корпус и ходовая', 'Оружие', 'Модули', 'Скидка'].every((x) => shopHtml.includes(x)) && shopHtml.includes('class="stat-grid"') && shopHtml.includes('stat-card cost'));
 check('автомастерская: выбор детали с поиском, как в «Персонаже»', ['data-combo="body"', 'data-combo-search="body"', 'class="combo-pop"', 'data-combo-list="body"', 'garage-picks'].every((x) => shopHtml.includes(x)));
+const bodyParts = partsOf(d).filter((p) => p.stats.kind === 'body');
+const bodySelect = shopHtml.match(/<select data-b="body"[\s\S]*?<\/select>/)?.[0] || '';
+const bodyIds = [...bodySelect.matchAll(/<option value="([^"]+)"/g)].map((m) => m[1]);
+check('автомастерская: детали по ID, без групп редкости', bodyIds.length === bodyParts.length && bodyIds.every((id, i) => id === bodyParts[i].item.id) && !bodySelect.includes('<optgroup'), bodyIds.join(','));
 check('автомастерская: выгрузка гаража и поле текущего ОЗ', shopHtml.includes('data-export-garage') && shopHtml.includes('data-b="currentHp"') && shopHtml.includes('Текущее ОЗ'));
 shopRoot.onchange({ target: { dataset: { b: 'currentHp' }, value: '42', type: 'number', tagName: 'INPUT' } });
 const hpHtml = utilities.render(ctx);
@@ -281,6 +322,8 @@ check('подсказки: списки вместо сплошного текс
 check('подсказки: гараж, текущее ОЗ и клиника', helpBlock('util').includes('вкладками') && helpBlock('util').includes('Текущее ОЗ') && helpBlock('util').includes('Выгрузка') && helpBlock('char').includes('Клиника:'));
 const swSource = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const cssSource = readFileSync(new URL('../css/app.css', import.meta.url), 'utf8');
+check('комбобокс: строки не сжимаются в плоском списке', /\.combo-opt\{[^}]*flex:0 0 auto/.test(cssSource));
 check('обновление интерфейса: service worker и свежие файлы', swSource.includes("cache: 'no-store'") && indexSource.includes("register('sw.js'"));
 check('иконка сайта: paw.webp', indexSource.includes('rel="icon"') && indexSource.includes('assets/icons/paw.webp'));
 check('обновление интерфейса: данные персонажа не затрагиваются', !swSource.includes('localStorage') && !swSource.includes('indexedDB'));
@@ -305,8 +348,35 @@ const repSelect = repHtml.match(/<select data-in="repository"[\s\S]*?<\/select>/
 const repGroups = [...repSelect.matchAll(/<optgroup label="([^"]+)"/g)].map((m) => m[1]);
 check('репозиторий: выбранный класс → общие → остальные', repGroups[0] === 'Трансгрессор' && repGroups[1] === 'Общие' && repGroups[2] === 'Другие классы', repGroups.join(' → '));
 clickTab('beasts');
-const beastHtml = character.render({ ...ctx, char: { ...c, race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id] } });
-check('инвентарь: способности Зверя (WIP)', beastHtml.includes('Способности Зверя') && beastHtml.includes('WIP') && beastHtml.includes(d.beasts[0].name));
+const beastGeneral = d.beasts.find((b) => b.group_name === 'Общие');
+const beastOther = d.beasts.find((b) => b.group_name === 'Сокрытие' && !/^Путь/.test(b.name));
+const beastChar = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id] };
+const beastHtml = character.render({ ...ctx, char: beastChar });
+check('звери: путь определяется по взятой способности', beastHtml.includes('data-beast-path="Хищник"') && beastHtml.includes('class="beast-path on"'));
+check('звери: способность пути в списке, общие — в меню', beastHtml.includes(`data-beast-row="${d.beasts[0].id}"`) && beastHtml.includes(beastGeneral.name));
+const beastSelect = beastHtml.match(/<select data-in="beasts"[\s\S]*?<\/select>/)?.[0] || '';
+check('звери: способности чужого пути скрыты', beastSelect.includes('value=""') && !beastSelect.includes(`value="${beastOther.id}"`));
+check('звери: выбор через adder с поиском и группами', beastHtml.includes('data-combo="beasts"') && beastHtml.includes('data-in="beasts"') && beastHtml.includes('data-search="beasts"') && beastHtml.includes('<optgroup label="Общие">'));
+check('звери: корень пути не удаляется, требования видны', !beastHtml.includes('data-del="beasts.0"') && beastHtml.includes('путь') && beastHtml.includes('нужно: Кровавая ярость'));
+
+const bc = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id, beastGeneral.id], beastPath: 'Хищник' };
+const bRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(bRoot, { ...ctx, char: bc });
+bRoot.onclick({ target: { closest: (s) => s === '[data-beast-path]' ? { dataset: { beastPath: 'Сокрытие' } } : null } });
+const hideRoot = d.beasts.find((b) => b.group_name === 'Сокрытие' && /^Путь/.test(b.name));
+check('звери: смена пути оставляет общие и берёт корень пути', bc.beastPath === 'Сокрытие' && bc.beasts.includes(hideRoot.id) && bc.beasts.includes(beastGeneral.id) && !bc.beasts.includes(d.beasts[0].id));
+
+const bcAdd = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id], beastPath: 'Хищник' };
+const addRoot = { addEventListener() {}, querySelector: (s) => (s === '[data-in="beasts"]' ? { value: beastGeneral.id } : null) };
+character.bind(addRoot, { ...ctx, char: bcAdd });
+addRoot.onclick({ target: { closest: (s) => s === '[data-add]' ? { dataset: { add: 'beasts' } } : null } });
+check('звери: добавление способности из меню', bcAdd.beasts.includes(beastGeneral.id), bcAdd.beasts.join(','));
+
+const bcDel = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id, beastGeneral.id], beastPath: 'Хищник' };
+const delRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(delRoot, { ...ctx, char: bcDel });
+delRoot.onclick({ target: { closest: (s) => s === '[data-del]' ? { dataset: { del: 'beasts.1' } } : null } });
+check('звери: удаление строки', !bcDel.beasts.includes(beastGeneral.id) && bcDel.beasts.includes(d.beasts[0].id), bcDel.beasts.join(','));
 
 // Транспорт в экипировке Кочевника.
 const legacyGarage = normGarage(null, { body: bodyPart.item.id, wheels: null, engine: null, weapons: [], modules: [], discount: 0 });
@@ -330,6 +400,24 @@ c.transport = imported.id;
 fakeRoot.onchange({ target: { dataset: { p: 'class' }, value: 'Соло', type: 'select-one', tagName: 'SELECT' } });
 check('экипировка: при смене класса транспорт сбрасывается', c.transport === null);
 check('подсказки: транспорт, импорт и заметки', helpBlock('util').includes('Загрузить') && helpBlock('util').includes('Заметки') && helpBlock('util').includes('Текущее ОЗ') && helpBlock('util').includes('Элиада') && helpBlock('char').includes('Транспорт'));
+check('подсказки: нечёткий поиск, звери и калькулятор', helpBlock('db').includes('нечёткий') && helpBlock('char').includes('выберите путь') && helpBlock('util').includes('Калькулятор вероятностей') && helpBlock('settings').includes('Сбросить кэш'));
+
+const settingsHtml = settings.render(ctx);
+const systemAt = settingsHtml.indexOf('Системные');
+check('настройки: сброс персонажа выше экспорта, кэш — в «Системных»',
+  settingsHtml.includes('data-a="reset-char"') && settingsHtml.includes('data-a="reset-cache"')
+  && settingsHtml.indexOf('data-a="reset-char"') < settingsHtml.indexOf('data-a="export"')
+  && systemAt > 0 && settingsHtml.indexOf('data-a="reset-cache"') > systemAt);
+let settingsSaved = 0, settingsRendered = 0;
+const settingsCtx = { ...ctx, char: { ...c }, save() { settingsSaved++; }, rerender() { settingsRendered++; } };
+const settingsRoot = { querySelector: () => ({ textContent: '' }) };
+settings.bind(settingsRoot, settingsCtx);
+// Как в браузере: data-theme висит на <html>, поэтому closest('[data-theme]') ловит любой клик.
+// Кнопка темы должна искаться именно как button[data-theme].
+settingsRoot.onclick({ target: { closest: (s) => s === '[data-a]' ? { dataset: { a: 'reset-char' } }
+  : s === 'button[data-theme]' ? null
+    : s === '[data-theme]' ? { dataset: { theme: 'auto' } } : null } });
+check('настройки: «Сбросить персонажа» чистит только карточку', settingsSaved === 1 && settingsRendered === 1 && settingsCtx.char.name === '' && settingsCtx.char.beasts.length === 0);
 
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');
 process.exit(fail ? 1 : 0);

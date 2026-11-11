@@ -1,4 +1,6 @@
-# Локальный сервер
+# Сервис Фрейз
+/fraiseservice
+rpg_generator.py
 localserver.bat
 
 # Зависимости и логи Node (сборки нет, но npm может появиться)
@@ -36,3 +38,4 @@ _mobile-check.html
 
 # Выгрузка гаража из «Автомастерской»
 transport.json
+
