@@ -5,7 +5,7 @@ import { esc } from './util.js';
 const cmpText = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'ru');
 const MAX_POP = 352; // выше списка не раскрываем: меню не растягивается на весь экран
 
-// Группы сортируются по rank (важность), внутри группы — по названию.
+// Группы сортируются по rank (важность), внутри группы — по order (например, ID), иначе по названию.
 export function groupedRows(rows) {
   const groups = new Map();
   for (const r of rows) {
@@ -15,7 +15,7 @@ export function groupedRows(rows) {
   }
   return [...groups.entries()]
     .sort(([a, la], [b, lb]) => ((la[0]?.rank ?? 0) - (lb[0]?.rank ?? 0)) || cmpText(a, b))
-    .map(([g, list]) => [g, [...list].sort((a, b) => cmpText(a.text, b.text))]);
+    .map(([g, list]) => [g, [...list].sort((a, b) => cmpText(a.order ?? a.text, b.order ?? b.text))]);
 }
 
 export function comboList(rows) {

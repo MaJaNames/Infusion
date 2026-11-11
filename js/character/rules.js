@@ -22,7 +22,7 @@ export const skillAvailable = (stat, tier) => stat >= tier;
 // only — разрешённый список, except — запрещённые классы (остальные доступны).
 export const CLASS_RESTRICTIONS = Object.freeze({
   '0x001': Object.freeze({ only: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант', 'Свой']) }), // Новуссит
-  '0x002': Object.freeze({ except: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант']) }), // Поляриец
+  '0x002': Object.freeze({ except: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант', 'Зверь']) }), // Поляриец
   '0x003': Object.freeze({ only: Object.freeze(['Кочевник', 'Зверь', 'Рокер']) }), // Хуманиец
 });
 

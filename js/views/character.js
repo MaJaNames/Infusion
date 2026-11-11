@@ -52,11 +52,26 @@ const missing = (kind, i, id) => `<div class="line miss">Записи ${esc(id)}
 const slots = (rows) => `<div class="chips">${rows.map((s) => `<span class="lim ${s.status === 'ОК' ? 'o' : s.status === 'Занято' ? 'b' : s.status === 'Свободно' ? 'f' : 'x2'}">${esc(s.tag)} ${s.used}/${s.limit} · ${s.status}</span>`).join('')}</div>`;
 const optionLabel = (it) => optLabel(it);
 const abilityText = (a) => `${a.kind === 'mutation' ? 'Мутация' : 'Способность'}: ${a.name}${a.class_requirement ? ' (' + a.class_requirement + ')' : ''}`;
-const abilityRows = (d) => d.abilities.map((a) => ({ id: a.id, text: abilityText(a), group: a.kind === 'mutation' ? 'Мутации' : 'Способности' }));
+// Порядок групп: общие → способности текущего класса → мутации → способности других классов.
+// Внутри группы — по ID.
+function abilityRows(d, cls) {
+  return d.abilities.map((a) => {
+    const mutation = a.kind === 'mutation';
+    const general = !mutation && !a.class_requirement;
+    const own = !mutation && !!cls && a.class_requirement === cls;
+    return {
+      id: a.id,
+      text: abilityText(a),
+      group: mutation ? 'Мутации' : general ? 'Общие' : own ? cls : 'Другие классы',
+      rank: mutation ? 2 : general ? 0 : own ? 1 : 3,
+      order: a.id,
+    };
+  });
+}
 // На телефоне нативный select тоже получает группы, как выпадающий список на ПК.
-const abilityOptions = (d, id) => groupedRows(abilityRows(d)).map(([g, list]) =>
+const abilityOptions = (d, id, cls) => groupedRows(abilityRows(d, cls)).map(([g, list]) =>
   `<optgroup label="${esc(g)}">${list.map((r) => `<option value="${esc(r.id)}"${r.id === id ? ' selected' : ''}>${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
-const comboRows = (kind, c, d) => (kind.startsWith('abilities.') ? abilityRows(d) : adderRows(kind, c, d));
+const comboRows = (kind, c, d) => (kind.startsWith('abilities.') ? abilityRows(d, c.class) : adderRows(kind, c, d));
 
 // Состояние подвкладок и сортировки переживает перерисовку, как и OPEN у навыков.
 const UI = {
@@ -309,9 +324,9 @@ const skillRow = (s, d) => {
   </details>`;
 };
 
-function abilityCombo(id, i, d) {
+function abilityCombo(id, i, d, cls) {
   const chosen = id ? d.abilityMap.get(id) : null, key = `abilities.${i}`, hint = `Слот ${i + 1}: пусто`;
-  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${abilityOptions(d, id)}</select>
+  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${abilityOptions(d, id, cls)}</select>
     <div class="combo grow" data-combo="${key}" data-combo-target="${key}">
       <button type="button" class="combo-btn" data-combo-btn="${key}" aria-haspopup="listbox" aria-expanded="false"><span data-combo-label="${key}">${esc(chosen ? abilityText(chosen) : hint)}</span><span class="combo-caret" aria-hidden="true">▾</span></button>
       <div class="combo-pop" data-combo-pop="${key}" hidden>
@@ -487,7 +502,7 @@ export function render(ctx) {
         ${adder('skills', full ? `Лимит навыков: ${r.skillLimit}` : 'Найти навык…', c, d, full)}
         ${full ? `<p class="meta bad">Лимит навыков: ${r.skillLimit} (4 × ранг ${r.rankLevel}).</p>` : ''}
         ${r.skills.map((s) => skillRow(s, d)).join('') || '<p class="meta">Навыки не выбраны.</p>'}</section>
-      <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d)).join('')}</section>
+      <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d, c.class)).join('')}</section>
     </div>
     <div class="char-col">
       ${inventoryPanel(c, d, r, race)}

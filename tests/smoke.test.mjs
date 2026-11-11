@@ -66,7 +66,8 @@ const comboTexts = [...invHtml.matchAll(/data-combo-opt="[^"]*">([^<]*)<\/button
 check('комбобокс: список не дублируется в HTML', comboTexts.length === 0);
 check('способности: комбобокс с поиском', invHtml.includes('data-combo="abilities.0"') && invHtml.includes('class="grow ability-native" data-p="abilities.0"') && invHtml.includes(`Способность: ${d.abilities[0].name}`));
 const abilitySelect = invHtml.match(/<select class="grow ability-native"[\s\S]*?<\/select>/)?.[0] || '';
-check('способности: нативный список с группами', abilitySelect.includes('<optgroup label="Способности">') && abilitySelect.includes('<optgroup label="Мутации">'));
+const abilityGroups = [...abilitySelect.matchAll(/<optgroup label="([^"]+)"/g)].map((m) => m[1]);
+check('способности: группы «Общие → класс → Мутации → другие классы»', abilityGroups.join(' → ') === 'Общие → Соло → Мутации → Другие классы', abilityGroups.join(' → '));
 check('инвентарь: мобильные подвкладки', invHtml.includes('data-itab-select'));
 check('хранилище: слот [K], база 20 и счётчик позиций', blankChar().storage === null && RULES.pocketLimit === 20 && invHtml.includes('data-p="storage"') && invHtml.includes('Позиций: 12 / 20'));
 const storageItem = d.items.find((i) => i.tag === 'K' && /вер\. 1$/.test(i.name));
@@ -311,10 +312,10 @@ const classSelect = (html) => html.match(/<select data-p="class">([\s\S]*?)<\/se
 const polar = classSelect(character.render({ ...ctx, char: { ...c, race: '0x002', class: 'Соло' } }));
 const novus = classSelect(character.render({ ...ctx, char: { ...c, race: '0x001', class: 'Свой' } }));
 const human = classSelect(character.render({ ...ctx, char: { ...c, race: '0x003', class: 'Рокер' } }));
-check('классы Полярийца: без Трансгрессора', polar.includes('>Соло<') && !polar.includes('>Трансгрессор<'));
+check('классы Полярийца: без Трансгрессора и Зверя', polar.includes('>Соло<') && !polar.includes('>Трансгрессор<') && !polar.includes('>Зверь<'));
 check('классы Новуссита: только 4 и Свой', novus.includes('>Трансгрессор<') && novus.includes('>Свой<') && !novus.includes('>Соло<'));
 check('классы Хуманийца: только Кочевник, Зверь, Рокер', human.includes('>Рокер<') && !human.includes('>Соло<') && !human.includes('>Трансгрессор<'));
-check('правило классов работает по ID расы', classAllowed('0x002', 'Соло') && !classAllowed('0x002', 'Медикус') && classAllowed('0x001', 'Медикус') && !classAllowed('0x001', 'Соло') && classAllowed('0x003', 'Зверь') && !classAllowed('0x003', 'Техник'));
+check('правило классов работает по ID расы', classAllowed('0x002', 'Соло') && !classAllowed('0x002', 'Медикус') && !classAllowed('0x002', 'Зверь') && classAllowed('0x001', 'Медикус') && !classAllowed('0x001', 'Соло') && classAllowed('0x003', 'Зверь') && !classAllowed('0x003', 'Техник'));
 const polarHtml = character.render({ ...ctx, char: { ...c, race: '0x002', class: 'Соло' } });
 const novusHtml = character.render({ ...ctx, char: { ...c, race: '0x001', class: 'Свой' } });
 check('сущность доступна только Новусситу', !polarHtml.includes('data-p="essence"') && novusHtml.includes('data-p="essence"'));
