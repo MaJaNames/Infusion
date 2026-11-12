@@ -519,8 +519,8 @@ function renderOutput() {
     
     const dmgInfo = DAMAGE_TYPES_INFO[dmgType] || { desc: "", mult: 1.0 };
     text += `- Тип урона: ${dmgType} (${dmgInfo.desc})\n`;
-    text += `- ОЗ: ${hp} | Деф(П): ${defP} | Деф(А): ${defA} | УКЛ: ${ukl}\n`;
-    text += `- АТК: ${atk} | КШ: ${crit}% | ТЧН: ${acc}\n`;
+    text += `- ОЗ: ${hp} | Деф(П): +${defP} | Деф(А): +${defA} | УКЛ: +${ukl}\n`;
+    text += `- АТК: +${atk} | КШ: +${crit} | ТЧН: +${acc}\n`;
     text += `- АВХ: ${avh} | КЦ: ${kc} | ОД: ${od} | ОП: ${op}`;
     
     if (ignDef > 0 || ignUkl > 0) {
