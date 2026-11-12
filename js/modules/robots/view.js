@@ -57,7 +57,7 @@ function picker(path, robot, ctx, slot, extra = '') {
   const chosen = value ? ctx.data.itemMap.get(value) : null;
   const rows = rowsFor(path, robot, ctx);
   return `<div class="garage-pick">
-    <span class="garage-pick-name">${esc(slot)}</span>
+    <span class="garage-pick-name">${esc(slot)}${extra}</span>
     <div class="add garage-add" data-rbox="${esc(path)}" data-hint="${esc(slot)}">
       <input type="search" data-rsearch="${esc(path)}" placeholder="Фильтр…" autocomplete="off" aria-label="Поиск: ${esc(slot)}">
       <select data-rb="${esc(path)}" aria-label="${esc(slot)}"><option value="">—</option>${rows.map((r) => `<option value="${esc(r.id)}"${r.id === value ? ' selected' : ''}>${esc(r.text)}</option>`).join('')}</select>
@@ -69,7 +69,6 @@ function picker(path, robot, ctx, slot, extra = '') {
         </div>
       </div>
     </div>
-    ${extra}
   </div>`;
 }
 
@@ -96,14 +95,31 @@ const robotStatsTip = (r, ctx) => {
 
 export function render(ctx) {
   const c = ctx.char || {};
-  const robot = currentRobot();
-  if (!robot) {
+
+  if (!R.robots || R.robots.length === 0) {
     return `<section class="panel garage">
-      <div class="garage-head"><div><h2>Мастерская техники</h2><p class="meta">Соберите робота из предметов инвентаря. Сборка не требует Робософта — он понадобится только для надевания.</p></div>
-        <div class="garage-actions"><button type="button" data-add-robot>+ Робот</button></div></div>
+      <div class="garage-head">
+        <div>
+          <h2>Мастерская техники</h2>
+          <p class="meta">Сборка не требует Робософта. Детали можно выбирать из всей базы: чего не хватает в инвентаре, покажет небольшая плашка.</p>
+        </div>
+        <div class="garage-actions">
+          <button type="button" data-import-robots title="Загрузить роботов из JSON">Загрузить</button>
+          <input type="file" accept="application/json,.json" data-robots-file hidden>
+          <button type="button" data-export-robots title="Скачать всех роботов в JSON" disabled>Выгрузить</button>
+          <button type="button" data-add-robot>+ Робот</button>
+        </div>
+      </div>
       <div class="part-empty">Роботов пока нет. Добавьте первого.</div>
     </section>`;
   }
+
+  const robot = currentRobot();
+  if (!robot) {
+    R.active = R.robots[0]?.id || null;
+    return render(ctx);
+  }
+
   const base = robotBase(robot, ctx.data), kind = robotKind(base);
   const stats = robotStats(robot, ctx.data);
   const total = stats.total;
@@ -159,7 +175,10 @@ export function render(ctx) {
 
   return `<section class="panel garage">
     <div class="garage-head">
-      <div><h2>Мастерская техники</h2><p class="meta">Сборка не требует Робософта. Детали можно выбирать из всей базы: чего не хватает в инвентаре, покажет небольшая плашка. Предметы остаются в инвентаре; занятые экземпляры нельзя использовать дважды.</p></div>
+      <div>
+        <h2>Мастерская техники</h2>
+        <p class="meta">Сборка не требует Робософта. Детали можно выбирать из всей базы: чего не хватает в инвентаре, покажет небольшая плашка.</p>
+      </div>
       <div class="garage-actions">
         <button type="button" data-import-robots title="Загрузить роботов из JSON">Загрузить</button>
         <input type="file" accept="application/json,.json" data-robots-file hidden>
@@ -184,7 +203,7 @@ export function render(ctx) {
     <div class="garage-edit">
       <label class="garage-name" title="${esc(robotStatsTip(robot, ctx))}">Название робота<input type="text" data-robot-name value="${esc(robot.name)}" maxlength="${MAX_ROBOT_NAME}" placeholder="Робот"></label>
       ${weaponSelect}
-      <button type="button" class="danger" data-del-robot${R.robots.length <= 1 ? ' disabled' : ''}>Удалить робота</button>
+      <button type="button" class="danger" data-del-robot>Удалить робота</button>
     </div>
     <label class="garage-notes">Заметки<textarea rows="3" data-robot-notes placeholder="Эффекты, повреждения, любой другой текст...">${esc(robot.notes || '')}</textarea></label>
     ${useReq.needs.length ? `<p class="meta">Для надевания: ${esc(reqText(useReq.needs))}${canWear ? '' : ' — пока недоступно'}.</p>` : useReq.reason ? `<p class="meta">${esc(useReq.reason)}.</p>` : ''}
@@ -201,8 +220,8 @@ export function render(ctx) {
     <div class="shop-group"><h3>Модули</h3><div class="garage-picks">${robot.modules.map((id, i) => {
       const it = id ? ctx.data.itemMap.get(id) : null;
       const extra = it && moduleIsActive(it)
-        ? `<label class="module-active" title="Параметры активного модуля учитываются только при активации"><input type="checkbox" data-robot-module="${i}"${moduleChecked(robot, i) ? ' checked' : ''}> Активация</label>`
-        : it ? '<span class="meta">Пассивный модуль</span>' : '';
+        ? ` <label class="mod-flag${moduleChecked(robot, i) ? ' on' : ''}" title="Параметры активного модуля учитываются только при активации"><input type="checkbox" data-robot-module="${i}"${moduleChecked(robot, i) ? ' checked' : ''}> Активация</label>`
+        : it ? ' <span class="mod-flag passive">Пассивный</span>' : '';
       return picker(`modules.${i}`, robot, ctx, `Модуль ${i + 1}`, extra);
     }).join('')}</div></div>` : ''}
   </section>
@@ -215,7 +234,6 @@ export function render(ctx) {
       ${srcRows.length ? `<ul>${srcRows.map((x) => `<li><span>${esc(x.name)}</span><b>${OPEN_SOURCE === 'cost' ? money(x.value) : num(x.value)}</b></li>`).join('')}</ul>` : '<p class="meta">Нет источников: параметр равен нулю.</p>'}
       <p class="sources-total">Итого: <b>${OPEN_SOURCE === 'cost' ? money(total.cost) : num(total[OPEN_SOURCE])}</b></p>
     </div>` : ''}
-    ${total.unique ? `<p class="meta">${esc(total.unique)}</p>` : ''}
   </section>
   <section class="panel">
     <div class="inv-head">

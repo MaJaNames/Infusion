@@ -64,11 +64,21 @@ export function addRobot() {
 }
 
 export function removeRobot(id) {
-  if (R.robots.length <= 1) return false;
-  const i = R.robots.findIndex((r) => r.id === id);
+  const robot = R.robots.find((r) => r.id === id);
+  if (!robot) return false;
+
+  const ok = typeof confirm === 'function' ? confirm(`Удалить «${robot.name}»?`) : true;
+  if (!ok) return false;
+
+  const i = R.robots.indexOf(robot);
   if (i < 0) return false;
+
   R.robots.splice(i, 1);
-  R.active = (R.robots[i] || R.robots[i - 1] || R.robots[0]).id;
+
+  R.active = R.robots.length > 0 
+    ? (R.robots[i] || R.robots[i - 1] || R.robots[0]).id 
+    : null;
+
   saveRobots(R);
   return true;
 }

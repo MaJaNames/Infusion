@@ -196,7 +196,7 @@ check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
 utilities.setRoute('robots');
 utilities.setRoute('');
 check('утилиты: пустой подраздел сохраняет последнюю вкладку', utilities.currentRoute() === 'robots');
-utilities.setRoute('shop');
+utilities.setRoute('nomad');
 databases.setRoute('cards');
 check('подссылки: #db/cards', databases.currentRoute() === 'cards');
 databases.setRoute('items');

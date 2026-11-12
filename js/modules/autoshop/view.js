@@ -35,8 +35,31 @@ const TOTALS = [['maxHp', 'Макс. ОЗ'], ['defP', 'ДЕФ.П'], ['evasion', 
   ['weaponSlots', 'Слоты оружий'], ['heavySlots', 'Макс. сверхтяж'], ['seats', 'Кол-во мест']];
 
 export function render(ctx) {
+  if (!G.vehicles || G.vehicles.length === 0) {
+    return `<section class="panel garage">
+      <div class="garage-head">
+        <div>
+          <h2>Транспорт кочевника</h2>
+          <p class="meta">Несколько транспортных средств хранятся в браузере. Переключайтесь между ними вкладками или списком.</p>
+        </div>
+        <div class="garage-actions">
+          <button type="button" data-import-garage title="Загрузить транспорт из JSON">Загрузить</button>
+          <input type="file" accept="application/json,.json" data-garage-file hidden>
+          <button type="button" data-export-garage title="Скачать весь транспорт в JSON" disabled>Выгрузить</button>
+          <button type="button" data-add-vehicle>+ Транспорт</button>
+        </div>
+      </div>
+      <div class="part-empty">Транспорта пока нет. Добавьте первый.</div>
+    </section>`;
+  }
+
   const parts = partsOf(ctx.data);
-  const v = current(), B = v.build;
+  const v = current();
+  if (!v) {
+    G.active = G.vehicles[0]?.id || null;
+    return render(ctx);
+  }
+  const B = v.build;
   // Старые сборки с «Торусом» и чужими колёсами приводим в порядок сразу при отрисовке.
   fixWheels(B, ctx.data);
   const find = (id) => parts.find((p) => p.item.id === id);
@@ -129,7 +152,7 @@ export function render(ctx) {
     </div>
     <div class="garage-edit">
       <label class="garage-name" title="${esc(statsTip(B))}">Название транспорта<input type="text" data-vehicle-name value="${esc(v.name)}" maxlength="${MAX_NAME}" placeholder="Транспорт"></label>
-      <button type="button" class="danger" data-del-vehicle${G.vehicles.length <= 1 ? ' disabled' : ''}>Удалить транспорт</button>
+      <button type="button" class="danger" data-del-vehicle>Удалить транспорт</button>
     </div>
     <label class="garage-notes">Заметки
       <textarea rows="3" data-vehicle-notes placeholder="Эффекты, повреждения, любой другой текст...">${esc(v.notes || '')}</textarea>
@@ -229,8 +252,10 @@ export function bind(root, ctx) {
     if (comboPath) {
       const box = e.target.closest('[data-combo]');
       if (!box) return;
+      const curr = current();
+      if (!curr) return;
       const q = e.target.value.trim().toLowerCase();
-      const rows = rowsForPath(comboPath, ctx.data, current().build).filter((r) => !q || r.text.toLowerCase().includes(q));
+      const rows = rowsForPath(comboPath, ctx.data, curr.build).filter((r) => !q || r.text.toLowerCase().includes(q));
       box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
       return;
     }
@@ -239,8 +264,10 @@ export function bind(root, ctx) {
     const box = e.target.closest('[data-addbox]');
     const select = box?.querySelector(`select[data-b="${path}"]`);
     if (!select) return;
+    const curr = current();
+    if (!curr) return;
     const q = e.target.value.trim().toLowerCase();
-    const items = itemsForPath(path, ctx.data, current().build).filter((p) => !q || optLabel(p.item).toLowerCase().includes(q));
+    const items = itemsForPath(path, ctx.data, curr.build).filter((p) => !q || optLabel(p.item).toLowerCase().includes(q));
     const hint = box.dataset.hint || '—';
     select.innerHTML = `<option value="">${esc(hint)}</option>${items.length ? opts(items, select.value, (p) => optLabel(p.item), (p) => p.item.id) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
@@ -257,17 +284,22 @@ export function bind(root, ctx) {
     }
     if (t.dataset.vehicleName !== undefined) {
       const v = current();
+      if (!v) return;
       v.name = String(t.value || '').trim().slice(0, MAX_NAME) || v.name;
       commit(ctx);
       return;
     }
     if (t.dataset.vehicleNotes !== undefined) {
-      current().notes = String(t.value || '');
+      const v = current();
+      if (!v) return;
+      v.notes = String(t.value || '');
       commit(ctx);
       return;
     }
     if (t.dataset.partHp !== undefined) {
-      const B = current().build;
+      const v = current();
+      if (!v) return;
+      const B = v.build;
       if (!B.partHp || typeof B.partHp !== 'object') B.partHp = {};
       const id = t.dataset.partHp;
       if (t.value === '') delete B.partHp[id];
@@ -276,7 +308,9 @@ export function bind(root, ctx) {
       return;
     }
     if (!t.dataset.b) return;
-    const B = current().build;
+    const v = current();
+    if (!v) return;
+    const B = v.build;
     const n = t.type === 'number' ? (t.value === '' ? null : Number(t.value)) : null;
     const raw = t.type === 'number' ? (Number.isFinite(n) ? n : null) : fieldValue(t);
     set(B, t.dataset.b, raw);
@@ -290,7 +324,9 @@ export function bind(root, ctx) {
     const comboBtn = e.target.closest('[data-combo-btn]');
     if (comboBtn) {
       const combo = comboBtn.closest('[data-combo]');
-      if (combo?.querySelector('[data-combo-pop]')?.hidden) openCombo(comboBtn, rowsForPath(combo.dataset.combo, ctx.data, current().build), root);
+      const curr = current();
+      if (!curr) return;
+      if (combo?.querySelector('[data-combo-pop]')?.hidden) openCombo(comboBtn, rowsForPath(combo.dataset.combo, ctx.data, curr.build), root);
       else closeCombos(root);
       return;
     }
@@ -299,7 +335,9 @@ export function bind(root, ctx) {
       const combo = comboOpt.closest('[data-combo]');
       const path = combo?.dataset.combo;
       if (path) {
-        const B = current().build;
+        const v = current();
+        if (!v) return;
+        const B = v.build;
         set(B, path, comboOpt.dataset.comboOpt || null);
         if (path === 'engine' || path === 'wheels') fixWheels(B, ctx.data);
         commit(ctx);
@@ -334,19 +372,19 @@ export function bind(root, ctx) {
       return;
     }
     if (e.target.closest('[data-del-vehicle]')) {
-      if (G.vehicles.length <= 1) return;
       const v = current();
+      if (!v) return;
       const ok = typeof confirm === 'function' ? confirm(`Удалить «${v.name}»?`) : true;
       if (!ok) return;
       const i = G.vehicles.indexOf(v);
       G.vehicles.splice(i, 1);
-      G.active = (G.vehicles[i] || G.vehicles[i - 1] || G.vehicles[0]).id;
+      
+      G.active = G.vehicles.length > 0 
+        ? (G.vehicles[i] || G.vehicles[i - 1] || G.vehicles[0]).id 
+        : null;
+        
       commit(ctx);
       return;
-    }
-    if (e.target.closest('[data-b-clear]')) {
-      current().build = blank();
-      commit(ctx);
     }
   };
   if (!root._partToggle) {

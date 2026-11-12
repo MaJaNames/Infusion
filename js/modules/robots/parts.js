@@ -70,7 +70,6 @@ export function robotStats(robot, d) {
   const weaponAtk = weapon ? (parsePart(weapon.description).atk || 0) : 0;
   total.atk = (weapon ? weaponAtk : baseAtk) + moduleAtk;
   total.cost = parts.reduce((a, it) => a + (it.cost || 0), 0);
-  total.unique = stats.map((s) => s.unique).filter(Boolean).join(' ');
 
   // Источники для каждого параметра: какая деталь дала значение. Нужны для раскрытия по клику («Итоги»).
   const byPart = (f) => statParts.map((it, i) => ({ item: it, value: f(stats[i]) || 0 })).filter((x) => x.value);

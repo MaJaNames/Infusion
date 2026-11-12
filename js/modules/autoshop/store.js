@@ -49,8 +49,8 @@ export function normGarage(raw, legacy) {
       return { id, name, notes: String(v.notes ?? ''), build: normBuild(v.build) };
     });
   // Старая одиночная сборка становится первым транспортом гаража.
-  if (!vehicles.length) vehicles.push({ id: newId(), name: 'Транспорт 1', notes: '', build: normBuild(legacy) });
-  const active = vehicles.some((v) => v.id === raw?.active) ? raw.active : vehicles[0].id;
+  // if (!vehicles.length) vehicles.push({ id: newId(), name: 'Транспорт 1', notes: '', build: normBuild(legacy) });
+  const active = vehicles.length > 0 && vehicles.some((v) => v.id === raw?.active) ? raw.active : (vehicles[0]?.id || null);
   return { active, vehicles };
 }
 
