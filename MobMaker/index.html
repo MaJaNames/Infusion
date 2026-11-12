@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конструктор Мобов - РП-Сервер (Баланс 2026)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Конструктор Мобов</h1>
+        <div class="pills-wrap">
+            <div class="budget-pill">
+                <span>Очки генерации:</span>
+                <span id="budgetDisplay" class="budget-val ok">0 / 2800</span>
+            </div>
+            <div class="budget-pill">
+                <span>Хар-ки:</span>
+                <span id="attrBudgetDisplay" class="budget-val ok">45 / 58</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Блок 1: Профиль и Сложность -->
+    <div class="card">
+        <h2>1. Профиль и Сложность</h2>
+        <div class="grid-2" style="margin-bottom: 10px;">
+            <div>
+                <label>Имя / Название моба</label>
+                <input type="text" id="mobName" value="Элитный Страж" oninput="handleInput('mobName', this.value)">
+            </div>
+            <div>
+                <label>Уровень сложности квеста</label>
+                <select id="mobTier" onchange="applyTierPreset()">
+                    <option value="Новичок" data-budget="350">Новичок - Безопасно</option>
+                    <option value="Обычный" data-budget="750">Обычный - Малая опасность</option>
+                    <option value="Опасный" data-budget="1300">Опасный - Смерть возможна</option>
+                    <option value="Элитный" data-budget="2800" selected>Элитный - Смерть вероятна</option>
+                    <option value="Смерть" data-budget="4000">Смерть - Ожидайте смерть</option>
+                </select>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div>
+                <label>Тип юнита</label>
+                <select id="mobType" onchange="applyTierPreset()">
+                    <option value="Моб">Рядовой моб</option>
+                    <option value="Элитный">Элитный моб</option>
+                    <option value="Босс" selected>Босс</option>
+                </select>
+            </div>
+            <div>
+                <label>Тип урона</label>
+                <select id="damageType" onchange="updateDamageInfo()">
+                    <option value="Кинетический">Кинетический (Стандарт)</option>
+                    <option value="Термический">Термический</option>
+                    <option value="Химический">Химический</option>
+                    <option value="Кронотический">Кронотический</option>
+                    <option value="Криотический">Криотический</option>
+                    <option value="Гидравлический">Гидравлический</option>
+                    <option value="Электрический">Электрический</option>
+                    <option value="Псионический">Псионический</option>
+                    <option value="Хронотопический">Хронотопический</option>
+                    <option value="Радиоактивный">Радиоактивный</option>
+                    <option value="Психический">Психический</option>
+                    <option value="Чистый урон">Чистый урон</option>
+                </select>
+                <div id="damageInfoBox" class="damage-info-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок 2: Боевые параметры -->
+    <div class="card">
+        <h2>2. Боевые параметры</h2>
+        <div class="grid-4" style="margin-bottom: 10px;">
+            <div>
+                <label>Здоровье (ОЗ)</label>
+                <input type="number" id="statHp" value="1200" min="1" oninput="handleInput('statHp', this.value)">
+            </div>
+            <div>
+                <label>Деф (П)</label>
+                <input type="number" id="statDefP" value="20" min="0" oninput="handleInput('statDefP', this.value)">
+            </div>
+            <div>
+                <label>Деф (А)</label>
+                <input type="number" id="statDefA" value="20" min="0" oninput="handleInput('statDefA', this.value)">
+            </div>
+            <div>
+                <label>Уклонение (Укл)</label>
+                <input type="number" id="statUkl" value="50" min="0" oninput="handleInput('statUkl', this.value)">
+            </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 10px;">
+            <div>
+                <label>Атака (АТК)</label>
+                <input type="number" id="statAtk" value="70" min="0" oninput="handleInput('statAtk', this.value)">
+            </div>
+            <div>
+                <label>Крит. шанс (КШ)</label>
+                <input type="number" id="statCrit" value="10" min="0" max="100" oninput="handleInput('statCrit', this.value)">
+            </div>
+            <div>
+                <label>Точность (ТЧН)</label>
+                <input type="number" id="statAcc" value="25" oninput="handleInput('statAcc', this.value)">
+            </div>
+            <div>
+                <label>АВХ (Атак)</label>
+                <input type="number" id="statAvh" value="2" min="1" step="1" oninput="handleInput('statAvh', this.value)">
+            </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 10px;">
+            <div>
+                <label>КЦ (Целей)</label>
+                <input type="number" id="statKc" value="1" min="1" step="1" oninput="handleInput('statKc', this.value)">
+            </div>
+            <div>
+                <label>ОД</label>
+                <input type="number" id="statOd" value="1" min="1" max="3" oninput="handleInput('statOd', this.value)">
+            </div>
+            <div>
+                <label>ОП</label>
+                <input type="number" id="statOp" value="2" min="0" max="10" oninput="handleInput('statOp', this.value)">
+            </div>
+            <div>
+                <label>Игнор Деф(П)</label>
+                <input type="number" id="statIgnDef" value="0" min="0" oninput="handleInput('statIgnDef', this.value)">
+            </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 10px;">
+            <div>
+                <label>Игнор УКЛ</label>
+                <input type="number" id="statIgnUkl" value="0" min="0" oninput="handleInput('statIgnUkl', this.value)">
+            </div>
+        </div>
+
+        <!-- Настройка сопротивлений -->
+        <div class="grid-2">
+            <div>
+                <label>Сопротивление (тип урона)</label>
+                <select id="resType" onchange="handleInput('resType', this.value)">
+                    <option value="Нет">Нет</option>
+                    <option value="Кинетический">Кинетический</option>
+                    <option value="Термический">Термический</option>
+                    <option value="Химический">Химический</option>
+                    <option value="Кронотический">Кронотический</option>
+                    <option value="Криотический">Криотический</option>
+                    <option value="Электрический">Электрический</option>
+                    <option value="Все типы урона">Все типы урона</option>
+                </select>
+            </div>
+            <div>
+                <label>Сопр. включено</label>
+                <select id="resActive" onchange="handleInput('resActive', this.value)">
+                    <option value="0">Отключено</option>
+                    <option value="1">Включено</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок 3: Характеристики -->
+    <div class="card">
+        <h2>
+            <span>3. Характеристики (0-10)</span>
+            <span class="hint">Свободные поинты</span>
+        </h2>
+        <div class="grid-attrs" id="attrsContainer"></div>
+    </div>
+
+    <!-- Блок 4: Эффекты -->
+    <div class="card">
+        <h2>
+            <span>4. Эффекты атак и пассивки</span>
+            <span class="hint">Умная кривая стоимости с учетом вероятностей и частоты атак</span>
+        </h2>
+
+        <div id="effectsCatalog"></div>
+
+        <div id="activeEffectsWrapper" style="margin-top: 14px; display: none;">
+            <label style="color: var(--accent); margin-bottom: 6px;">Настройка выбранных эффектов:</label>
+            <div id="activeEffectsList"></div>
+        </div>
+    </div>
+
+    <!-- Блок 5: Примечания -->
+    <div class="card">
+        <h2>5. Особые механики / Лут / Заметки</h2>
+        <textarea id="mobNotes" rows="2" placeholder="Например: При активации использует щит..." oninput="handleInput('mobNotes', this.value)"></textarea>
+    </div>
+
+    <!-- Итоговый вывод -->
+    <div class="card">
+        <h2>Готовая карточка моба</h2>
+        <pre id="outputBox"></pre>
+        <button class="btn" style="margin-top: 10px;" onclick="copyResult()">Скопировать в буфер обмена</button>
+    </div>
+</div>
+
+<script src="script.js" defer></script>
+</body>
+</html>

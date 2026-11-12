@@ -1,0 +1,231 @@
+:root {
+    --bg-main: #0e0e11;
+    --bg-card: #18181d;
+    --bg-input: #222229;
+    --border: #2e2e38;
+    --accent: #8b5cf6;
+    --accent-hover: #7c3aed;
+    --text-main: #f4f4f6;
+    --text-muted: #9ca3af;
+    --p1-color: #ef4444;
+    --p2-color: #f97316;
+    --p3-color: #eab308;
+    --p4-color: #3b82f6;
+    --p5-color: #a855f7;
+    --ok-color: #10b981;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    margin: 0;
+    padding: 12px;
+    line-height: 1.4;
+}
+
+.container { max-width: 980px; margin: 0 auto; }
+
+header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(14, 14, 17, 0.95);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+header h1 { font-size: 1.3rem; margin: 0; color: var(--accent); }
+.pills-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.budget-pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.budget-val.ok { color: var(--ok-color); }
+.budget-val.over { color: var(--p1-color); }
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.card h2 {
+    font-size: 1.05rem;
+    margin: 0 0 12px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; }
+.grid-attrs { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 8px; }
+
+label {
+    display: block;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.92rem;
+}
+
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+.damage-info-box {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(139, 92, 246, 0.1);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #d8b4fe;
+    display: none;
+}
+
+.priority-block { margin-bottom: 14px; }
+
+.priority-header {
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.p1-bg { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-left: 3px solid var(--p1-color); }
+.p2-bg { background: rgba(249, 115, 22, 0.15); color: #fdba74; border-left: 3px solid var(--p2-color); }
+.p3-bg { background: rgba(234, 179, 8, 0.15); color: #fde047; border-left: 3px solid var(--p3-color); }
+.p4-bg { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-left: 3px solid var(--p4-color); }
+.p5-bg { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border-left: 3px solid var(--p5-color); }
+
+.effects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 8px; }
+
+.effect-chip {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.effect-chip:hover { border-color: #4b4b5c; }
+.effect-chip.active { border-color: var(--accent); background: rgba(139, 92, 246, 0.12); }
+
+.effect-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.effect-top input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.effect-desc { font-size: 0.74rem; color: var(--text-muted); }
+
+.active-effect-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr auto;
+    gap: 8px;
+    align-items: center;
+    background: var(--bg-input);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+}
+
+.eff-cost-badge {
+    font-family: ui-monospace, monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 700;
+    text-align: right;
+}
+
+.inf-label { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;}
+.inf-label input { margin: 0; accent-color: var(--accent); }
+
+@media (max-width: 720px) {
+    .active-effect-row { grid-template-columns: 1fr 1fr; }
+    .active-effect-row .eff-name-col { grid-column: 1 / -1; }
+}
+
+.btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 11px 16px;
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+}
+
+.btn:hover { background: var(--accent-hover); }
+
+.btn-del {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 5px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+pre {
+    background: #09090b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.88rem;
+    color: #e4e4e7;
+    margin: 0;
+}
+
+.hint { font-size: 0.78rem; color: var(--text-muted); font-weight: normal; }
