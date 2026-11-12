@@ -36,7 +36,7 @@ export const allowedClasses = (raceId, classes) => classes.filter((x) => classAl
 
 // РО (репутация организаций) персонажа: отдельное число от -100 до 100 для каждой фракции.
 // Особые пороги — ±15, ±35 и ±60: на них меняется ранг от -3 до 3.
-export const RO_FACTIONS = Object.freeze(['Ацуши', 'Хиллз', 'Чёрный Рынок', 'Гончие', 'Икс-Экшен', 'ГРА']);
+export const RO_FACTIONS = Object.freeze(['ГРА', 'Ацуши', 'Икс-Экшен', 'Хиллз', 'Гончие', 'Чёрный Рынок']);
 export const RO_VALUES = Object.freeze([-60, -35, -15, 0, 15, 35, 60]);
 export const RO_MIN = -100;
 export const RO_MAX = 100;
