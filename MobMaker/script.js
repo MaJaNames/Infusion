@@ -25,7 +25,7 @@ const EFFECT_GROUPS = [
         css: "p5-bg",
         items: [
             { name: "Проницаемость", desc: "Атака игнорирует Деф. Базовая ВЕР 20.", defN: 20, defVer: 50, defAkt: 1, baseCost: 12, step: 10 },
-            { name: "Распад", desc: "Снимает n ОЗ НАВСЕГДА.", defN: 5, defVer: 50, defAkt: 1, baseCost: 5, step: 1 },
+            { name: "Распад", desc: "Снимает n ОЗ НАВСЕГДА.", defN: 5, defVer: 50, defAkt: 1, baseCost: 10, step: 1 },
             { name: "Излучение", desc: "УКЛ от атак с этим эффектом бросается с помехой.", defN: 1, defVer: 50, defAkt: 1, baseCost: 200, step: 1 },
             { name: "Модификатор урона", desc: "Увеличивает значение атк*n. Возможен лишь 1 в ход.", defN: 1.5, defVer: 50, defAkt: 1, baseCost: 100, step: 1 }
         ]
@@ -44,7 +44,7 @@ const EFFECT_GROUPS = [
     },
     {
         level: 3,
-        title: "Контроль (Запрет действий)",
+        title: "Контроль (Запрет и Ограничение)",
         css: "p1-bg",
         items: [
             { name: "Кома", desc: "Лишает противника всех ОЗ при срабатывании.", defN: 1, defVer: 50, defAkt: 1, baseCost: 3500, step: 1 },
