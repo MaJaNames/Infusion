@@ -34,10 +34,39 @@ export function classAllowed(raceId, name) {
 
 export const allowedClasses = (raceId, classes) => classes.filter((x) => classAllowed(raceId, x.name));
 
-// РО (репутация организаций) персонажа: отдельное значение для каждой фракции.
+// РО (репутация организаций) персонажа: отдельное число от -100 до 100 для каждой фракции.
+// Особые пороги — ±15, ±35 и ±60: на них меняется ранг от -3 до 3.
 export const RO_FACTIONS = Object.freeze(['Ацуши', 'Хиллз', 'Чёрный Рынок', 'Гончие', 'Икс-Экшен', 'ГРА']);
 export const RO_VALUES = Object.freeze([-60, -35, -15, 0, 15, 35, 60]);
+export const RO_MIN = -100;
+export const RO_MAX = 100;
+export const RO_STATUS = Object.freeze({ none: '', association: 'association', membership: 'membership' });
+export const RO_STATUS_LABEL = Object.freeze({ association: 'Ассоциация', membership: 'Членство' });
 export const blankRO = () => Object.fromEntries(RO_FACTIONS.map((f) => [f, 0]));
+export const blankROStatus = () => Object.fromEntries(RO_FACTIONS.map((f) => [f, RO_STATUS.none]));
+
+// Ранг организации: -3…3. Границы совпадают с особыми значениями РО.
+export const roRank = (value) => {
+  const v = Math.max(RO_MIN, Math.min(RO_MAX, Number(value) || 0));
+  if (v >= 60) return 3;
+  if (v >= 35) return 2;
+  if (v >= 15) return 1;
+  if (v <= -60) return -3;
+  if (v <= -35) return -2;
+  if (v <= -15) return -1;
+  return 0;
+};
+export const roRankText = (rank) => (rank > 0 ? `${rank}` : String(rank));
+
+// Ассоциация доступна всем, кроме ГРА; членство — всем, кроме Чёрного Рынка,
+// и только при РО 60 и выше. Одновременно можно выбрать только одно.
+export const roStatusAllowed = (faction, status, value) => {
+  if (status === RO_STATUS.association) return faction !== 'ГРА';
+  if (status === RO_STATUS.membership) return faction !== 'Чёрный Рынок' && Number(value) >= 60;
+  return true;
+};
+export const normalizeROStatus = (faction, status, value) =>
+  (roStatusAllowed(faction, status, value) ? status : RO_STATUS.none);
 
 // Лимит БМЕТов: РО фракции Ацуши, но не меньше одного.
 export const bmetLimit = (ro) => {

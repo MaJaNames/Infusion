@@ -95,8 +95,8 @@ export function bind(root, ctx) {
 
 // Подссылки вида #util/calc открывают нужную вкладку утилит.
 export function setRoute(sub) {
+  // Пустой подраздел не сбрасывает выбор: при возврате на вкладку остаётся последняя подвкладка.
   if (TAB_IDS.has(sub)) S.tab = sub;
-  else if (!sub) S.tab = TABS[0][0];
 }
 export function currentRoute() {
   return S.tab;

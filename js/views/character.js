@@ -1,18 +1,21 @@
 import { esc, num, label, opts, set, fieldValue, RARITIES, RC, optLabel, money } from '../core/util.js';
 import { derive, sellPrice, skillLimit } from '../character/derive.js';
 import {
-  RULES, allowedClasses, RO_FACTIONS, RO_VALUES, blankRO, bmetLimit,
+  RULES, allowedClasses, RO_FACTIONS, RO_MIN, RO_MAX, RO_STATUS, RO_STATUS_LABEL,
+  blankRO, blankROStatus, roRank, roRankText, normalizeROStatus, bmetLimit,
   BEAST_SLOTS, BEAST_RARITIES, BEAST_EXTRA_L_ABILITY, ROBOT_IMPLANTS,
 } from '../character/rules.js';
+import { exportChar, importChar, blankChar } from '../core/storage.js';
 import { itemRow, cardRow } from './databases.js';
 import { G, partCount } from '../modules/autoshop/store.js';
-import { partsOf } from '../modules/autoshop/parts.js';
+import { partsOf, statChips } from '../modules/autoshop/parts.js';
 import { summarize } from '../modules/autoshop/aggregate.js';
 import { R, saveRobots } from '../modules/robots/store.js';
 import {
   isBmet, isSkeleton, isRobotModule, skeletonSlots, robotBase, robotKind, robotKindLabel,
-  robotStats, robotRequirement, availableCount, hasImplant,
+  robotStats, robotRequirement, availableCount, hasImplant, robotMissing, moduleChecked, moduleIsActive, weaponIndex,
 } from '../modules/robots/parts.js';
+import { parsePart } from '../modules/autoshop/parser.js';
 import { comboList, groupedRows, closeCombos, openCombo, comboKeydown, installComboClose } from '../core/combo.js';
 import { fuzzyScore } from '../core/fuzzy.js';
 
@@ -89,6 +92,7 @@ const UI = {
     repository: ['id', 1], beasts: ['id', 1],
   },
 };
+let DATA_MSG = ''; // сообщение после импорта/сброса карточки
 
 const RARITY_RANK = new Map(RARITIES.map((r, i) => [r, i]));
 const cmpText = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'ru');
@@ -527,9 +531,23 @@ const stockItems = (c, d, predicate) => {
 
 function roPanel(c) {
   const ro = { ...blankRO(), ...(c.ro || {}) };
+  const status = { ...blankROStatus(), ...(c.roStatus || {}) };
+  const rows = RO_FACTIONS.map((f) => {
+    const value = Math.max(RO_MIN, Math.min(RO_MAX, Number(ro[f]) || 0));
+    const rank = roRank(value);
+    const current = normalizeROStatus(f, status[f], value);
+    const canAssociate = f !== 'ГРА';
+    const canJoin = f !== 'Чёрный Рынок' && value >= 60;
+    const options = `<option value=""${current === '' ? ' selected' : ''}>—</option>${canAssociate ? `<option value="${RO_STATUS.association}"${current === RO_STATUS.association ? ' selected' : ''}>${RO_STATUS_LABEL.association}</option>` : ''}${canJoin ? `<option value="${RO_STATUS.membership}"${current === RO_STATUS.membership ? ' selected' : ''}>${RO_STATUS_LABEL.membership}</option>` : ''}`;
+    return `<div class="ro-row">
+      <span class="ro-name">${esc(f)} <span class="chip ro-rank" title="Ранг организации: от -3 до 3">Ранг ${roRankText(rank)}</span></span>
+      <label>РО<input type="number" min="${RO_MIN}" max="${RO_MAX}" step="1" data-p="ro.${esc(f)}" data-n="1" value="${value}"></label>
+      <label>Статус<select data-p="roStatus.${esc(f)}">${options}</select></label>
+    </div>`;
+  }).join('');
   return `<section class="panel ro-panel"><h2>РО — репутация организаций</h2>
-    <p class="meta">Для каждой фракции свой уровень. Для лимита БМЕТов используется РО «Ацуши», но не меньше 1.</p>
-    <div class="grid ro-grid">${RO_FACTIONS.map((f) => `<label>${esc(f)}<select data-p="ro.${esc(f)}" data-n="1">${RO_VALUES.map((v) => `<option value="${v}"${Number(ro[f]) === v ? ' selected' : ''}>${v > 0 ? '+' : ''}${v}</option>`).join('')}</select></label>`).join('')}</div>
+    <p class="meta">РО — целое число от ${RO_MIN} до ${RO_MAX}. На 15, 35 и 60 (и в минусах) меняется ранг от -3 до 3. Ассоциация недоступна ГРА; членство — Чёрному Рынку и только при РО 60 и выше.</p>
+    <div class="ro-list">${rows}</div>
     <div class="chips"><span class="chip total">Лимит БМЕТ: ${num(bmetLimit(ro))}</span></div>
   </section>`;
 }
@@ -542,42 +560,67 @@ function robotPanel(c, d) {
   }
   const active = new Set(Array.isArray(c.robots) ? c.robots : []);
   const limit = bmetLimit(c.ro);
+  const showBmet = hasImplant(c, d, ROBOT_IMPLANTS.bmet);
   const bmetsActive = robots.filter((r) => active.has(r.id) && isBmet(robotBase(r, d))).length;
   const cards = robots.map((r) => {
     const base = robotBase(r, d), kind = robotKind(base);
     const full = robotStats(r, d), stats = full.total;
     const req = robotRequirement(r, d, c);
+    const missing = req.missing || [];
     const on = active.has(r.id);
     const wouldExceed = kind === 'bmet' && !on && bmetsActive >= limit;
     const disabled = !on && (!req.ok || wouldExceed);
-    const why = !req.ok ? (req.reason || `Нужен имплант: ${req.needs.join(', ')}`) : wouldExceed ? 'Лимит БМЕТ по РО «Ацуши» исчерпан' : '';
-    const gear = kind === 'bmet' ? [] : [...r.weapons, ...r.modules].map((id) => d.itemMap.get(id)).filter(Boolean);
+    const reasons = [];
+    if (missing.length) reasons.push(`Нет в инвентаре: ${missing.map((x) => `${label(x.item || { name: x.id })}${x.need > 1 ? ` ×${x.need}` : ''}${x.have ? ` (есть ${x.have})` : ''}`).join(', ')}`);
+    if (req.needs.length) reasons.push(`Нужен имплант: ${req.needs.join(', ')}`);
+    if (wouldExceed) reasons.push('Лимит БМЕТ по РО «Ацуши» исчерпан');
+    if (req.reason) reasons.push(req.reason);
+    const why = reasons.join('. ');
+    const wi = weaponIndex(r, d);
+    const weaponSelect = kind && kind !== 'bmet'
+      ? `<label class="robot-hp">Текущее оружие <select data-robot-weapon="${esc(r.id)}"><option value="">— нет —</option>${r.weapons.map((id, i) => {
+        const it = id ? d.itemMap.get(id) : null;
+        return it ? `<option value="${i}"${wi === i ? ' selected' : ''}>${esc(label(it))}</option>` : '';
+      }).join('')}</select></label>` : '';
+    const gear = kind === 'bmet' ? [] : [...r.weapons.map((id, i) => ({ id, slot: `Оружие ${i + 1}`, i, mod: false })), ...r.modules.map((id, i) => ({ id, slot: `Модуль ${i + 1}`, i, mod: true }))]
+      .map(({ id, slot, i, mod }) => {
+        const it = id ? d.itemMap.get(id) : null;
+        if (!it) return '';
+        return mod
+          ? (moduleIsActive(it)
+              ? `<label class="chip module-toggle" title="Параметры активного модуля учитываются только при активации"><input type="checkbox" data-robot-module="${esc(r.id)}.${i}"${moduleChecked(r, i) ? ' checked' : ''}> ${esc(label(it))}${moduleChecked(r, i) ? '' : ' · выкл'}</label>`
+              : `<span class="chip" title="Пассивный модуль — параметры учитываются всегда">${esc(label(it))}</span>`)
+          : `<span class="chip">${esc(slot)}: ${esc(label(it))}</span>`;
+      }).join('');
     return `<article class="robot-card${on ? ' on' : ''}">
       <div class="robot-head"><label class="robot-use"><input type="checkbox" data-robot-use="${esc(r.id)}"${on ? ' checked' : ''}${disabled ? ' disabled' : ''}> Надеть</label><b>${esc(r.name)}</b><span class="meta">${esc(robotKindLabel[kind] || 'без основы')}</span></div>
       <div class="chips"><span class="chip">ОЗ: ${r.currentHp != null ? `${num(r.currentHp)} / ${num(stats.hp)}` : num(stats.hp)}</span>${stats.defP ? `<span class="chip">ДЕФ.П ${num(stats.defP)}</span>` : ''}${stats.defA ? `<span class="chip">ДЕФ.А ${num(stats.defA)}</span>` : ''}${stats.evasion ? `<span class="chip">УКЛ ${num(stats.evasion)}</span>` : ''}${stats.atk ? `<span class="chip">АТК ${num(stats.atk)}</span>` : ''}${on ? '<span class="chip total">надет</span>' : ''}</div>
       <label class="robot-hp">Текущее ОЗ <input type="number" min="0" data-robot-hp="${esc(r.id)}" value="${r.currentHp ?? ''}" placeholder="${num(stats.hp)}"><span class="meta">/ ${num(stats.hp)}</span></label>
-      ${gear.length ? `<div class="chips">${gear.map((it) => `<span class="chip">${esc(label(it))}</span>`).join('')}</div>` : `<p class="meta">${kind === 'bmet' ? 'У БМЕТ нет слотов оружия и модулей.' : 'Оружие и модули не установлены.'}</p>`}
+      ${weaponSelect}
+      ${gear ? `<div class="chips">${gear}</div>` : `<p class="meta">${kind === 'bmet' ? 'У БМЕТ нет слотов оружия и модулей.' : 'Оружие и модули не установлены.'}</p>`}
       ${full.unique ? `<p class="desc meta">${esc(full.unique)}</p>` : ''}
       ${r.notes ? `<p class="desc meta">${esc(r.notes)}</p>` : ''}
+      ${missing.length ? `<div class="miss-note"><b>Нет в инвентаре:</b> ${missing.map((x) => `${esc(label(x.item || { name: x.id }))}${x.need > 1 ? ` ×${x.need}` : ''}${x.have ? ` (есть ${x.have})` : ''}`).join(', ')}</div>` : ''}
       ${why ? `<p class="meta">${esc(why)}</p>` : ''}
     </article>`;
   }).join('');
   return `<section class="panel"><h2>Роботы Техника</h2>
-    <div class="chips"><span class="chip${bmetsActive > limit ? ' bad' : ''}">БМЕТ: ${num(bmetsActive)} / ${num(limit)}</span><span class="chip">Надето роботов: ${num(robots.filter((r) => active.has(r.id)).length)}</span></div>
-    <p class="meta">Собранные роботы можно надевать при наличии нужного импланта. БМЕТ ограничены РО «Ацуши»; Призмы и Ядра — без отдельного лимита.</p>
+    <div class="chips">${showBmet ? `<span class="chip${bmetsActive > limit ? ' bad' : ''}">БМЕТ: ${num(bmetsActive)} / ${num(limit)}</span>` : ''}<span class="chip">Надето роботов: ${num(robots.filter((r) => active.has(r.id)).length)}</span></div>
+    <p class="meta">Собранные роботы можно надевать при наличии нужного импланта и всех деталей в инвентаре. АТК считается по текущему оружию. БМЕТ ограничены РО «Ацуши»; Призмы и Ядра — без отдельного лимита.</p>
     <div class="robot-list">${cards}</div>
   </section>`;
 }
 
 function skeletonPanel(c, d) {
   if (c.class !== 'Техник') return '';
+  // Подвкладка доступна только с имплантом «Догмат Единства».
+  if (!hasImplant(c, d, ROBOT_IMPLANTS.skeleton)) return '';
   const equipment = Array.isArray(c.equipment) ? c.equipment : [];
   const current = equipment.map((id) => d.itemMap.get(id)).find(isSkeleton) || null;
   const skeletons = stockItems(c, d, isSkeleton);
   if (current && !skeletons.some((it) => it.id === current.id)) skeletons.unshift(current);
   const modules = equipment.map((id) => d.itemMap.get(id)).filter(isRobotModule);
   const slots = current ? skeletonSlots(current) : 0;
-  const allowed = hasImplant(c, d, ROBOT_IMPLANTS.skeleton);
   const mods = stockItems(c, d, isRobotModule);
   const moduleOptions = (i) => {
     const cur = modules[i]?.id || '';
@@ -586,11 +629,17 @@ function skeletonPanel(c, d) {
     if (chosen) list.unshift(chosen);
     return `<select data-skel-mod="${i}"><option value="">—</option>${opts(list, cur, (it) => optLabel(it), (it) => it.id)}</select>`;
   };
+  const card = (it) => `<details class="line skel-card"><summary><span class="grow"><b>${esc(label(it))}</b> <span class="meta">${esc(it.category || '')}</span></span><span class="chip">${esc(it.rarity || '')}</span></summary>
+    <div class="body"><div class="chips">${statChips(parsePart(it.description))}</div><p class="desc">${esc(it.description || 'Описание пока не заполнено.')}</p></div></details>`;
+  const equippedCards = [current, ...modules].filter(Boolean).map(card).join('');
+  const catalog = d.items.filter(isRobotModule).map(card).join('');
   return `<section class="panel"><h2>Модульный скелет</h2>
     <p class="meta">Скелет — броня в слоте [Exo], его модули занимают слоты [Acs]. Модули берутся из инвентаря и не могут использоваться дважды без второй копии.</p>
     <div class="grid"><label>Скелет<select data-skel><option value="">— не выбран —</option>${opts(skeletons, current?.id || '', (it) => optLabel(it), (it) => it.id)}</select></label></div>
-    ${current ? `<p class="meta">Модулей: ${modules.length} / ${slots}. ${allowed ? '' : `Для использования нужен имплант: ${esc(ROBOT_IMPLANTS.skeleton.map((id) => d.itemMap.get(id)?.name || id).join(', '))}.`}</p>
+    ${current ? `<p class="meta">Модулей: ${modules.length} / ${slots}.</p>
       <div class="grid">${Array.from({ length: slots }, (_, i) => `<label>Модуль ${i + 1}${moduleOptions(i)}</label>`).join('')}</div>` : '<p class="meta">Выберите модульный скелет из инвентаря.</p>'}
+    ${equippedCards ? `<div class="skel-cards"><h3>Установленные карточки</h3>${equippedCards}</div>` : ''}
+    ${catalog ? `<details class="skel-catalog"><summary>Посмотреть карточки модулей (${d.items.filter(isRobotModule).length})</summary><div class="list">${catalog}</div></details>` : ''}
   </section>`;
 }
 
@@ -598,6 +647,8 @@ export function render(ctx) {
   const c = ctx.char, d = ctx.data;
   if (!c.ro) c.ro = blankRO();
   else c.ro = { ...blankRO(), ...c.ro };
+  if (!c.roStatus) c.roStatus = blankROStatus();
+  for (const f of RO_FACTIONS) c.roStatus[f] = normalizeROStatus(f, c.roStatus[f], c.ro[f]);
   if (!Array.isArray(c.robots)) c.robots = [];
   const race = d.raceMap.get(c.race), trait = d.traitMap.get(c.trait);
   const isNovus = race?.name === 'Новуссит';
@@ -639,6 +690,12 @@ export function render(ctx) {
         ${r.skills.map((s) => skillRow(s, d)).join('') || '<p class="meta">Навыки не выбраны.</p>'}</section>
       <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d, c.class)).join('')}</section>
       ${roPanel(c)}
+      <section class="panel char-data"><h2>Данные персонажа</h2>
+        <div class="btns"><button class="danger" data-a="reset-char">Сбросить персонажа</button>
+          <button data-a="export-char">Экспорт в .json</button>
+          <label class="btn">Импорт из .json<input type="file" accept=".json" data-a="import-char" hidden></label></div>
+        <p class="meta">Сброс очищает только карточку персонажа. Гараж, роботы, тема и кэш базы остаются. Полная выгрузка всех данных — в «Настройках».</p>
+        <p id="char-msg" class="meta">${esc(DATA_MSG)}</p></section>
     </div>
     <div class="char-col">
       ${inventoryPanel(c, d, r, race)}
@@ -652,6 +709,7 @@ export function render(ctx) {
 export function bind(root, ctx) {
   const c = ctx.char, d = ctx.data, done = () => { ctx.save(); ctx.rerender(); };
   if (!c.ro) c.ro = blankRO();
+  if (!c.roStatus) c.roStatus = blankROStatus();
   if (!Array.isArray(c.robots)) c.robots = [];
   if (!Array.isArray(c.equipment)) c.equipment = [];
   root.oninput = (e) => {
@@ -674,6 +732,20 @@ export function bind(root, ctx) {
     select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
   root.onchange = (e) => {
+    if (e.target.dataset.a === 'import-char') {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      importChar(file).then((imported) => {
+        ctx.char = imported;
+        ctx.save();
+        DATA_MSG = 'Персонаж загружен: ' + (ctx.char.name || 'без имени');
+        ctx.rerender();
+      }).catch((err) => {
+        DATA_MSG = err.message;
+        ctx.rerender();
+      });
+      return;
+    }
     if (e.target.dataset.clinic !== undefined) {
       const id = e.target.dataset.clinic;
       if (!Array.isArray(c.clinicImplants)) c.clinicImplants = [];
@@ -698,6 +770,27 @@ export function bind(root, ctx) {
       const robot = R.robots.find((x) => x.id === e.target.dataset.robotHp);
       if (robot) {
         robot.currentHp = e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value) || 0));
+        saveRobots(R);
+        done();
+      }
+      return;
+    }
+    if (e.target.dataset.robotWeapon !== undefined) {
+      const robot = R.robots.find((x) => x.id === e.target.dataset.robotWeapon);
+      if (robot) {
+        robot.weapon = e.target.value === '' ? null : Number(e.target.value);
+        saveRobots(R);
+        done();
+      }
+      return;
+    }
+    if (e.target.dataset.robotModule !== undefined) {
+      const [id, raw] = e.target.dataset.robotModule.split('.');
+      const robot = R.robots.find((x) => x.id === id);
+      if (robot) {
+        const i = Number(raw) || 0;
+        if (!Array.isArray(robot.modulesActive)) robot.modulesActive = [false, false, false, false, false];
+        robot.modulesActive[i] = !!e.target.checked;
         saveRobots(R);
         done();
       }
@@ -730,8 +823,14 @@ export function bind(root, ctx) {
         c.stats[key] = Math.min(max, Math.max(1, Math.round(Number(c.stats[key]) || 1)));
       }
       if (path.startsWith('ro.')) {
-        const faction = path.slice(3), value = Number(c.ro?.[faction]);
-        c.ro[faction] = RO_VALUES.includes(value) ? value : 0;
+        const faction = path.slice(3);
+        const raw = Number(c.ro?.[faction]);
+        c.ro[faction] = Math.max(RO_MIN, Math.min(RO_MAX, Math.round(Number.isFinite(raw) ? raw : 0)));
+        c.roStatus[faction] = normalizeROStatus(faction, c.roStatus[faction], c.ro[faction]);
+      }
+      if (path.startsWith('roStatus.')) {
+        const faction = path.slice(9);
+        c.roStatus[faction] = normalizeROStatus(faction, c.roStatus[faction], c.ro[faction]);
       }
       if (path === 'race') {
         const allowed = allowedClasses(c.race, ctx.data.classes);
@@ -754,6 +853,15 @@ export function bind(root, ctx) {
     }
   };
   root.onclick = (e) => {
+    const action = e.target.closest('[data-a]')?.dataset.a;
+    if (action === 'export-char') { exportChar(ctx.char); return; }
+    if (action === 'reset-char' && (typeof confirm !== 'function' || confirm('Сбросить персонажа? Гараж, роботы и настройки останутся.'))) {
+      ctx.char = blankChar();
+      ctx.save();
+      DATA_MSG = 'Персонаж сброшен.';
+      ctx.rerender();
+      return;
+    }
     const comboBtn = e.target.closest('[data-combo-btn]');
     if (comboBtn) {
       const combo = comboBtn.closest('[data-combo]');
@@ -852,8 +960,8 @@ export function bind(root, ctx) {
 // Подссылки вида #char/beasts открывают нужную вкладку инвентаря.
 const TAB_IDS = new Set(['pockets', 'equipment', 'implants', 'repository', 'beasts']);
 export function setRoute(sub) {
+  // Пустой подраздел не сбрасывает выбор: при возврате на вкладку остаётся последняя подвкладка.
   if (TAB_IDS.has(sub)) UI.tab = sub;
-  else if (!sub) UI.tab = 'pockets';
 }
 export function currentRoute() {
   return UI.tab;

@@ -5,7 +5,7 @@ import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
 import { blankChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
-import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, blankRO, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
+import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
@@ -13,11 +13,12 @@ import * as utilities from '../js/views/utilities.js';
 import * as settings from '../js/views/settings.js';
 import * as shop from '../js/modules/autoshop/view.js';
 import { partsOf } from '../js/modules/autoshop/parts.js';
+import { parsePart } from '../js/modules/autoshop/parser.js';
 import { summarize } from '../js/modules/autoshop/aggregate.js';
 import { G, importGarage, normGarage, currentVehicle } from '../js/modules/autoshop/store.js';
 import * as robotsView from '../js/modules/robots/view.js';
-import { R as robotStore, normRobot } from '../js/modules/robots/store.js';
-import { robotRequirement, availableCount } from '../js/modules/robots/parts.js';
+import { R as robotStore, normRobot, importRobots } from '../js/modules/robots/store.js';
+import { robotRequirement, availableCount, robotStats, robotMissing, moduleChecked, moduleIsActive, moduleEnabled } from '../js/modules/robots/parts.js';
 
 const d = indexData(JSON.parse(readFileSync(new URL('../data/data.json', import.meta.url), 'utf8')));
 let fail = 0;
@@ -192,12 +193,17 @@ utilities.setRoute('calc');
 const calcHtml = utilities.render(ctx);
 check('утилиты: калькулятор с полем «Вер» и без «Атаки»', ['data-calc="stat"', 'data-calc="bonus"', 'data-calc="target"', 'data-calc="ver"', 'data-calc="mode"', 'data-calc-out', 'Результат D100'].every((x) => calcHtml.includes(x)) && !calcHtml.includes('data-calc="attack"') && !calcHtml.includes('Формула'));
 check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
+utilities.setRoute('robots');
+utilities.setRoute('');
+check('утилиты: пустой подраздел сохраняет последнюю вкладку', utilities.currentRoute() === 'robots');
 utilities.setRoute('shop');
 databases.setRoute('cards');
 check('подссылки: #db/cards', databases.currentRoute() === 'cards');
 databases.setRoute('items');
 character.setRoute('repository');
 check('подссылки: #char/repository', character.currentRoute() === 'repository');
+character.setRoute('');
+check('персонаж: пустой подраздел сохраняет последнюю вкладку', character.currentRoute() === 'repository');
 character.setRoute('pockets');
 
 check('утилиты: мобильные вкладки', utilities.render(ctx).includes('data-tab-select'));
@@ -408,26 +414,33 @@ check('подсказки: нечёткий поиск, звери и кальк
 
 const settingsHtml = settings.render(ctx);
 const systemAt = settingsHtml.indexOf('Системные');
-check('настройки: сброс персонажа выше экспорта, кэш — в «Системных»',
-  settingsHtml.includes('data-a="reset-char"') && settingsHtml.includes('data-a="reset-cache"')
-  && settingsHtml.indexOf('data-a="reset-char"') < settingsHtml.indexOf('data-a="export"')
+check('настройки: полная выгрузка всех данных и сброс кэша',
+  settingsHtml.includes('data-a="export-all"') && !settingsHtml.includes('data-a="reset-char"') && !settingsHtml.includes('data-a="export"')
   && systemAt > 0 && settingsHtml.indexOf('data-a="reset-cache"') > systemAt);
-let settingsSaved = 0, settingsRendered = 0;
-const settingsCtx = { ...ctx, char: { ...c }, save() { settingsSaved++; }, rerender() { settingsRendered++; } };
-const settingsRoot = { querySelector: () => ({ textContent: '' }) };
-settings.bind(settingsRoot, settingsCtx);
-// Как в браузере: data-theme висит на <html>, поэтому closest('[data-theme]') ловит любой клик.
-// Кнопка темы должна искаться именно как button[data-theme].
-settingsRoot.onclick({ target: { closest: (s) => s === '[data-a]' ? { dataset: { a: 'reset-char' } }
-  : s === 'button[data-theme]' ? null
-    : s === '[data-theme]' ? { dataset: { theme: 'auto' } } : null } });
-check('настройки: «Сбросить персонажа» чистит только карточку', settingsSaved === 1 && settingsRendered === 1 && settingsCtx.char.name === '' && settingsCtx.char.beasts.length === 0);
+const charDataHtml = character.render(ctx);
+check('персонаж: выгрузка, загрузка и сброс на своей вкладке',
+  charDataHtml.includes('data-a="reset-char"') && charDataHtml.includes('data-a="export-char"') && charDataHtml.includes('data-a="import-char"'));
+let charSaved = 0, charRendered = 0;
+const charCtx = { ...ctx, char: { ...c }, save() { charSaved++; }, rerender() { charRendered++; } };
+const charRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(charRoot, charCtx);
+charRoot.onclick({ target: { closest: (s) => s === '[data-a]' ? { dataset: { a: 'reset-char' } } : null } });
+check('персонаж: «Сбросить персонажа» чистит только карточку', charSaved === 1 && charRendered === 1 && charCtx.char.name === '' && charCtx.char.beasts.length === 0);
 
 // --- РО, слоты Зверя, нумерация БД и роботы Техника ---
 check('РО: шесть фракций и семь значений', RO_FACTIONS.length === 6 && RO_VALUES.join(',') === '-60,-35,-15,0,15,35,60', RO_VALUES.join(','));
-check('РО: лимит БМЕТ = max(1, РО Ацуши)', [-60, -35, -15, 0, 15, 35, 60].map((v) => bmetLimit({ 'Ацуши': v })).join(',') === '1,1,1,1,15,35,60');
-const roHtml = character.render({ ...ctx, char: { ...blankChar(), ro: { ...blankRO(), 'Ацуши': 35 } } });
-check('РО: карточка показывает фракции и лимит БМЕТ', roHtml.includes('data-p="ro.Ацуши"') && roHtml.includes('data-p="ro.ГРА"') && roHtml.includes('Лимит БМЕТ: 35'));
+check('РО: лимит БМЕТ по РО Ацуши', [-60, -35, -15, 0, 15, 35, 60].map((v) => bmetLimit({ 'Ацуши': v })).join(',') === '1,1,1,1,1,2,3');
+check('РО: диапазон −100…100 и ранги на порогах', RO_MIN === -100 && RO_MAX === 100
+  && [-60, -35, -15, -14, 0, 14, 15, 35, 60, 100].map(roRank).join(',') === '-3,-2,-1,0,0,0,1,2,3,3');
+check('РО: ассоциация и членство по правилам', normalizeROStatus('ГРА', RO_STATUS.association, 100) === ''
+  && normalizeROStatus('Чёрный Рынок', RO_STATUS.membership, 100) === ''
+  && normalizeROStatus('Ацуши', RO_STATUS.membership, 35) === ''
+  && normalizeROStatus('Ацуши', RO_STATUS.membership, 60) === RO_STATUS.membership
+  && normalizeROStatus('Хиллз', RO_STATUS.association, 0) === RO_STATUS.association);
+const roHtml = character.render({ ...ctx, char: { ...blankChar(), ro: { ...blankRO(), 'Ацуши': 35 }, roStatus: { ...blankROStatus(), 'Ацуши': RO_STATUS.association } } });
+check('РО: карточка показывает фракции, ранг, статус и лимит БМЕТ', roHtml.includes('data-p="ro.Ацуши"') && roHtml.includes('data-p="ro.ГРА"') && roHtml.includes('data-p="roStatus.Ацуши"') && roHtml.includes('Ранг +2') && roHtml.includes('Лимит БМЕТ: 2'));
+const roMemberHtml = character.render({ ...ctx, char: { ...blankChar(), ro: { ...blankRO(), 'Ацуши': 60 } } });
+check('РО: членство появляется только при 60+', roMemberHtml.includes(`value="${RO_STATUS.membership}"`) && !roHtml.includes(`value="${RO_STATUS.membership}"`));
 
 check('звери: слоты по рангам', BEAST_SLOTS[1]['Обычный'] === 2 && BEAST_SLOTS[3]['Редкий'] === 1
   && BEAST_SLOTS[5]['Обычный'] === 4 && BEAST_SLOTS[6]['Легендарный'] === 1
@@ -472,6 +485,7 @@ robotStore.robots = [normRobot({ id: 'r-test-prism', name: 'Призма', base:
 robotStore.active = 'r-test-prism';
 const prismHtml = robotsView.render({ ...ctx, char: prismChar });
 check('роботы: Призма принимает 2 оружия и 5 модулей', prismHtml.includes(esc(robotWeapon.name)) && prismHtml.includes(esc(robotModule.name)) && !/undefined|NaN/.test(prismHtml));
+check('роботы: «Активация» только у установленных модулей', (prismHtml.match(/data-robot-module="/g) || []).length === 1);
 check('роботы: занятый экземпляр не используется дважды', availableCount(prismChar, robotStore.robots, robotWeapon.id) === 0
   && availableCount({ ...prismChar, pockets: [{ id: robotWeapon.id, qty: 2 }] }, robotStore.robots, robotWeapon.id) === 1);
 check('роботы: Призма требует один из робософтов', robotRequirement(robotStore.robots[0], d, prismChar).ok
@@ -479,6 +493,43 @@ check('роботы: Призма требует один из робософт�
 const techHtml = character.render({ ...ctx, char: { ...prismChar, robots: ['r-test-prism'] } });
 check('Техник: карточка показывает робота, ОЗ и снаряжение', techHtml.includes('Роботы Техника') && techHtml.includes('data-robot-use="r-test-prism"')
   && techHtml.includes('Надето роботов: 1') && techHtml.includes(robotModule.name) && !/undefined|NaN/.test(techHtml));
+
+// АТК — по текущему оружию, модули учитываются только с активацией.
+const weapon2 = d.items.find((i) => i.category === 'Оружие' && i.id !== robotWeapon.id);
+const atkModule = d.items.find((i) => i.id === '0x1d5');
+robotStore.robots = [normRobot({
+  id: 'r-atk', name: 'АТК', base: prism.id,
+  weapons: [robotWeapon.id, weapon2.id], weapon: 0,
+  modules: [atkModule.id, null, null, null, null],
+})];
+robotStore.active = 'r-atk';
+const atkOff = robotStats(robotStore.robots[0], d).total.atk;
+const atkOn = robotStats({ ...robotStore.robots[0], weapon: 1, modulesActive: [true, false, false, false, false] }, d).total.atk;
+check('роботы: АТК считается по выбранному оружию, а не суммой', atkOff === parsePart(robotWeapon.description).atk, atkOff);
+check('роботы: активный модуль добавляет параметры', atkOn === parsePart(weapon2.description).atk + parsePart(atkModule.description).atk
+  && !moduleActive(robotStore.robots[0], 0), `${atkOn}`);
+const atkHtml = character.render({ ...ctx, char: { ...prismChar, robots: ['r-atk'] } });
+check('роботы: в карточке есть выбор оружия и активация модулей', atkHtml.includes('data-robot-weapon="r-atk"')
+  && atkHtml.includes('data-robot-module="r-atk.0"') && atkHtml.includes('выкл'));
+
+// Сборка из любых деталей и плашка о недостающем.
+const emptyTech = { ...blankChar(), class: 'Техник', implants: ['0x189'] };
+robotStore.robots = [normRobot({ id: 'r-missing', name: 'Недобор', base: prism.id, weapons: [robotWeapon.id, null] })];
+robotStore.active = 'r-missing';
+const missingParts = robotMissing(robotStore.robots[0], d, emptyTech);
+const missingHtml = robotsView.render({ ...ctx, char: emptyTech });
+check('роботы: показывает, чего нет в инвентаре', missingParts.length === 2 && missingParts.every((x) => x.have === 0)
+  && missingHtml.includes('miss-note') && missingHtml.includes('Нет в инвентаре'));
+check('роботы: собирать можно из любых деталей базы', missingHtml.includes(esc(prism.name)) && missingHtml.includes(esc(weapon2.name)) && missingHtml.includes('нет в инвентаре'));
+check('роботы: без деталей надеть нельзя', !robotRequirement(robotStore.robots[0], d, emptyTech).ok
+  && /data-robot-use="r-missing"[^>]*disabled/.test(character.render({ ...ctx, char: { ...emptyTech, robots: [] } })));
+
+// Счётчик БМЕТ виден только с «Атсуши продвинутый робософт».
+robotStore.robots = [normRobot({ id: 'r-b-count', name: 'Орион', base: bmetOrion.id })];
+robotStore.active = 'r-b-count';
+const noBmetImplantHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Техник', robots: ['r-b-count'] } });
+const withBmetImplantHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Техник', implants: ['0x1ac'], robots: ['r-b-count'] } });
+check('Техник: счётчик БМЕТ только при Робософте', !noBmetImplantHtml.includes('БМЕТ: 1 / 1') && withBmetImplantHtml.includes('БМЕТ: 1 / 1'));
 
 robotStore.robots = [
   normRobot({ id: 'r-b1', name: 'Орион', base: bmetOrion.id }),
@@ -494,13 +545,21 @@ robotsView.bind(rbRoot, { ...ctx, char: limitChar, rerender() { robotRenders++; 
 rbRoot.onchange({ target: { dataset: { robotName: '' }, value: 'Разведчик' } });
 check('роботы: переименование сохраняется', robotStore.robots[0].name === 'Разведчик' && robotRenders === 1);
 
-const skelChar = { ...blankChar(), class: 'Техник', pockets: [{ id: skeletonItem.id, qty: 1 }, { id: robotModule.id, qty: 1 }], equipment: [skeletonItem.id] };
+const skelChar = { ...blankChar(), class: 'Техник', implants: ['0x1ad'], pockets: [{ id: skeletonItem.id, qty: 1 }, { id: robotModule.id, qty: 1 }], equipment: [skeletonItem.id] };
 const skelHtml = character.render({ ...ctx, char: skelChar });
-check('скелет: 3 модуля [Acs] и требование Догмата', skelHtml.includes('Модульный скелет') && skelHtml.includes('data-skel-mod="2"')
-  && skelHtml.includes('Догмат Единства') && !/undefined|NaN/.test(skelHtml));
+check('скелет: 3 модуля [Acs] и карточки модулей', skelHtml.includes('Модульный скелет') && skelHtml.includes('data-skel-mod="2"')
+  && skelHtml.includes('Посмотреть карточки модулей') && skelHtml.includes('skel-catalog') && !/undefined|NaN/.test(skelHtml));
+const skelHiddenHtml = character.render({ ...ctx, char: { ...skelChar, implants: [] } });
+check('скелет: подвкладка скрыта без Догмата Единства', !skelHiddenHtml.includes('<h2>Модульный скелет</h2>'));
 const skelSlots = derive({ ...skelChar, equipment: [skeletonItem.id, robotModule.id] }, d).gearSlots;
 check('скелет: [Exo] занимает броню, модуль — [Acs]',
   skelSlots.find((s) => s.tag === '[Exo]').used === 1 && skelSlots.find((s) => s.tag === '[Acs]').used === 1);
+
+const robotsBefore = robotStore.robots.length;
+const importedRobots = importRobots(JSON.stringify({ robots: [{ id: 'r-import-test', name: 'Импорт', base: prism.id }] }));
+check('роботы: импорт добавляет с новым ID', importedRobots === 1 && robotStore.robots.length === robotsBefore + 1
+  && robotStore.robots[robotStore.robots.length - 1].id !== 'r-import-test'
+  && robotStore.robots[robotStore.robots.length - 1].name === 'Импорт');
 
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');
 process.exit(fail ? 1 : 0);
