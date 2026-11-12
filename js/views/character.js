@@ -57,7 +57,11 @@ const transportData = (c, d) => {
   return { vehicle, build: B, sum };
 };
 const ov = (title, path, v) => `<label class="ov${v.overridden ? ' on' : ''}"><span>${title}</span><b class="${v.value < 0 ? 'bad' : ''}">${num(v.value)}</b>
-  <input type="number" data-p="${path}" value="${v.overridden ? v.value : ''}" placeholder="авто ${num(v.auto)}"></label>`;
+  <input type="number" data-p="${path}" value="${v.overridden ? v.value : ''}" placeholder="${num(v.auto)}"></label>`;
+const ovFreePointsBonus = (title, path, v, bonusVal) => {
+  return `<label class="ov${bonusVal !== 0 ? ' on' : ''}"><span>${title}</span><b class="${v.value < 0 ? 'bad' : ''}">${num(v.value)}</b>
+    <input type="number" data-p-free-bonus="${path}" value="${bonusVal !== 0 ? bonusVal : ''}" placeholder="Доп. ОХ"></label>`;
+};
 const del = (kind, i) => `<button class="x" data-del="${kind}.${i}" title="Убрать">✕</button>`;
 const missing = (kind, i, id) => `<div class="line miss">Записи ${esc(id)} больше нет в базе ${del(kind, i)}</div>`;
 const slots = (rows) => `<div class="chips">${rows.map((s) => `<span class="lim ${s.status === 'ОК' ? 'o' : s.status === 'Занято' ? 'b' : s.status === 'Свободно' ? 'f' : 'x2'}">${esc(s.tag)} ${s.used}/${s.limit} · ${s.status}</span>`).join('')}</div>`;
@@ -532,7 +536,7 @@ const stockItems = (c, d, predicate) => {
 function roPanel(c) {
   const ro = { ...blankRO(), ...(c.ro || {}) };
   const status = { ...blankROStatus(), ...(c.roStatus || {}) };
-  const rows = RO_FACTIONS.map((f) => {
+  const rows = RO_FACTIONS.map((f, index) => {
     const value = Math.max(RO_MIN, Math.min(RO_MAX, Number(ro[f]) || 0));
     const rank = roRank(value);
     const current = normalizeROStatus(f, status[f], value);
@@ -541,7 +545,7 @@ function roPanel(c) {
     const options = `<option value=""${current === '' ? ' selected' : ''}>—</option>${canAssociate ? `<option value="${RO_STATUS.association}"${current === RO_STATUS.association ? ' selected' : ''}>${RO_STATUS_LABEL.association}</option>` : ''}${canJoin ? `<option value="${RO_STATUS.membership}"${current === RO_STATUS.membership ? ' selected' : ''}>${RO_STATUS_LABEL.membership}</option>` : ''}`;
     return `<div class="ro-row">
       <span class="ro-name">${esc(f)} <span class="chip ro-rank" title="Ранг организации: от -3 до 3">Ранг ${roRankText(rank)}</span></span>
-      <label>РО<input type="number" min="${RO_MIN}" max="${RO_MAX}" step="1" data-p="ro.${esc(f)}" data-n="1" value="${value}"></label>
+      <label>РО<input type="number" min="${RO_MIN}" max="${RO_MAX}" step="1" data-p="ro.${esc(f)}" data-n="1" data-enter-next="ro.${RO_FACTIONS[(index + 1) % RO_FACTIONS.length]}" value="${value}"></label>
       <label>Статус<select data-p="roStatus.${esc(f)}">${options}</select></label>
     </div>`;
   }).join('');
@@ -562,7 +566,7 @@ function robotPanel(c, d) {
   const limit = bmetLimit(c.ro);
   const showBmet = hasImplant(c, d, ROBOT_IMPLANTS.bmet);
   const bmetsActive = robots.filter((r) => active.has(r.id) && isBmet(robotBase(r, d))).length;
-  const cards = robots.map((r) => {
+  const cards = robots.map((r, index) => {
     const base = robotBase(r, d), kind = robotKind(base);
     const full = robotStats(r, d), stats = full.total;
     const req = robotRequirement(r, d, c);
@@ -592,10 +596,12 @@ function robotPanel(c, d) {
               : `<span class="chip" title="Пассивный модуль — параметры учитываются всегда">${esc(label(it))}</span>`)
           : `<span class="chip">${esc(slot)}: ${esc(label(it))}</span>`;
       }).join('');
+    const nextRobot = robots[(index + 1) % robots.length];
+    const nextHpAttr = nextRobot ? ` data-enter-next="robot-hp.${nextRobot.id}"` : '';
     return `<article class="robot-card${on ? ' on' : ''}">
       <div class="robot-head"><label class="robot-use"><input type="checkbox" data-robot-use="${esc(r.id)}"${on ? ' checked' : ''}${disabled ? ' disabled' : ''}> Надеть</label><b>${esc(r.name)}</b><span class="meta">${esc(robotKindLabel[kind] || 'без основы')}</span></div>
       <div class="chips"><span class="chip">ОЗ: ${r.currentHp != null ? `${num(r.currentHp)} / ${num(stats.hp)}` : num(stats.hp)}</span>${stats.defP ? `<span class="chip">ДЕФ.П ${num(stats.defP)}</span>` : ''}${stats.defA ? `<span class="chip">ДЕФ.А ${num(stats.defA)}</span>` : ''}${stats.evasion ? `<span class="chip">УКЛ ${num(stats.evasion)}</span>` : ''}${stats.atk ? `<span class="chip">АТК ${num(stats.atk)}</span>` : ''}${on ? '<span class="chip total">надет</span>' : ''}</div>
-      <label class="robot-hp">Текущее ОЗ <input type="number" min="0" data-robot-hp="${esc(r.id)}" value="${r.currentHp ?? ''}" placeholder="${num(stats.hp)}"><span class="meta">/ ${num(stats.hp)}</span></label>
+      <label class="robot-hp">Текущее ОЗ <input type="number" min="0" data-robot-hp="${esc(r.id)}"${nextHpAttr} value="${r.currentHp ?? ''}" placeholder="${num(stats.hp)}"><span class="meta">/ ${num(stats.hp)}</span></label>
       ${weaponSelect}
       ${gear ? `<div class="chips">${gear}</div>` : `<p class="meta">${kind === 'bmet' ? 'У БМЕТ нет слотов оружия и модулей.' : 'Оружие и модули не установлены.'}</p>`}
       ${full.unique ? `<p class="desc meta">${esc(full.unique)}</p>` : ''}
@@ -658,11 +664,29 @@ export function render(ctx) {
   // Транспорт доступен только Кочевнику и только пока машина есть в гараже.
   if (!isKochevnik(c)) c.transport = null;
   else if (c.transport && !G.vehicles.some((v) => v.id === c.transport)) c.transport = null;
+
+  // Суммируем все характеристики персонажа
+  const statsSum = Object.values(c.stats || {}).reduce((acc, val) => acc + (Number(val) || 0), 0);
+  
+  // База свободных очков (56 + бонус)
+  const bonus = Number(c.overrides?.freePointsBonus) || 0;
+  const totalPool = 56 + bonus;
+  const autoFreePoints = totalPool - statsSum;
+
   const r = derive(c, d, isKochevnik(c) && c.transport ? ['Tr'] : []);
+  // Устанавливаем свободные очки как сумму пула минус сумма характеристик
+  r.freePoints = {
+    value: autoFreePoints,
+    auto: 56 - statsSum,
+    overridden: bonus !== 0
+  };
+
   const stats = [...d.stats].sort((a, b) => STAT_ORDER.indexOf(a.key) - STAT_ORDER.indexOf(b.key));
-  const stat = (s) => {
+  const stat = (s, index) => {
     const issue = r.statIssues[s.key];
-    return `<label class="${issue ? 'stat-bad' : ''}"${issue ? ` title="Не хватает для навыков: ${esc(issue.skills.join(', '))}"` : ''}>${esc(s.name)}${issue ? ` <span class="bad">нужно ${issue.need}</span>` : ''}<input type="number" min="1" max="${s.max}" step="1" data-p="stats.${s.key}" value="${c.stats[s.key]}"${issue ? ' class="err"' : ''}></label>`;
+    const nextStatKey = STAT_ORDER[(index + 1) % STAT_ORDER.length];
+    const nextStatAttr = nextStatKey ? ` data-enter-next="stats.${nextStatKey}"` : '';
+    return `<label class="${issue ? 'stat-bad' : ''}"${issue ? ` title="Не хватает для навыков: ${esc(issue.skills.join(', '))}"` : ''}>${esc(s.name)}${issue ? ` <span class="bad">нужно ${issue.need}</span>` : ''}<input type="number" min="1" max="${s.max}" step="1" data-p="stats.${s.key}"${nextStatAttr} value="${c.stats[s.key]}"${issue ? ' class="err"' : ''}></label>`;
   };
   const ab = Array.from({ length: 9 }, (_, i) => c.abilities[i] || null);
   const rankText = (x) => `${x.level} · ${x.name}`;
@@ -680,8 +704,8 @@ export function render(ctx) {
         ${isNovus ? `<label>Сущность<select data-p="essence"><option value="">—</option>${opts(d.essences, c.essence)}</select></label>` : ''}</div>
         ${race && !race.has_kronos ? `<p class="meta">${esc(race.name)}: Кроноса нет (справочно, расчёт не блокируется).</p>` : ''}
         ${trait ? `<p class="desc meta">${esc(trait.description)}</p>` : ''}</section>
-      <section class="panel"><div class="grid">${ov('Свободные очки', 'overrides.freePoints', r.freePoints)}${ov('Макс. ОЗ', 'overrides.hpMax', r.hpMax)}${ov('Макс. Кронос', 'overrides.kronosMax', r.kronosMax)}</div></section>
-      <section class="panel"><h2>Характеристики</h2><div class="grid">${stats.map(stat).join('')}</div></section>
+      <section class="panel"><div class="grid">${ovFreePointsBonus('Свободные очки', 'overrides.freePointsBonus', r.freePoints, bonus)}${ov('Макс. ОЗ', 'overrides.hpMax', r.hpMax)}${ov('Макс. Кронос', 'overrides.kronosMax', r.kronosMax)}</div></section>
+      <section class="panel"><h2>Характеристики</h2><div class="grid">${stats.map((s, index) => stat(s, index)).join('')}</div></section>
       <section class="panel"><h2>Навыки</h2>
         <div class="chips"><span class="chip ${r.skillsOverLimit ? 'bad' : ''}">Навыки: ${r.skillCount} / ${r.skillLimit}</span><span class="chip">Щепки: ${num(r.shardsTotal)}</span><span class="chip">Лимит: 4 × ранг ${r.rankLevel}</span></div>
         ${issues.length ? `<p class="bad">Не хватает характеристик: ${issues.map(([k, v]) => `${esc(d.statMap.get(k)?.name || k)} (нужно ${v.need}, есть ${v.have})`).join('; ')}</p>` : ''}
@@ -712,6 +736,44 @@ export function bind(root, ctx) {
   if (!c.roStatus) c.roStatus = blankROStatus();
   if (!Array.isArray(c.robots)) c.robots = [];
   if (!Array.isArray(c.equipment)) c.equipment = [];
+
+  if (!root._statEnterHandler) {
+    root._statEnterHandler = (e) => {
+      if (e.key === 'Enter') {
+        const targetInput = e.target.closest('input[data-p^="stats."]');
+        if (targetInput) {
+          e.preventDefault();
+          const path = targetInput.dataset.p;
+          const val = fieldValue(targetInput);
+          set(c, path, val);
+          if (path.startsWith('stats.')) {
+            const key = path.slice(6), max = ctx.data.statMap.get(key)?.max || 10;
+            c.stats[key] = Math.min(max, Math.max(1, Math.round(Number(c.stats[key]) || 1)));
+          }
+          ctx.save();
+
+          const statInputs = Array.from(root.querySelectorAll('input[data-p^="stats."]'));
+          const idx = statInputs.indexOf(targetInput);
+          const nextInput = idx >= 0 ? statInputs[(idx + 1) % statInputs.length] : null;
+          const nextPath = nextInput ? nextInput.dataset.p : null;
+
+          ctx.rerender();
+
+          if (nextPath) {
+            const nextEl = root.querySelector(`[data-p="${nextPath}"]`);
+            if (nextEl) {
+              nextEl.focus();
+              if (typeof nextEl.select === 'function') {
+                nextEl.select();
+              }
+            }
+          }
+        }
+      }
+    };
+    root.addEventListener('keydown', root._statEnterHandler);
+  }
+
   root.oninput = (e) => {
     const comboKind = e.target.dataset.comboSearch;
     if (comboKind) {
@@ -732,6 +794,14 @@ export function bind(root, ctx) {
     select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
   root.onchange = (e) => {
+    if (e.target.dataset.pFreeBonus !== undefined) {
+      const path = e.target.dataset.pFreeBonus;
+      const raw = e.target.value;
+      if (!c.overrides) c.overrides = {};
+      set(c, path, raw === '' ? 0 : Number(raw) || 0);
+      done();
+      return;
+    }
     if (e.target.dataset.a === 'import-char') {
       const file = e.target.files?.[0];
       if (!file) return;
