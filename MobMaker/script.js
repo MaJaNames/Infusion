@@ -68,7 +68,6 @@ const EFFECT_GROUPS = [
             { name: "Слепота", desc: "Боевые действия только через Удачу без модификаторов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 100, step: 1 },
             { name: "Страх", desc: "В конце хода проверка Воля/2 >= 50, иначе атаки не засчитываются.", defN: 1, defVer: 50, defAkt: 2, baseCost: 90, step: 1 },
             { name: "Мокрый", desc: "Дает Сложную Местность. Продлевает крио-обездвижен.", defN: 1, defVer: 50, defAkt: 2, baseCost: 20, step: 1 },
-            { name: "Громкий", desc: "Порог обнаружения становится 90 вместо 180.", defN: 1, defVer: 50, defAkt: 2, baseCost: 10, step: 1 }
         ]
     },
     {
