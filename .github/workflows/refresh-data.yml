@@ -1,8 +1,10 @@
 name: Обновить снимок базы
 
 on:
-  schedule: [{ cron: '0 21 * * *' }]    # 21:00 UTC соответствует 04:00 UTC+11
-  workflow_dispatch:                    # и вручную: вкладка Actions → Run workflow
+  schedule:
+    - cron: '0 4 * * *'
+      timezone: 'Asia/Magadan'    # Запуск ровно в 04:00 по Магадану
+  workflow_dispatch:
 
 permissions:
   contents: write
