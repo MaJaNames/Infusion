@@ -185,11 +185,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .inf-label { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 4px;}
 .inf-label input { margin: 0; accent-color: var(--accent); }
 
-@media (max-width: 720px) {
-    .active-effect-row { grid-template-columns: 1fr 1fr; }
-    .active-effect-row .eff-name-col { grid-column: 1 / -1; }
-}
-
 .btn {
     background: var(--accent);
     color: #fff;
@@ -229,3 +224,80 @@ pre {
 }
 
 .hint { font-size: 0.78rem; color: var(--text-muted); font-weight: normal; }
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.action-buttons .btn {
+    flex: 1 1 200px;
+}
+
+.btn-link {
+    background: #10b981;
+    color: white;
+}
+.btn-link:hover {
+    background: #059669;
+}
+
+/* =========================================
+   МОБИЛЬНАЯ ВЕРСИЯ (Адаптивность)
+   ========================================= */
+@media (max-width: 720px) {
+    .active-effect-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    .active-effect-row .eff-name-col {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 8px;
+    }
+    .card {
+        padding: 12px;
+    }
+    
+    /* Шапка */
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .pills-wrap {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Сетки переводим в одну колонку */
+    .grid-2, .grid-4, .grid-attrs {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Выбранные эффекты */
+    .active-effect-row {
+        grid-template-columns: 1fr; /* В колонку на телефоне */
+        gap: 6px;
+    }
+    .active-effect-row .eff-name-col {
+        margin-bottom: 4px;
+        font-size: 1rem;
+    }
+
+    /* Кнопки копирования */
+    .action-buttons {
+        flex-direction: column;
+        height: auto;
+    }
+    .action-buttons .btn {
+        width: 100%;
+        flex: none;
+        height: auto;
+    }
+}

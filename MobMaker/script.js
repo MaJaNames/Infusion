@@ -135,8 +135,14 @@ function init() {
         catDiv.appendChild(block);
     });
 
-    updateDamageInfo();
-    applyTierPreset();
+    // Пытаемся загрузить данные из ссылки
+    const loadedFromUrl = loadStateFromUrl();
+    
+    if (!loadedFromUrl) {
+        // Если ссылки нет, ставим дефолтные значения
+        updateDamageInfo();
+        applyTierPreset();
+    }
 }
 
 function updateDamageInfo() {
@@ -542,6 +548,119 @@ function copyResult() {
         btn.textContent = "Скопировано!";
         setTimeout(() => btn.textContent = orig, 1500);
     });
+}
+
+// === СОХРАНЕНИЕ И ЗАГРУЗКА (URL) ===
+
+function shareLink() {
+    const state = {
+        name: document.getElementById('mobName').value,
+        tier: document.getElementById('mobTier').value,
+        type: document.getElementById('mobType').value,
+        dmgType: document.getElementById('damageType').value,
+        hp: document.getElementById('statHp').value,
+        defP: document.getElementById('statDefP').value,
+        defA: document.getElementById('statDefA').value,
+        ukl: document.getElementById('statUkl').value,
+        atk: document.getElementById('statAtk').value,
+        crit: document.getElementById('statCrit').value,
+        acc: document.getElementById('statAcc').value,
+        avh: document.getElementById('statAvh').value,
+        kc: document.getElementById('statKc').value,
+        od: document.getElementById('statOd').value,
+        op: document.getElementById('statOp').value,
+        ignDef: document.getElementById('statIgnDef').value,
+        ignUkl: document.getElementById('statIgnUkl').value,
+        resType: document.getElementById('resType').value,
+        resActive: document.getElementById('resActive').value,
+        notes: document.getElementById('mobNotes').value,
+        attrs: {},
+        effects: selectedEffects
+    };
+
+    // Собираем характеристики
+    document.querySelectorAll('.attr-input').forEach(inp => {
+        state.attrs[inp.dataset.name] = inp.value;
+    });
+
+    const jsonStr = JSON.stringify(state);
+    // Кодируем в Base64 с поддержкой кириллицы
+    const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+    
+    // Формируем ссылку
+    const currentUrl = window.location.href.split('#')[0];
+    const shareUrl = `${currentUrl}#state=${encoded}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        const btn = document.querySelector('.btn-link');
+        const orig = btn.textContent;
+        btn.textContent = "Ссылка скопирована!";
+        setTimeout(() => btn.textContent = orig, 1500);
+    });
+}
+
+function loadStateFromUrl() {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#state=')) return false;
+
+    try {
+        const encoded = hash.replace('#state=', '');
+        const jsonStr = decodeURIComponent(escape(atob(encoded)));
+        const state = JSON.parse(jsonStr);
+
+        document.getElementById('mobName').value = state.name || "Безымянный";
+        document.getElementById('mobTier').value = state.tier || "Элитный";
+        document.getElementById('mobType').value = state.type || "Босс";
+        document.getElementById('damageType').value = state.dmgType || "Кинетический";
+        
+        document.getElementById('statHp').value = state.hp || 1000;
+        document.getElementById('statDefP').value = state.defP || 0;
+        document.getElementById('statDefA').value = state.defA || 0;
+        document.getElementById('statUkl').value = state.ukl || 0;
+        document.getElementById('statAtk').value = state.atk || 0;
+        document.getElementById('statCrit').value = state.crit || 0;
+        document.getElementById('statAcc').value = state.acc || 0;
+        document.getElementById('statAvh').value = state.avh || 1;
+        document.getElementById('statKc').value = state.kc || 1;
+        document.getElementById('statOd').value = state.od || 1;
+        document.getElementById('statOp').value = state.op || 1;
+        document.getElementById('statIgnDef').value = state.ignDef || 0;
+        document.getElementById('statIgnUkl').value = state.ignUkl || 0;
+        
+        document.getElementById('resType').value = state.resType || "Нет";
+        document.getElementById('resActive').value = state.resActive || "0";
+        document.getElementById('mobNotes').value = state.notes || "";
+
+        if (state.attrs) {
+            document.querySelectorAll('.attr-input').forEach(inp => {
+                if (state.attrs[inp.dataset.name] !== undefined) {
+                    inp.value = state.attrs[inp.dataset.name];
+                }
+            });
+        }
+
+        selectedEffects = state.effects || {};
+        
+        document.querySelectorAll('.effect-chip input[type="checkbox"]').forEach(cb => {
+            const name = cb.closest('.effect-chip').id.replace('chip_', '');
+            if (selectedEffects[name]) {
+                cb.checked = true;
+                cb.closest('.effect-chip').classList.add('active');
+            } else {
+                cb.checked = false;
+                cb.closest('.effect-chip').classList.remove('active');
+            }
+        });
+
+        updateDamageInfo();
+        renderActiveEffects();
+        recalcStats();
+        
+        return true;
+    } catch (e) {
+        console.error("Ошибка загрузки состояния из ссылки", e);
+        return false;
+    }
 }
 
 init();

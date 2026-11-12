@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конструктор Мобов - РП-Сервер (Баланс 2026)</title>
+    <title>Конструктор Мобов</title>
     <link rel="stylesheet" href="style.css">
+    <meta property="og:title" content="Конструктор Мобов">
+    <meta property="og:description" content="Конструктор мобов для инфузии">
+    <link rel="icon" type="image/webp" href="../assets/icons/paw.webp">
+    <link rel="apple-touch-icon" href="../assets/icons/paw.webp">
 </head>
 <body>
 
@@ -177,7 +181,7 @@
     <div class="card">
         <h2>
             <span>4. Эффекты атак и пассивки</span>
-            <span class="hint">Умная кривая стоимости с учетом вероятностей и частоты атак</span>
+            <!-- <span class="hint">Умная кривая стоимости с учетом вероятностей и частоты атак</span> -->
         </h2>
 
         <div id="effectsCatalog"></div>
@@ -198,7 +202,10 @@
     <div class="card">
         <h2>Готовая карточка моба</h2>
         <pre id="outputBox"></pre>
-        <button class="btn" style="margin-top: 10px;" onclick="copyResult()">Скопировать в буфер обмена</button>
+        <div class="action-buttons">
+            <button class="btn" onclick="copyResult()">Скопировать текст</button>
+            <button class="btn btn-link" onclick="shareLink()">Поделиться ссылкой</button>
+        </div>
     </div>
 </div>
 
