@@ -552,7 +552,7 @@ function roPanel(c) {
   return `<section class="panel ro-panel"><h2>РО — репутация организаций</h2>
     <p class="meta">РО — целое число от ${RO_MIN} до ${RO_MAX}. На 15, 35 и 60 (и в минусах) меняется ранг от -3 до 3. Ассоциация недоступна ГРА; членство — Чёрному Рынку и только при РО 60 и выше.</p>
     <div class="ro-list">${rows}</div>
-    <div class="chips"><span class="chip total">Лимит БМЕТ: ${num(bmetLimit(ro))}</span></div>
+    <!-- <div class="chips"><span class="chip total">Лимит БМЕТ: ${num(bmetLimit(ro))}</span></div> -->
   </section>`;
 }
 
