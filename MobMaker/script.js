@@ -63,7 +63,7 @@ const EFFECT_GROUPS = [
         css: "p3-bg",
         items: [
             { name: "Перелом", desc: "Не может блокировать и использовать Тяжелое.", defN: 1, defVer: 50, defAkt: 3, baseCost: 70, step: 1 },
-            { name: "Подавлен", desc: "Штраф к АТК - АТК/4. 1 АКТ. Не суммируется.", defN: 1, defVer: 50, defAkt: 2, baseCost: 50, step: 1 },
+            { name: "Подавлен", desc: "Персонаж не может пользоваться навыками и способностями.", defN: 1, defVer: 50, defAkt: 2, baseCost: 50, step: 1 },
             { name: "Обезоружен", desc: "Не может использовать оружие n ходов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 80, step: 1 },
             { name: "Слепота", desc: "Боевые действия только через Удачу без модификаторов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 100, step: 1 },
             { name: "Страх", desc: "В конце хода проверка Воля/2 >= 50, иначе атаки не засчитываются.", defN: 1, defVer: 50, defAkt: 2, baseCost: 90, step: 1 },
