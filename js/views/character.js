@@ -536,23 +536,36 @@ const stockItems = (c, d, predicate) => {
 function roPanel(c) {
   const ro = { ...blankRO(), ...(c.ro || {}) };
   const status = { ...blankROStatus(), ...(c.roStatus || {}) };
+  
+  // Check if the user already has any active status in ANY faction
+  const activeFactionWithStatus = RO_FACTIONS.find(faction => {
+    const currentStatus = normalizeROStatus(faction, status[faction], Math.max(RO_MIN, Math.min(RO_MAX, Number(ro[faction]) || 0)));
+    return currentStatus === RO_STATUS.association || currentStatus === RO_STATUS.membership;
+  });
+
   const rows = RO_FACTIONS.map((f, index) => {
     const value = Math.max(RO_MIN, Math.min(RO_MAX, Number(ro[f]) || 0));
     const rank = roRank(value);
     const current = normalizeROStatus(f, status[f], value);
-    const canAssociate = f !== 'ГРА';
-    const canJoin = f !== 'Чёрный Рынок' && value >= 60;
+    
+    // If another faction already has a status, disable options for this faction unless it's the one already selected
+    const hasGlobalLimitReached = activeFactionWithStatus && activeFactionWithStatus !== f;
+
+    const canAssociate = !hasGlobalLimitReached && f !== 'ГРА' && f !== 'Хиллз' && f !== 'Гончие';
+    const canJoin = !hasGlobalLimitReached && f !== 'Чёрный Рынок' && (value >= 60 || f === 'Хиллз' || f === 'Гончие');
+    
     const options = `<option value=""${current === '' ? ' selected' : ''}>—</option>${canAssociate ? `<option value="${RO_STATUS.association}"${current === RO_STATUS.association ? ' selected' : ''}>${RO_STATUS_LABEL.association}</option>` : ''}${canJoin ? `<option value="${RO_STATUS.membership}"${current === RO_STATUS.membership ? ' selected' : ''}>${RO_STATUS_LABEL.membership}</option>` : ''}`;
+    
     return `<div class="ro-row">
       <span class="ro-name">${esc(f)} <span class="chip ro-rank" title="Ранг организации: от -3 до 3">Ранг ${roRankText(rank)}</span></span>
       <label>РО<input type="number" min="${RO_MIN}" max="${RO_MAX}" step="1" data-p="ro.${esc(f)}" data-n="1" data-enter-next="ro.${RO_FACTIONS[(index + 1) % RO_FACTIONS.length]}" value="${value}"></label>
       <label>Статус<select data-p="roStatus.${esc(f)}">${options}</select></label>
     </div>`;
   }).join('');
+  
   return `<section class="panel ro-panel"><h2>РО — репутация организаций</h2>
-    <p class="meta">РО — целое число от ${RO_MIN} до ${RO_MAX}. На 15, 35 и 60 (и в минусах) меняется ранг от -3 до 3. Ассоциация недоступна ГРА; членство — Чёрному Рынку и только при РО 60 и выше.</p>
+    <p class="meta">РО — целое число от ${RO_MIN} до ${RO_MAX}. На 15, 35 и 60 (и в минусах) меняется ранг от -3 до 3. Доступна только 1 ассоциация или членство на все фракции.</p>
     <div class="ro-list">${rows}</div>
-    <!-- <div class="chips"><span class="chip total">Лимит БМЕТ: ${num(bmetLimit(ro))}</span></div> -->
   </section>`;
 }
 

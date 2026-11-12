@@ -60,9 +60,22 @@ export const roRankText = (rank) => (rank > 0 ? `${rank}` : String(rank));
 
 // Ассоциация доступна всем, кроме ГРА; членство — всем, кроме Чёрного Рынка,
 // и только при РО 60 и выше. Одновременно можно выбрать только одно.
-export const roStatusAllowed = (faction, status, value) => {
-  if (status === RO_STATUS.association) return faction !== 'ГРА';
-  if (status === RO_STATUS.membership) return faction !== 'Чёрный Рынок' && Number(value) >= 60;
+export const roStatusAllowed = (faction, status, value, userRelations = []) => {
+  const bypassFactions = ['Хиллз', 'Гончие'];
+
+  // Block if the user already has any existing association or membership
+  if (userRelations.length > 0) {
+    return false;
+  }
+
+  if (status === RO_STATUS.association) {
+    return faction !== 'ГРА';
+  }
+  
+  if (status === RO_STATUS.membership) {
+    return faction !== 'Чёрный Рынок' && (Number(value) >= 60 || bypassFactions.includes(faction));
+  }
+  
   return true;
 };
 export const normalizeROStatus = (faction, status, value) =>
