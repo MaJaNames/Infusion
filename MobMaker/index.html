@@ -243,6 +243,42 @@
             <span>Готовая карточка моба</span>
             <span class="hint" id="outputBudgetHint"></span>
         </h2>
+            <!-- Итоговый вывод -->
+    <div class="card">
+        <h2>
+            <span>Готовая карточка моба</span>
+            <span class="hint" id="outputBudgetHint"></span>
+        </h2>
+
+        <!-- Калькулятор для ГМа -->
+        <div class="sheet-section" style="margin-bottom: 20px; border-bottom: 1px dashed var(--border); padding-bottom: 20px;">
+            <div class="sheet-section-title">Калькулятор уклонения (Инструмент ГМа)</div>
+            <div class="grid-4" style="margin-bottom: 8px;">
+                <div>
+                    <label>СТАТ игрока (1-10)</label>
+                    <input type="number" id="calcStat" value="5" min="1" max="10" oninput="updateDamageCalc()">
+                </div>
+                <div>
+                    <label>Бонус к УКЛ</label>
+                    <input type="number" id="calcBonus" value="20" oninput="updateDamageCalc()">
+                </div>
+                <div>
+                    <label>Деф(П) игрока</label>
+                    <input type="number" id="calcDefP" value="10" oninput="updateDamageCalc()">
+                </div>
+            </div>
+            <div id="damageCalcResult" class="hint" style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6;"></div>
+        </div>
+        <!-- КОНЕЦ КАЛЬКУЛЯТОРА -->
+        <!-- Бюджет вне карточки -->
+        <div class="sheet-budget" id="externalBudget" style="margin-bottom: 16px; margin-top: 0; padding-top: 0; border-top: none;">
+            <span class="sheet-budget-label">Бюджет моба</span>
+            <div class="budget-bar"><span id="externalBudgetBar" style="width:0%"></span></div>
+            <b id="externalBudgetText">0 / 0</b>
+        </div>
+
+        <div id="outputCard" class="output-card"></div>
+
         <div id="outputCard" class="output-card"></div>
         <pre id="outputBox" hidden></pre>
         <div class="action-buttons">
@@ -251,10 +287,13 @@
             <button class="btn btn-outline" onclick="exportJSON()">Скачать .json</button>
             <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">Загрузить .json</button>
             <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" style="display: none;">
+            <button class="btn btn-outline" onclick="downloadCardAsImage()">Скачать картинку</button>
         </div>
     </div>
 </div>
 
+
 <script src="script.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>

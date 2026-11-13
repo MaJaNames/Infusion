@@ -1144,6 +1144,23 @@ function recalcStats() {
     budgetDisplay.textContent = `${totalSpent} / ${maxBudget}`;
     budgetDisplay.className = totalSpent > maxBudget ? "budget-val over" : "budget-val ok";
 
+    const extBudget = document.getElementById("externalBudget");
+    const extBudgetBar = document.getElementById("externalBudgetBar");
+    const extBudgetText = document.getElementById("externalBudgetText");
+    
+    if (extBudget && extBudgetBar && extBudgetText) {
+        extBudgetText.textContent = `${totalSpent} / ${maxBudget}`;
+        extBudgetBar.style.width = `${budgetPercent()}%`;
+        
+        if (totalSpent > maxBudget) {
+            extBudget.classList.add("over");
+            extBudgetText.style.color = "var(--p1-color)";
+        } else {
+            extBudget.classList.remove("over");
+            extBudgetText.style.color = "var(--ok-color)";
+        }
+    }
+
     const attrBudgetDisplay = document.getElementById("attrBudgetDisplay");
     attrBudgetDisplay.textContent = `${attrSum} / ${maxAttrs}`;
     attrBudgetDisplay.className = attrSum > maxAttrs ? "budget-val over" : "budget-val ok";
@@ -1151,6 +1168,9 @@ function recalcStats() {
     updateAllAttackCostDisplays();
     renderOutput();
     
+    // Обновляем калькулятор
+    updateDamageCalc();
+
     // M6: Автосохранение при любом изменении
     if (!isApplyingState) {
         triggerAutoSave();
@@ -1315,7 +1335,7 @@ function buildOutputHtml(data) {
                     <div class="mob-sub">${esc(TYPE_RENAME[data.type] || data.type)}${data.role ? ` · ${esc(data.role)}` : ""}</div>
                 </div>
                 <div class="mob-tags">
-                    <span class="tag tag-tier">${esc(TIER_RENAME[data.tier] || data.tier)}</span>
+                    <!-- <span class="tag tag-tier">${esc(TIER_RENAME[data.tier] || data.tier)}</span> -->
                     <span class="tag tag-type">${esc(TYPE_RENAME[data.type] || data.type)}</span>
                 </div>
             </div>
@@ -1338,29 +1358,6 @@ function buildOutputHtml(data) {
                 ${passivesHtml}
             </div>
             ${data.notes ? `<div class="notes-block"><div class="sheet-section-title">Особые примечания</div><div>${formatMarkdown(data.notes)}</div></div>` : ""}
-            <div class="sheet-section" style="border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
-                <div class="sheet-section-title">Калькулятор уклонения</div>
-                <div class="grid-4" style="margin-bottom: 8px;">
-                    <div>
-                        <label>СТАТ игрока (1-10)</label>
-                        <input type="number" id="calcStat" value="5" min="1" max="10" oninput="updateDamageCalc()">
-                    </div>
-                    <div>
-                        <label>Бонус к УКЛ</label>
-                        <input type="number" id="calcBonus" value="20" oninput="updateDamageCalc()">
-                    </div>
-                    <div>
-                        <label>Деф(П) игрока</label>
-                        <input type="number" id="calcDefP" value="10" oninput="updateDamageCalc()">
-                    </div>
-                </div>
-                <div id="damageCalcResult" class="hint" style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6;"></div>
-            </div>
-            <div class="sheet-budget ${currentBudget.spent > currentBudget.max ? "over" : ""}">
-                <span class="sheet-budget-label">Бюджет</span>
-                <div class="budget-bar"><span style="width:${budgetPercent()}%"></span></div>
-                <b>${currentBudget.spent} / ${currentBudget.max}</b>
-            </div>
         </div>
     `;
 }
@@ -1433,6 +1430,52 @@ function showButtonFeedback(btn, text) {
     setTimeout(() => btn.textContent = original, 1500);
 }
 
+function downloadCardAsImage() {
+    const cardElement = document.getElementById('outputCard');
+    if (!cardElement || !cardElement.innerHTML.trim()) {
+        alert("Сначала создайте моба!");
+        return;
+    }
+
+    // Меняем текст кнопки, чтобы показать, что идет процесс
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = "Генерация...";
+    btn.disabled = true;
+
+    // Настройки рендера
+    html2canvas(cardElement, {
+        scale: 2, // Увеличение разрешения (х2) для четкости на Retina-экранах
+        backgroundColor: "#09090b", // Цвет фона (чтобы не было прозрачности, берем цвет из твоего CSS .mob-sheet)
+        useCORS: true, // Разрешает загрузку внешних картинок (если они будут)
+        logging: false // Отключает спам в консоли
+    }).then(canvas => {
+        // Получаем картинку в формате PNG
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Создаем ссылку для скачивания
+        const link = document.createElement('a');
+        
+        // Имя файла: берем имя моба и дату
+        const mobName = document.getElementById("mobName").value.trim() || "mob";
+        link.download = `${mobName.replace(/[^a-zа-я0-9]/gi, '_')}_card.png`;
+        
+        link.href = imgData;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Возвращаем кнопку в исходное состояние
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }).catch(err => {
+        console.error("Ошибка при создании картинки:", err);
+        alert("Не удалось создать картинку. Попробуйте еще раз.");
+        btn.textContent = originalText;
+        btn.disabled = false;
+    });
+}
+
 function copyResult() {
     const text = lastOutputText || document.getElementById("outputBox").textContent;
     const btn = document.querySelector(".action-buttons .btn");
@@ -1490,9 +1533,9 @@ function shareLink() {
 function applyState(state) {
     isApplyingState = true;
     setInputValue("mobName", state.name || "Безымянный");
-    setInputValue("mobTier", state.tier || "Элитный");
-    setInputValue("mobType", state.type || "Босс");
-    setInputValue("mobRole", state.role || "Универсал");
+    setInputValue("mobTier", state.tier || "Новичок");
+    setInputValue("mobType", state.type || "Моб");
+    setInputValue("mobRole", state.role || "");
     setInputValue("statHp", state.hp || 1000);
     setInputValue("statExtraHp", state.extraHp ?? 0);
     setInputValue("statDefP", state.defP ?? 0);
