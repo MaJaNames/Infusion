@@ -122,6 +122,22 @@ const IMMUNITY_GROUPS = [
     },
 ];
 
+// Словарь для переименования Типов юнитов
+const TYPE_RENAME = {
+    "Моб": "Шестёрка",
+    "Элитный": "Лейтенант",
+    "Босс": "Босс"
+};
+
+// Словарь для переименования Сложностей (Тиров)
+const TIER_RENAME = {
+    "Новичок": "Новичок",
+    "Обычный": "Обычный",
+    "Опасный": "Опасный",
+    "Элитный": "Элитный",
+    "Смерть": "Смерть"
+};
+
 const GLOBAL_ATK_COST = 4.0;
 const GLOBAL_KS_COST = 5.0;
 const GLOBAL_TCHN_COST = 3.0;
@@ -875,7 +891,7 @@ function calculateAttackStatCost(attack) {
     const ks = (hasNoDamage || hasGrenade) ? 0 : attack.ks;
     const tchn = hasGrenade ? 0 : attack.tchn;
 
-    // ДЛЯ АТК СТАВИМ ПОРОГ 25 (до 25 АТК считается линейно, после — по кривой)
+    // Пороги 50, 10, 25.
     const statCost = Math.max(0, 
         calcCurvedCost(atk, ATTACK_ATK_COST, 50) + 
         calcCurvedCost(ks, ATTACK_KS_COST, 10) + 
@@ -899,7 +915,7 @@ function calculateGlobalAttackStatCost() {
         const gAtk = hasNoDamage ? 0 : global.atk;
         const gKs = (hasNoDamage || hasGrenade) ? 0 : global.ks;
         const gTchn = hasGrenade ? 0 : global.tchn;
-        
+        // Порог 30 для АТК.
         const statCost = Math.max(0, 
             calcCurvedCost(gAtk, ATTACK_ATK_COST, 30) + 
             calcCurvedCost(gKs, ATTACK_KS_COST, 0) + 
@@ -1148,7 +1164,9 @@ function updateOutputBudgetHint() {
 
 function buildPlainText(data) {
     const lines = [];
-    lines.push(`=== [${data.tier.toUpperCase()}] ${data.name} (${data.type}) ===`);
+    const displayType = TYPE_RENAME[data.type] || data.type;
+    const displayTier = TIER_RENAME[data.tier] || data.tier;
+    lines.push(`=== ${data.name} (${displayType}) ===`);
     if (data.role) lines.push(`Роль: ${data.role}`);
 
     if (data.attrs.length) lines.push(`- Характеристики: ${data.attrs.map(attr => `${attr.name}: ${attr.value}`).join(", ")}`);
@@ -1245,11 +1263,11 @@ function buildOutputHtml(data) {
             <div class="mob-sheet-head">
                 <div>
                     <h3 class="mob-name">${esc(data.name)}</h3>
-                    <div class="mob-sub">${esc(data.type)}${data.role ? ` · ${esc(data.role)}` : ""}</div>
+                    <div class="mob-sub">${esc(TYPE_RENAME[data.type] || data.type)}${data.role ? ` · ${esc(data.role)}` : ""}</div>
                 </div>
                 <div class="mob-tags">
-                    <span class="tag tag-tier">${esc(data.tier)}</span>
-                    <span class="tag tag-type">${esc(data.type)}</span>
+                    <span class="tag tag-tier">${esc(TIER_RENAME[data.tier] || data.tier)}</span>
+                    <span class="tag tag-type">${esc(TYPE_RENAME[data.type] || data.type)}</span>
                 </div>
             </div>
             <div class="sheet-section">
