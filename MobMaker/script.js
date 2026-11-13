@@ -1407,7 +1407,7 @@ function renderAttackOutput(attack) {
                 ${ignoreBadges.join("")}
             </div>
             ${effectsHtml}
-            <div class="attack-output-cost">Стоимость атаки: <b>${calculateAttackCost(attack)}</b> оч.</div>
+            <!-- <div class="attack-output-cost">Стоимость атаки: <b>${calculateAttackCost(attack)}</b> оч.</div> -->
         </div>
     `;
 }
