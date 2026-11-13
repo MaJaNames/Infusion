@@ -785,13 +785,17 @@ function updateAttackField(attackId, field, value) {
 }
 
 function addAttack() {
-    const base = attacks[0];
     attacks.push(createAttack({
-        name: `Атака ${attacks.length + 1}`, type: base ? base.type : "Ближняя",
-        distMin: base ? base.distMin : 0, distMax: base ? base.distMax : 1,
-        damageType: base ? base.damageType : "Кинетический",
-        atk: base ? base.atk : 70, ks: base ? base.ks : 10, tchn: base ? base.tchn : 25,
-        avh: base ? base.avh : 2, kc: base ? base.kc : 1
+        name: `Атака ${attacks.length + 1}`,
+        type: "Ближняя",
+        distMin: 0,
+        distMax: 0,
+        damageType: "Кинетический",
+        atk: 0,
+        ks: 0,
+        tchn: 0,
+        avh: 1,
+        kc: 1
     }));
     renderAttacks();
     recalcStats();
@@ -816,12 +820,24 @@ function removeAttack(attackId) {
 }
 
 function attackCostMultiplier(attack) {
+    const global = getGlobalStats();
     const hasNoDamage = !!attack.effects["Без урона"];
     const hasGrenade = !!attack.effects["Граната"];
-    const kc = (hasNoDamage || hasGrenade) ? 1 : attack.kc;
-    const stats = { avh: attack.avh, kc: kc };
+    
+    // Базовые значения атаки (с защитой от пустых строк)
+    const baseAvh = Number(attack.avh) || 1;
+    const baseKc = Number(attack.kc) || 1;
+    
+    // Считаем ИТОГОВЫЕ значения с учетом глобальных бонусов
+    const totalAvh = baseAvh + global.avh;
+    
+    // У Гранаты и Без урона КЦ всегда 1. В остальных случаях — локальный + глобальный.
+    const totalKc = (hasNoDamage || hasGrenade) ? 1 : (baseKc + global.kc);
+    
     const od = readNum("statOd", 1) || 1;
-    return Math.max(1, stats.avh * stats.kc * od * getDamageMult(attack.damageType)) * attackTypeMult(attack.type);
+    
+    // Умножаем на итоговые АВХ и КЦ
+    return Math.max(1, totalAvh * totalKc * od * getDamageMult(attack.damageType)) * attackTypeMult(attack.type);
 }
 
 function attackDistanceCost(attack) {
@@ -839,6 +855,17 @@ function attackDistanceCost(attack) {
     } else { return Math.round(span * 100); }
 }
 
+// Функция прогрессивной стоимости (кривой)
+function calcCurvedCost(value, baseCost, threshold = 0) {
+    if (value <= 0) return 0;
+    
+    // Насколько значение превысило безопасный порог
+    const penaltyValue = Math.max(0, value - threshold);
+    
+    // Квадратичный штраф применяется ТОЛЬКО к превышению
+    return Math.round((value + (penaltyValue * penaltyValue) / 40) * baseCost);
+}
+
 function calculateAttackStatCost(attack) {
     const mult = attackCostMultiplier(attack);
     const hasNoDamage = !!attack.effects["Без урона"];
@@ -848,7 +875,13 @@ function calculateAttackStatCost(attack) {
     const ks = (hasNoDamage || hasGrenade) ? 0 : attack.ks;
     const tchn = hasGrenade ? 0 : attack.tchn;
 
-    const statCost = Math.max(0, atk * ATTACK_ATK_COST + ks * ATTACK_KS_COST + tchn * ATTACK_TCHN_COST);
+    // ДЛЯ АТК СТАВИМ ПОРОГ 25 (до 25 АТК считается линейно, после — по кривой)
+    const statCost = Math.max(0, 
+        calcCurvedCost(atk, ATTACK_ATK_COST, 50) + 
+        calcCurvedCost(ks, ATTACK_KS_COST, 10) + 
+        calcCurvedCost(tchn, ATTACK_TCHN_COST, 25)
+    );
+    
     const ignDefCost = (Number(attack.ignDef) || 0) * IGNORE_DEF_COST;
     const ignUklCost = (Number(attack.ignUkl) || 0) * IGNORE_UKL_COST;
     return Math.round((statCost + ignDefCost + ignUklCost) * (2 * mult) + attackDistanceCost(attack));
@@ -856,12 +889,33 @@ function calculateAttackStatCost(attack) {
 
 function calculateGlobalAttackStatCost() {
     const global = getGlobalStats();
-    const od = readNum("statOd", 1) || 1;
-    const mult = Math.max(1, (global.avh || 1) * (global.kc || 1) * od);
-    const statCost = Math.max(0, global.atk * GLOBAL_ATK_COST + global.ks * GLOBAL_KS_COST + global.tchn * GLOBAL_TCHN_COST);
-    const avhCost = Math.max(0, global.avh) * GLOBAL_AVH_BASE;
-    const kcCost = Math.max(0, global.kc) * GLOBAL_KC_BASE;
-    return Math.round(statCost * 2 * mult + avhCost + kcCost);
+    let totalEquivalentCost = 0;
+    
+    attacks.forEach(attack => {
+        const mult = attackCostMultiplier(attack);
+        const hasNoDamage = !!attack.effects["Без урона"];
+        const hasGrenade = !!attack.effects["Граната"];
+        
+        const gAtk = hasNoDamage ? 0 : global.atk;
+        const gKs = (hasNoDamage || hasGrenade) ? 0 : global.ks;
+        const gTchn = hasGrenade ? 0 : global.tchn;
+        
+        const statCost = Math.max(0, 
+            calcCurvedCost(gAtk, ATTACK_ATK_COST, 30) + 
+            calcCurvedCost(gKs, ATTACK_KS_COST, 0) + 
+            calcCurvedCost(gTchn, ATTACK_TCHN_COST, 0)
+        );
+        
+        totalEquivalentCost += statCost * (2 * mult);
+        
+        totalEquivalentCost += Math.max(0, global.avh) * GLOBAL_AVH_BASE;
+        if (!hasNoDamage && !hasGrenade) {
+            totalEquivalentCost += Math.max(0, global.kc) * GLOBAL_KC_BASE;
+        }
+    });
+    
+    const finalCost = totalEquivalentCost * 0.85;
+    return Math.round(finalCost);
 }
 
 function calculateAttackEffectCost(attack, name) {
