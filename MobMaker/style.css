@@ -829,6 +829,23 @@ pre {
 .mob-tab-close { font-size: 1.1rem; line-height: 1; color: var(--text-muted); border: none; background: transparent; cursor: pointer; padding: 0 4px; }
 .mob-tab-close:hover { color: var(--p1-color); }
 
+/* Курсор-рука для кружка с номером */
+.attack-number {
+    cursor: grab;
+    transition: background 0.15s;
+}
+.attack-number:active {
+    cursor: grabbing;
+    background: rgba(139, 92, 246, 0.4);
+}
+
+/* Визуальная подсветка карточки при наведении перетаскиваемого элемента */
+.attack-editor.drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+    background: rgba(139, 92, 246, 0.05);
+}
+
 @media (max-width: 720px) {
     .active-effect-row,
     .selected-effect-row {

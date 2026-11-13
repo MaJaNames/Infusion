@@ -30,9 +30,9 @@ const EFFECT_GROUPS = [
         title: "Эффекты атак (Пробитие и Урон)",
         css: "p5-bg",
         items: [
-            { name: "Проницаемость", desc: "Атака игнорирует Деф. Базовая ВЕР 20.", defN: 20, defVer: 50, defAkt: 1, baseCost: 12, step: 10, isPermanent: true },
-            { name: "Распад", desc: "Снимает n ОЗ НАВСЕГДА.", defN: 5, defVer: 50, defAkt: 1, baseCost: 15, step: 1, isPermanent: true },
-            { name: "Излучение", desc: "УКЛ от атак с этим эффектом бросается с помехой.", defN: 1, defVer: 50, defAkt: 1, baseCost: 200, step: 1, isPermanent: true },
+            { name: "Проницаемость", desc: "Атака игнорирует Деф. Базовая ВЕР 20.", defN: 1, defVer: 20, defAkt: 1, baseCost: 600, step: 1, hideN: true, hideAkt: true, isPermanent: true, linearVer: true },
+            { name: "Распад", desc: "Снимает n ОЗ НАВСЕГДА.", defN: 5, defVer: 50, defAkt: 1, baseCost: 15, step: 1, hideAkt: true, isPermanent: true },
+            { name: "Излучение", desc: "УКЛ от атак с этим эффектом бросается с помехой.", defN: 1, defVer: 50, defAkt: 1, baseCost: 200, step: 1, hideN: true, hideAkt: true, isPermanent: true },
         ]
     },
     {
@@ -52,7 +52,7 @@ const EFFECT_GROUPS = [
         title: "Контроль (Запрет и Ограничение)",
         css: "p1-bg",
         items: [
-            { name: "Кома", desc: "Лишает противника всех ОЗ при срабатывании.", defN: 1, defVer: 50, defAkt: 1, baseCost: 3500, step: 1, isPermanent: true },
+            { name: "Кома", desc: "Лишает противника всех ОЗ при срабатывании.", defN: 1, defVer: 50, defAkt: 1, baseCost: 3500, step: 1, hideN: true, hideAkt: true, isPermanent: true },
             { name: "Оцепенение", desc: "Персонаж не способен совершать никаких действий.", defN: 1, defVer: 50, defAkt: 1, baseCost: 180, step: 1 },
             { name: "Сон", desc: "Выключает цель до пробуждения.", defN: 1, defVer: 50, defAkt: 2, baseCost: 100, step: 1 },
             { name: "Дезориентация", desc: "Персонаж не способен атаковать n ходов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 120, step: 1 },
@@ -166,6 +166,7 @@ let savedMobs = {};
 let activeMobId = null;
 let isApplyingState = false;
 let saveTimeout = null;
+let draggedAttackId = null;
 
 // Z8: Навигация по Enter
 document.addEventListener('keydown', function(e) {
@@ -508,6 +509,17 @@ function togglePassiveEffect(name, isChecked) {
 
 function passiveCost(item) { return Math.round((item.baseCost || 0) * 2.5); }
 
+function toggleAllAttacks() {
+    const detailsList = document.querySelectorAll('.attack-effects');
+    if (detailsList.length === 0) return;
+    
+    // Проверяем, открыт ли хотя бы один
+    const isAnyOpen = Array.from(detailsList).some(d => d.open);
+    
+    // Если хоть один открыт — закрываем все. Иначе — открываем все.
+    detailsList.forEach(d => d.open = !isAnyOpen);
+}
+
 function renderAttacks() {
     const container = document.getElementById("attacksContainer");
     if (!container) return;
@@ -548,10 +560,19 @@ function renderAttackEditor(attack, index, wasOpen = null) {
     const hasNoDamage = !!attack.effects["Без урона"];
     const hasGrenade = !!attack.effects["Граната"];
 
-    return `
-        <div class="attack-editor" data-attack-id="${attack.id}">
+        return `
+        <div class="attack-editor" data-attack-id="${attack.id}" 
+             ondragover="handleDragOver(event)" 
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event, ${attack.id})">
             <div class="attack-editor-head">
-                <div class="attack-number">${index + 1}</div>
+                <div class="attack-number" 
+                     draggable="true" 
+                     ondragstart="handleDragStart(event, ${attack.id})" 
+                     ondragend="handleDragEnd(event)"
+                     title="Перетащите, чтобы изменить порядок">
+                    ${index + 1}
+                </div>
                 <input type="text" class="attack-name-input" data-field="name" value="${esc(attack.name)}"
                     placeholder="Название атаки" oninput="updateAttackField(${attack.id}, 'name', this.value)">
                 <div class="attack-head-actions">
@@ -749,6 +770,7 @@ function toggleAttackEffect(attackId, name, isChecked, level) {
             n: item.defN, ver: item.defVer, akt: 1, baseCost: item.baseCost, step: item.step,
             isInfinite: false, isPermanent: item.isPermanent || false, isItemProperty: item.isItemProperty || false,
             hideN: item.hideN || false, hideVer: item.hideVer || false, hideAkt: item.hideAkt || false,
+            linearVer: item.linearVer || false, // <--- ВОТ ЭТА СТРОЧКА
             priority: level
         };
     } else { delete attack.effects[name]; }
@@ -939,7 +961,16 @@ function calculateAttackEffectCost(attack, name) {
     if (!eff) return 0;
 
     let verFactor = eff.ver / 100;
-    if (eff.ver > 30) { verFactor = Math.pow(eff.ver / 30, 1.6); }
+    
+    // Если у эффекта включен флаг linearVer, используем чистую линейку
+    if (eff.linearVer) {
+        // Начинается с 0.5 (50%) и растет до 1.0 (100%)
+        verFactor = 0.5 + (eff.ver / 200); 
+    } else if (eff.ver > 30) {
+        // Старая экспонента для остальных эффектов
+        verFactor = Math.pow(eff.ver / 30, 1.6);
+    }
+
     const stepMult = eff.n / eff.step;
     
     let aktMult = Math.max(1, eff.akt);
@@ -980,9 +1011,18 @@ function updateAttackCostDisplay(attack) {
     const statEl = card.querySelector('[data-role="attack-stat-cost"]');
     const effectEl = card.querySelector('[data-role="attack-effect-cost"]');
     const totalEl = card.querySelector('[data-role="attack-total-cost"]');
-    if (statEl) statEl.textContent = statCost;
-    if (effectEl) effectEl.textContent = effectCost;
-    if (totalEl) totalEl.textContent = totalCost;
+    if (statEl) {
+        statEl.textContent = statCost;
+        statEl.title = `База + Дистанция. Множитель атаки: ${attackCostMultiplier(attack).toFixed(2)}`;
+    }
+    if (effectEl) {
+        effectEl.textContent = effectCost;
+        effectEl.title = `Сумма всех наложенных эффектов`;
+    }
+    if (totalEl) {
+        totalEl.textContent = totalCost;
+        totalEl.title = `Статы (${statCost}) + Эффекты (${effectCost})`;
+    }
 
     card.querySelectorAll("[data-effect-cost]").forEach(el => {
         const effName = el.dataset.effectCost;
@@ -1227,6 +1267,15 @@ function buildPlainText(data) {
     return lines.join("\n");
 }
 
+function formatMarkdown(text) {
+    if (!text) return "";
+    return esc(text)
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/`(.*?)`/g, '<code style="background: var(--bg-main); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">$1</code>')
+        .replace(/\n/g, '<br>');
+}
+
 function buildOutputHtml(data) {
     const statTiles = [
         statTile("ОЗ", `${data.hp}/${data.hp}`, "hp"),
@@ -1288,7 +1337,25 @@ function buildOutputHtml(data) {
                 <div class="sheet-section-title">Пассивные эффекты</div>
                 ${passivesHtml}
             </div>
-            ${data.notes ? `<div class="notes-block"><div class="sheet-section-title">Особые примечания</div><div>${esc(data.notes)}</div></div>` : ""}
+            ${data.notes ? `<div class="notes-block"><div class="sheet-section-title">Особые примечания</div><div>${formatMarkdown(data.notes)}</div></div>` : ""}
+            <div class="sheet-section" style="border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
+                <div class="sheet-section-title">Калькулятор уклонения</div>
+                <div class="grid-4" style="margin-bottom: 8px;">
+                    <div>
+                        <label>СТАТ игрока (1-10)</label>
+                        <input type="number" id="calcStat" value="5" min="1" max="10" oninput="updateDamageCalc()">
+                    </div>
+                    <div>
+                        <label>Бонус к УКЛ</label>
+                        <input type="number" id="calcBonus" value="20" oninput="updateDamageCalc()">
+                    </div>
+                    <div>
+                        <label>Деф(П) игрока</label>
+                        <input type="number" id="calcDefP" value="10" oninput="updateDamageCalc()">
+                    </div>
+                </div>
+                <div id="damageCalcResult" class="hint" style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6;"></div>
+            </div>
             <div class="sheet-budget ${currentBudget.spent > currentBudget.max ? "over" : ""}">
                 <span class="sheet-budget-label">Бюджет</span>
                 <div class="budget-bar"><span style="width:${budgetPercent()}%"></span></div>
@@ -1671,6 +1738,127 @@ function clearCurrentMob() {
         localStorage.setItem('mobConstructorSaves', JSON.stringify(savedMobs));
     }
     renderTabs();
+}
+
+function exportJSON() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedMobs, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "mobs_backup.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+function importJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            Object.assign(savedMobs, imported); // Объединяем с текущими
+            localStorage.setItem('mobConstructorSaves', JSON.stringify(savedMobs));
+            renderTabs();
+            alert("База мобов успешно загружена!");
+        } catch (err) {
+            alert("Ошибка: файл поврежден или имеет неверный формат.");
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Сбрасываем инпут
+}
+
+function handleDragStart(e, id) {
+    draggedAttackId = id;
+    e.dataTransfer.effectAllowed = 'move';
+    // Добавляем класс для визуального эффекта, что мы что-то тащим
+    e.currentTarget.closest('.attack-editor').style.opacity = '0.4';
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    // Подсвечиваем карточку, над которой находимся
+    e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e, targetId) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    
+    if (!draggedAttackId || draggedAttackId === targetId) return;
+    
+    const fromIndex = attacks.findIndex(a => a.id === draggedAttackId);
+    const toIndex = attacks.findIndex(a => a.id === targetId);
+    
+    // Меняем атаки местами в массиве
+    const [moved] = attacks.splice(fromIndex, 1);
+    attacks.splice(toIndex, 0, moved);
+    
+    renderAttacks();
+    recalcStats();
+}
+
+function handleDragEnd(e) {
+    // Возвращаем прозрачность
+    e.currentTarget.closest('.attack-editor').style.opacity = '1';
+    draggedAttackId = null;
+    // Убираем подсветку со всех карточек
+    document.querySelectorAll('.attack-editor').forEach(el => el.classList.remove('drag-over'));
+}
+
+function updateDamageCalc() {
+    const el = document.getElementById("damageCalcResult");
+    if (!el) return;
+    
+    const stat = Number(document.getElementById("calcStat").value) || 5;
+    const bonus = Number(document.getElementById("calcBonus").value) || 0;
+    const defP = Number(document.getElementById("calcDefP").value) || 0;
+    
+    // Множитель СТАТА (1 = 0.6, 5 = 1.0, 10 = 1.5)
+    const mult = 1 + (stat - 5) * 0.1;
+    
+    if (attacks.length === 0) {
+        el.innerHTML = "Нет атак для расчета.";
+        return;
+    }
+    
+    let results = attacks.map(a => {
+        const eff = effectiveAttackStats(a);
+        
+        // Нам нужно: D100 * mult + bonus > eff.atk
+        // Отсюда: D100 > (eff.atk - bonus) / mult
+        const target = (eff.atk - bonus) / mult;
+        let reqD100 = Math.floor(target) + 1;
+        
+        let evadeText = "";
+        if (reqD100 <= 1) {
+            evadeText = `<span style="color: var(--ok-color); font-weight: 700;">Уклонение при любом броске</span>`;
+        } else if (reqD100 > 100) {
+            evadeText = `<span style="color: var(--p1-color); font-weight: 700;">Невозможно уклониться</span>`;
+        } else {
+            evadeText = `нужно выкинуть <b>${reqD100}+</b> на D100`;
+        }
+        
+        // Если уклонение провалено (игрок выкинул меньше), считаем урон
+        let hitText = "";
+        if (reqD100 <= 100) {
+            // ВНИМАНИЕ: Здесь мы берем АТК как урон. Если урон оружия фиксирован, 
+            // формулу нужно будет поменять на фактический урон оружия.
+            const dmgPerHit = Math.max(0, eff.atk - defP); 
+            const totalDmg = dmgPerHit * eff.avh;
+            hitText = ` (при провале: ~${totalDmg} урона)`;
+        }
+        
+        return `<b>${esc(a.name)}</b> (АТК ${eff.atk}): ${evadeText}${hitText}`;
+    });
+    
+    el.innerHTML = results.join("<br>");
 }
 
 init();

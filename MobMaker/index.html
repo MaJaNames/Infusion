@@ -201,7 +201,10 @@
     <div class="card">
         <h2>
             <span>5. Конструктор атак</span>
-            <button type="button" class="btn btn-small" onclick="addAttack()">+ Добавить атаку</button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-small btn-outline" onclick="toggleAllAttacks()">Свернуть/Развернуть</button>
+                <button type="button" class="btn btn-small" onclick="addAttack()">+ Добавить атаку</button>
+            </div>
         </h2>
         <p class="section-desc">
             У каждой атаки свои <b>АТК</b>, <b>АВХ</b>, <b>КШ</b>, <b>КЦ</b>, <b>ТЧН</b> (дешевле общих),
@@ -245,6 +248,9 @@
         <div class="action-buttons">
             <button class="btn" onclick="copyResult()">Скопировать текст</button>
             <button class="btn btn-link" onclick="shareLink()">Поделиться ссылкой</button>
+            <button class="btn btn-outline" onclick="exportJSON()">Скачать .json</button>
+            <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">Загрузить .json</button>
+            <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" style="display: none;">
         </div>
     </div>
 </div>
