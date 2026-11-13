@@ -13,6 +13,14 @@
 <body>
 
 <div class="container">
+    <div class="mob-tabs-container" style="margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <div class="mob-tabs" id="mobTabs" style="display: flex; gap: 5px; overflow-x: auto; flex: 1;"></div>
+    <div class="mob-tabs-container" style="margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <div class="mob-tabs" id="mobTabs" style="display: flex; gap: 5px; overflow-x: auto; flex: 1;"></div>
+    <button type="button" class="btn btn-small" onclick="addNewTab()">+ Новый моб</button>
+    <button type="button" class="btn btn-small btn-outline" onclick="clearCurrentMob()" style="border-color: var(--p1-color); color: #fca5a5;" title="Сбросить все поля текущего моба">Очистить</button>
+    </div>
+    </div>
     <header>
         <h1>Конструктор Мобов</h1>
         <div class="pills-wrap">
@@ -37,7 +45,7 @@
             </div>
             <div>
                 <label>Уровень сложности квеста</label>
-                <select id="mobTier" onchange="applyTierPreset()">
+                <select id="mobTier" onchange="recalcStats()">
                     <option value="Новичок" data-budget="350">Новичок - Безопасно</option>
                     <option value="Обычный" data-budget="750">Обычный - Малая опасность</option>
                     <option value="Опасный" data-budget="1300">Опасный - Смерть возможна</option>
@@ -49,40 +57,33 @@
         <div class="grid-2">
             <div>
                 <label>Тип юнита</label>
-                <select id="mobType" onchange="applyTierPreset()">
+                <select id="mobType" onchange="recalcStats()">
                     <option value="Моб">Рядовой моб</option>
                     <option value="Элитный">Элитный моб</option>
                     <option value="Босс" selected>Босс</option>
                 </select>
             </div>
             <div>
-                <label>Тип урона</label>
-                <select id="damageType" onchange="updateDamageInfo()">
-                    <option value="Кинетический">Кинетический (Стандарт)</option>
-                    <option value="Термический">Термический</option>
-                    <option value="Химический">Химический</option>
-                    <option value="Кронотический">Кронотический</option>
-                    <option value="Криотический">Криотический</option>
-                    <option value="Гидравлический">Гидравлический</option>
-                    <option value="Электрический">Электрический</option>
-                    <option value="Псионический">Псионический</option>
-                    <option value="Хронотопический">Хронотопический</option>
-                    <option value="Радиоактивный">Радиоактивный</option>
-                    <option value="Психический">Психический</option>
-                    <option value="Чистый урон">Чистый урон</option>
-                </select>
-                <div id="damageInfoBox" class="damage-info-box"></div>
+                <label>Роль в бою</label>
+                <input type="text" id="mobRole" value="" placeholder="Например: Соло, Гейт..." oninput="handleInput('mobRole', this.value)">
             </div>
         </div>
     </div>
 
     <!-- Блок 2: Боевые параметры -->
     <div class="card">
-        <h2>2. Боевые параметры</h2>
+        <h2>
+            <span>2. Боевые параметры</span>
+            <span class="hint">Защита, живучесть и ресурсы персонажа</span>
+        </h2>
         <div class="grid-4" style="margin-bottom: 10px;">
             <div>
                 <label>Здоровье (ОЗ)</label>
                 <input type="number" id="statHp" value="1200" min="1" oninput="handleInput('statHp', this.value)">
+            </div>
+            <div>
+                <label>Доп. Здоровье (ExtraHP)</label>
+                <input type="number" id="statExtraHp" value="0" min="0" oninput="handleInput('statExtraHp', this.value)">
             </div>
             <div>
                 <label>Деф (П)</label>
@@ -98,53 +99,15 @@
             </div>
         </div>
 
-        <div class="grid-4" style="margin-bottom: 10px;">
+        <div class="grid-4">
             <div>
-                <label>Атака (АТК)</label>
-                <input type="number" id="statAtk" value="70" min="0" oninput="handleInput('statAtk', this.value)">
-            </div>
-            <div>
-                <label>Крит. шанс (КШ)</label>
-                <input type="number" id="statCrit" value="10" min="0" max="100" oninput="handleInput('statCrit', this.value)">
-            </div>
-            <div>
-                <label>Точность (ТЧН)</label>
-                <input type="number" id="statAcc" value="25" oninput="handleInput('statAcc', this.value)">
-            </div>
-            <div>
-                <label>АВХ (Атак)</label>
-                <input type="number" id="statAvh" value="2" min="1" step="1" oninput="handleInput('statAvh', this.value)">
-            </div>
-        </div>
-
-        <div class="grid-4" style="margin-bottom: 10px;">
-            <div>
-                <label>КЦ (Целей)</label>
-                <input type="number" id="statKc" value="1" min="1" step="1" oninput="handleInput('statKc', this.value)">
-            </div>
-            <div>
-                <label>ОД</label>
+                <label>ОД (действия)</label>
                 <input type="number" id="statOd" value="1" min="1" max="3" oninput="handleInput('statOd', this.value)">
             </div>
             <div>
-                <label>ОП</label>
+                <label>ОП (перемещение)</label>
                 <input type="number" id="statOp" value="2" min="0" max="10" oninput="handleInput('statOp', this.value)">
             </div>
-            <div>
-                <label>Игнор Деф(П)</label>
-                <input type="number" id="statIgnDef" value="0" min="0" oninput="handleInput('statIgnDef', this.value)">
-            </div>
-        </div>
-
-        <div class="grid-4" style="margin-bottom: 10px;">
-            <div>
-                <label>Игнор УКЛ</label>
-                <input type="number" id="statIgnUkl" value="0" min="0" oninput="handleInput('statIgnUkl', this.value)">
-            </div>
-        </div>
-
-        <!-- Настройка сопротивлений -->
-        <div class="grid-2">
             <div>
                 <label>Сопротивление (тип урона)</label>
                 <select id="resType" onchange="handleInput('resType', this.value)">
@@ -168,40 +131,117 @@
         </div>
     </div>
 
-    <!-- Блок 3: Характеристики -->
+    <!-- Блок 3: Общие параметры атак -->
     <div class="card">
         <h2>
-            <span>3. Характеристики (0-10)</span>
+            <span>3. Общие параметры атак</span>
+            <span class="hint">Прибавляются к каждой атаке (дороже личных)</span>
+        </h2>
+        <p class="section-desc">
+            Эти бонусы действуют на все атаки сразу. Их стоимость считается здесь (общие статы дороже),
+            поэтому в каждой атаке общие очки повторно не начисляются.
+        </p>
+        <div class="grid-4">
+            <div>
+                <label>Общий АТК (х4 оч.)</label>
+                <input type="number" id="globalAtk" value="0" oninput="handleInput('globalAtk', this.value)">
+            </div>
+            <div>
+                <label>Общий КШ (х5 оч.)</label>
+                <input type="number" id="globalKs" value="0" oninput="handleInput('globalKs', this.value)">
+            </div>
+            <div>
+                <label>Общий КЦ (250 оч.)</label>
+                <input type="number" id="globalKc" value="0" min="0" step="1" oninput="handleInput('globalKc', this.value)">
+            </div>
+            <div>
+                <label>Общий ТЧН (х3 оч.)</label>
+                <input type="number" id="globalTchn" value="0" oninput="handleInput('globalTchn', this.value)">
+            </div>
+            <div>
+                <label>Общий АВХ (200 оч.)</label>
+                <input type="number" id="globalAvh" value="0" min="0" step="1" oninput="handleInput('globalAvh', this.value)">
+            </div>
+        </div>
+        <div class="cost-note" id="globalAttackCostNote"></div>
+    </div>
+
+    <!-- Блок 4: Резисты / Игнор эффектов моба -->
+    <div class="card">
+        <h2>
+            <span>4. Резисты (Игнор эффектов)</span>
+            <span class="hint">Срабатывают при пассивной/активной защите по кубу Удачи</span>
+        </h2>
+        <p class="section-desc">
+            Если на моба должен наложиться эффект, при проверке защиты бросается куб <b>Удачи</b>:
+            если значение попадает в порог <b>ВЕР</b> (например, 31–100 при ВЕР 70; ВЕР 100 — полный иммунитет), эффект полностью блокируется.
+            Стоимость резиста не ниже стоимости наложения эффекта.
+        </p>
+        <div class="immunity-block" style="margin-top: 0; padding-top: 0; border-top: none;">
+            <div class="block-head">
+                <label>Резисты моба <span class="hint">ВЕР настраивается (1–100%)</span></label>
+                <div class="custom-immunity">
+                    <input type="text" id="customImmunityInput" placeholder="Свой резист / иммунитет" onkeydown="if(event.key==='Enter') addCustomImmunity()">
+                    <button type="button" class="btn btn-small btn-outline" onclick="addCustomImmunity()">+</button>
+                </div>
+            </div>
+            <details class="immunity-picker">
+                <summary>
+                    <span>Выбрать резисты к эффектам</span>
+                    <span class="badge" id="immunityCountBadge">0</span>
+                </summary>
+                <div id="immunityCatalog" class="immunity-catalog"></div>
+            </details>
+            <div id="immunitySettings" class="selected-effects"></div>
+            <div class="cost-note" id="immunityCostNote"></div>
+        </div>
+    </div>
+
+    <!-- Блок 5: Конструктор атак -->
+    <div class="card">
+        <h2>
+            <span>5. Конструктор атак</span>
+            <button type="button" class="btn btn-small" onclick="addAttack()">+ Добавить атаку</button>
+        </h2>
+        <p class="section-desc">
+            У каждой атаки свои <b>АТК</b>, <b>АВХ</b>, <b>КШ</b>, <b>КЦ</b>, <b>ТЧН</b> (дешевле общих),
+            <b>диапазон дистанции (Min–Max ОП)</b>, <b>гарантированные игноры Деф.П и УКЛ</b>, <b>эффекты наложения (с ВЕР)</b> и <b>тип</b>.
+        </p>
+        <div id="attacksContainer"></div>
+    </div>
+
+    <!-- Блок 6: Характеристики -->
+    <div class="card">
+        <h2>
+            <span>6. Характеристики (0-10)</span>
             <span class="hint">Свободные поинты</span>
         </h2>
         <div class="grid-attrs" id="attrsContainer"></div>
     </div>
 
-    <!-- Блок 4: Эффекты -->
+    <!-- Блок 7: Пассивные эффекты -->
     <div class="card">
         <h2>
-            <span>4. Эффекты атак и пассивки</span>
-            <!-- <span class="hint">Умная кривая стоимости с учетом вероятностей и частоты атак</span> -->
+            <span>7. Пассивные эффекты</span>
+            <span class="hint">Постоянные свойства, не привязанные к атаке</span>
         </h2>
-
-        <div id="effectsCatalog"></div>
-
-        <div id="activeEffectsWrapper" style="margin-top: 14px; display: none;">
-            <label style="color: var(--accent); margin-bottom: 6px;">Настройка выбранных эффектов:</label>
-            <div id="activeEffectsList"></div>
-        </div>
+        <div id="passiveEffectsCatalog"></div>
     </div>
 
-    <!-- Блок 5: Примечания -->
+    <!-- Блок 8: Примечания -->
     <div class="card">
-        <h2>5. Особые механики / Лут / Заметки</h2>
+        <h2>8. Особые механики / Лут / Заметки</h2>
         <textarea id="mobNotes" rows="2" placeholder="Например: При активации использует щит..." oninput="handleInput('mobNotes', this.value)"></textarea>
     </div>
 
     <!-- Итоговый вывод -->
     <div class="card">
-        <h2>Готовая карточка моба</h2>
-        <pre id="outputBox"></pre>
+        <h2>
+            <span>Готовая карточка моба</span>
+            <span class="hint" id="outputBudgetHint"></span>
+        </h2>
+        <div id="outputCard" class="output-card"></div>
+        <pre id="outputBox" hidden></pre>
         <div class="action-buttons">
             <button class="btn" onclick="copyResult()">Скопировать текст</button>
             <button class="btn btn-link" onclick="shareLink()">Поделиться ссылкой</button>
