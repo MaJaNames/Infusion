@@ -109,10 +109,13 @@ export const BEAST_EXTRA_L_ABILITY = 'Я Особенный';
 
 // Импланты, которые открывают управление роботами.
 export const ROBOT_IMPLANTS = Object.freeze({
-  prism: Object.freeze(['0x189', '0x1ac', '0x1ad']), // D.P.L РобоСофт, Атсуши продвинутый, Догмат Единства
+  // D.P.L РобоСофт, Атсуши продвинутый, Догмат Единства, Перераспределитель энерго-ядра.
+  prism: Object.freeze(['0x189', '0x1ac', '0x1ad', '0x271']),
   bmet: Object.freeze(['0x1ac']), // Атсуши продвинутый робософт
   skeleton: Object.freeze(['0x1ad']), // Догмат Единства
 });
-// Имплант для Ядра пока отсутствует в data.json. Когда появится — достаточно вписать его ID.
-export const CORE_IMPLANT = Object.freeze({ id: '', name: 'Имплант Ядра' });
+// «Перераспределитель энерго-ядра»: +20 АТК и +10 ТЧН получает SAT (робот), а не персонаж.
+export const CORE_IMPLANT = Object.freeze({ id: '0x271', name: 'Перераспределитель энерго-ядра' });
+export const CORE_IMPLANT_ATK = 20;
+export const CORE_IMPLANT_TCHN = 10;
 

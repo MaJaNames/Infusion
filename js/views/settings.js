@@ -1,23 +1,51 @@
 import { esc } from '../core/util.js';
-import { downloadJson } from '../core/storage.js';
+import { downloadJson, normChar, saveChar } from '../core/storage.js';
 import { getTheme, setTheme } from '../core/theme.js';
-import { G } from '../modules/autoshop/store.js';
-import { R } from '../modules/robots/store.js';
+import { G, normGarage, saveGarage } from '../modules/autoshop/store.js';
+import { R, normRobots, saveRobots } from '../modules/robots/store.js';
 
 const THEMES = [['auto', 'Как в системе'], ['light', 'Светлая'], ['dark', 'Тёмная']];
+let FLASH = ''; // сообщение после перерисовки (например, об успешной загрузке бэкапа)
 
 export function render(ctx) {
   const d = ctx.data;
+  const flash = FLASH;
+  FLASH = '';
   return `<section class="panel"><h2>Все данные</h2>
-      <div class="btns"><button data-a="export-all">Выгрузить все данные в .json</button></div>
-      <p class="meta">Полная выгрузка пользовательских данных: персонаж, транспорт Кочевника, роботы Техника и тема оформления. Загрузка и сброс персонажа — на вкладке «Персонаж».</p>
-      <p id="msg" class="meta"></p></section>
+      <div class="btns"><button data-a="export-all">Выгрузить все данные в .json</button><button data-a="import-all">Загрузить все данные из .json</button>
+        <input type="file" accept="application/json,.json" data-backup-file hidden></div>
+      <p class="meta">Полная выгрузка пользовательских данных: персонаж, транспорт Кочевника, роботы Техника и тема оформления. Загрузка заменяет текущие данные содержимым файла. Загрузка и сброс персонажа — на вкладке «Персонаж».</p>
+      <p id="msg" class="meta">${esc(flash)}</p></section>
     <section class="panel"><h2>Оформление</h2><div class="btns">${THEMES.map(([v, t]) => `<button data-theme="${v}" class="${getTheme() === v ? 'on' : ''}">${t}</button>`).join('')}</div></section>
     <section class="panel"><h2>База данных</h2><p class="meta">Источник: ${esc(d.source)} · версия: ${esc(String(d.version).slice(0, 19))} · предметов ${d.items.length}, карт ${d.cards.length}</p>
       <p class="meta">Справочники обновляются автоматически: GitHub Actions пересобирает снимок базы, а сайт читает data/data.json. Если сети нет, используется кэш браузера.</p></section>
     <section class="panel system"><h2>Системные</h2>
       <p class="meta">Полная очистка локальных данных сайта: персонаж, гараж, роботы, тема, кэш базы и service worker. После этого страница перезагрузится.</p>
       <div class="btns"><button class="danger" data-a="reset-cache">Сбросить кэш сайта</button></div></section>`;
+}
+
+// Загрузка полной резервной копии: заменяет персонажа, гараж, роботов и тему.
+function restoreBackup(text, ctx) {
+  const raw = JSON.parse(text);
+  if (!raw || typeof raw !== 'object' || raw.kind !== 'infusion-backup') throw new Error('это не резервная копия Инфузии');
+  if (!raw.char || !raw.garage || !raw.robots) throw new Error('в резервной копии не хватает данных');
+  const ok = typeof confirm !== 'function' || confirm('Заменить текущего персонажа, транспорт, роботов и тему данными из файла?');
+  if (!ok) return false;
+
+  const char = normChar(raw.char);
+  ctx.char = char;
+  saveChar(char);
+
+  Object.assign(G, normGarage(raw.garage));
+  saveGarage(G);
+
+  Object.assign(R, normRobots(raw.robots));
+  saveRobots(R);
+
+  if (raw.theme) setTheme(raw.theme);
+  FLASH = `Данные загружены: ${char.name || 'персонаж без имени'}.`;
+  ctx.rerender();
+  return true;
 }
 
 export function bind(root, ctx) {
@@ -34,6 +62,10 @@ export function bind(root, ctx) {
       msg('Все данные выгружены.');
       return;
     }
+    if (a === 'import-all') {
+      root.querySelector?.('[data-backup-file]')?.click();
+      return;
+    }
     if (a === 'reset-cache' && (typeof confirm !== 'function' || confirm('Очистить весь кэш сайта: персонаж, гараж, роботов, тему и базу? Страница перезагрузится.'))) {
       try { localStorage.clear(); } catch { /* память браузера недоступна */ }
       try {
@@ -43,6 +75,17 @@ export function bind(root, ctx) {
         }
       } catch { /* Cache API недоступен */ }
       location.reload();
+    }
+  };
+  root.onchange = async (e) => {
+    if (e.target.dataset.backupFile === undefined) return;
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      restoreBackup(await file.text(), ctx);
+    } catch (err) {
+      msg(`Не удалось загрузить файл: ${err.message}`);
     }
   };
 }

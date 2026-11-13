@@ -1,5 +1,5 @@
 import { parsePart } from '../autoshop/parser.js';
-import { ROBOT_IMPLANTS, CORE_IMPLANT } from '../../character/rules.js';
+import { ROBOT_IMPLANTS, CORE_IMPLANT, CORE_IMPLANT_ATK, CORE_IMPLANT_TCHN } from '../../character/rules.js';
 
 const has = (v, re) => re.test(String(v || ''));
 export const isBmet = (it) => has(it?.name, /^БМЕТ/i);
@@ -36,9 +36,13 @@ export const currentWeapon = (robot, d) => {
   return i === null ? null : (robot.weapons[i] ? d.itemMap.get(robot.weapons[i]) : null);
 };
 
-export function robotStats(robot, d) {
+export function robotStats(robot, d, c = null) {
   const base = robotBase(robot, d);
   const kind = robotKind(base);
+  // «Перераспределитель энерго-ядра» отдаёт параметры SAT, а не персонажу.
+  const coreBonus = c && (kind === 'prism' || kind === 'core') && hasImplant(c, d, CORE_IMPLANT)
+    ? { atk: CORE_IMPLANT_ATK, tchn: CORE_IMPLANT_TCHN }
+    : { atk: 0, tchn: 0 };
   const weapons = kind === 'bmet' ? [] : (robot?.weapons || []).map((id) => (id ? d.itemMap.get(id) : null)).filter(Boolean);
   const modules = kind === 'bmet' ? [] : (robot?.modules || [])
     .map((id, i) => ({ id, i, it: id ? d.itemMap.get(id) : null }))
@@ -54,13 +58,14 @@ export function robotStats(robot, d) {
     const defA = Number((String(it.description || '').match(/(\d+)\s*ДЕФ\s*\(?а/i) || [])[1]) || 0;
     return { ...s, defA };
   });
-  const total = { hp: 0, defP: 0, defA: 0, evasion: 0, atk: 0, speed: 0, flight: 0, cost: 0 };
+  const total = { hp: 0, defP: 0, defA: 0, evasion: 0, atk: 0, tchn: 0, speed: 0, flight: 0, cost: 0 };
   for (const s of stats) {
     total.hp += s.hp || 0;
     total.defP += s.defP || 0;
     total.defA += s.defA || 0;
     total.evasion += s.evasion || 0;
     total.atk += s.atk || 0;
+    total.tchn += s.accuracy || 0;
     total.speed += s.speed || 0;
     total.flight += s.flight || 0;
   }
@@ -68,8 +73,10 @@ export function robotStats(robot, d) {
   const baseAtk = parsePart(base?.description).atk || 0;
   const moduleAtk = modules.reduce((a, it) => a + (parsePart(it.description).atk || 0), 0);
   const weaponAtk = weapon ? (parsePart(weapon.description).atk || 0) : 0;
-  total.atk = (weapon ? weaponAtk : baseAtk) + moduleAtk;
+  total.atk = (weapon ? weaponAtk : baseAtk) + moduleAtk + coreBonus.atk;
+  total.tchn += coreBonus.tchn;
   total.cost = parts.reduce((a, it) => a + (it.cost || 0), 0);
+  const weaponStats = weapon ? parsePart(weapon.description) : null;
 
   // Источники для каждого параметра: какая деталь дала значение. Нужны для раскрытия по клику («Итоги»).
   const byPart = (f) => statParts.map((it, i) => ({ item: it, value: f(stats[i]) || 0 })).filter((x) => x.value);
@@ -83,10 +90,15 @@ export function robotStats(robot, d) {
     atk: [
       ...(weapon ? (weaponAtk ? [{ item: weapon, value: weaponAtk }] : []) : (baseAtk ? [{ item: base, value: baseAtk }] : [])),
       ...modules.map((it) => ({ item: it, value: parsePart(it.description).atk || 0 })).filter((x) => x.value),
+      ...(coreBonus.atk ? [{ item: { name: CORE_IMPLANT.name }, value: coreBonus.atk }] : []),
+    ],
+    tchn: [
+      ...byPart((s) => s.accuracy),
+      ...(coreBonus.tchn ? [{ item: { name: CORE_IMPLANT.name }, value: coreBonus.tchn }] : []),
     ],
     cost: parts.filter((it) => it.cost).map((it) => ({ item: it, value: it.cost })),
   };
-  return { total, base, kind, parts, weapon, weaponIndex: weaponIndex(robot, d), modules, sources };
+  return { total, base, kind, parts, weapon, weaponStats, weaponIndex: weaponIndex(robot, d), modules, sources };
 }
 
 export const hasImplant = (c, d, req) => {
@@ -128,10 +140,7 @@ export function robotRequirement(robot, d, c) {
     const ok = hasImplant(c, d, CORE_IMPLANT);
     return { ok: ok && !missing.length, needs: ok ? [] : [CORE_IMPLANT.name], missing, kind };
   }
-  // Имплант Ядра несовместим с Призмой. Пока импланта нет в базе, проверка не срабатывает.
-  if (kind === 'prism' && hasImplant(c, d, CORE_IMPLANT)) {
-    return { ok: false, needs: [], missing, reason: 'Имплант Ядра несовместим с Призмой', kind };
-  }
+  // «Перераспределитель энерго-ядра» управляет и Призмой, и Ядром (но не одновременно двумя).
   const req = kind === 'bmet' ? ROBOT_IMPLANTS.bmet : ROBOT_IMPLANTS.prism;
   const implantOk = hasImplant(c, d, req);
   return { ok: implantOk && !missing.length, needs: implantOk ? [] : [req.map((id) => implantName(id, d)).join(' / ')], missing, kind };

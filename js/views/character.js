@@ -581,7 +581,7 @@ function robotPanel(c, d) {
   const bmetsActive = robots.filter((r) => active.has(r.id) && isBmet(robotBase(r, d))).length;
   const cards = robots.map((r, index) => {
     const base = robotBase(r, d), kind = robotKind(base);
-    const full = robotStats(r, d), stats = full.total;
+    const full = robotStats(r, d, c), stats = full.total;
     const req = robotRequirement(r, d, c);
     const missing = req.missing || [];
     const on = active.has(r.id);
@@ -616,6 +616,7 @@ function robotPanel(c, d) {
       <div class="chips"><span class="chip">ОЗ: ${r.currentHp != null ? `${num(r.currentHp)} / ${num(stats.hp)}` : num(stats.hp)}</span>${stats.defP ? `<span class="chip">ДЕФ.П ${num(stats.defP)}</span>` : ''}${stats.defA ? `<span class="chip">ДЕФ.А ${num(stats.defA)}</span>` : ''}${stats.evasion ? `<span class="chip">УКЛ ${num(stats.evasion)}</span>` : ''}${stats.atk ? `<span class="chip">АТК ${num(stats.atk)}</span>` : ''}${on ? '<span class="chip total">надет</span>' : ''}</div>
       <label class="robot-hp">Текущее ОЗ <input type="number" min="0" data-robot-hp="${esc(r.id)}"${nextHpAttr} value="${r.currentHp ?? ''}" placeholder="${num(stats.hp)}"><span class="meta">/ ${num(stats.hp)}</span></label>
       ${weaponSelect}
+      ${full.weapon ? `<div class="chips robot-weapon-stats"><span class="chip total">${esc(label(full.weapon))}</span><span class="chip">КШ ${num(full.weaponStats?.ksh || 0)}</span><span class="chip">ТЧН ${num(stats.tchn || 0)}</span><span class="chip">АВХ ${num(full.weaponStats?.avx || 0)}</span><span class="chip">КЦ ${num(full.weaponStats?.kc ?? 1)}</span></div>` : ''}
       ${gear ? `<div class="chips">${gear}</div>` : `<p class="meta">${kind === 'bmet' ? 'У БМЕТ нет слотов оружия и модулей.' : 'Оружие и модули не установлены.'}</p>`}
       ${full.unique ? `<p class="desc meta">${esc(full.unique)}</p>` : ''}
       ${r.notes ? `<p class="desc meta">${esc(r.notes)}</p>` : ''}

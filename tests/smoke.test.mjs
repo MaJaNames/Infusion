@@ -15,7 +15,7 @@ import * as shop from '../js/modules/autoshop/view.js';
 import { partsOf } from '../js/modules/autoshop/parts.js';
 import { parsePart } from '../js/modules/autoshop/parser.js';
 import { summarize } from '../js/modules/autoshop/aggregate.js';
-import { G, importGarage, normGarage, currentVehicle } from '../js/modules/autoshop/store.js';
+import { G, importGarage, normGarage, currentVehicle, blankBuild } from '../js/modules/autoshop/store.js';
 import * as robotsView from '../js/modules/robots/view.js';
 import { R as robotStore, normRobot, importRobots } from '../js/modules/robots/store.js';
 import { robotRequirement, availableCount, robotStats, robotMissing, moduleChecked, moduleIsActive, moduleEnabled } from '../js/modules/robots/parts.js';
@@ -195,7 +195,7 @@ check('утилиты: калькулятор с полем «Вер» и без
 check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
 utilities.setRoute('robots');
 utilities.setRoute('');
-check('утилиты: пустой подраздел сохраняет последнюю вкладку', utilities.currentRoute() === 'robots');
+check('утилиты: пустой подраздел открывает первую вкладку', utilities.currentRoute() === 'nomad');
 utilities.setRoute('nomad');
 databases.setRoute('cards');
 check('подссылки: #db/cards', databases.currentRoute() === 'cards');
@@ -209,11 +209,16 @@ character.setRoute('pockets');
 check('утилиты: мобильные вкладки', utilities.render(ctx).includes('data-tab-select'));
 
 // Автомастерская: несколько Кочевников в гараже.
+if (!G.vehicles.length) {
+  const first = { id: 'v-test-first', name: 'Транспорт 1', notes: '', build: blankBuild() };
+  G.vehicles.push(first);
+  G.active = first.id;
+}
 const shopRoot = { addEventListener() {} };
 shop.bind(shopRoot, { ...ctx, rerender() {} });
 const shopHtml = utilities.render(ctx);
 check('автомастерская: гараж и переключение машин', ['garage-tabs', 'data-vehicle-select', 'data-add-vehicle', 'data-vehicle-name', 'data-del-vehicle', 'data-import-garage', 'data-garage-file', 'data-vehicle-notes'].every((x) => shopHtml.includes(x)));
-check('автомастерская: у последней машины удаление недоступно', /data-del-vehicle disabled/.test(shopHtml));
+check('автомастерская: у последней машины удаление доступно', shopHtml.includes('data-del-vehicle') && !/data-del-vehicle disabled/.test(shopHtml));
 check('автомастерская: группы деталей и карточки итогов', ['Корпус и ходовая', 'Оружие', 'Модули', 'Скидка'].every((x) => shopHtml.includes(x)) && shopHtml.includes('class="stat-grid"') && shopHtml.includes('stat-card cost'));
 check('автомастерская: выбор детали с поиском, как в «Персонаже»', ['data-combo="body"', 'data-combo-search="body"', 'class="combo-pop"', 'data-combo-list="body"', 'garage-picks'].every((x) => shopHtml.includes(x)));
 const bodyParts = partsOf(d).filter((p) => p.stats.kind === 'body');
@@ -267,7 +272,7 @@ check('автомастерская: заметки транспорта сох�
 clickShop('[data-del-vehicle]');
 garageHtml = utilities.render(ctx);
 const leftIds = [...garageHtml.matchAll(/data-vehicle="([^"]+)"/g)].map((m) => m[1]);
-check('автомастерская: удаление машины', leftIds.length === 1 && leftIds[0] === vehicleIds[0] && /data-del-vehicle disabled/.test(garageHtml));
+check('автомастерская: удаление машины', leftIds.length === 1 && leftIds[0] === vehicleIds[0]);
 
 // Дрон: свои ОЗ, защита и ОП из описания, но в итоги машины они не входят.
 const dronePart = partsOf(d).find((p) => p.drone);
@@ -390,7 +395,7 @@ check('звери: удаление строки', !bcDel.beasts.includes(beastG
 
 // Транспорт в экипировке Кочевника.
 const legacyGarage = normGarage(null, { body: bodyPart.item.id, wheels: null, engine: null, weapons: [], modules: [], discount: 0 });
-check('миграция: старая сборка становится транспортом', legacyGarage.vehicles.length === 1 && legacyGarage.vehicles[0].name === 'Транспорт 1' && legacyGarage.vehicles[0].build.body === bodyPart.item.id);
+check('гараж: пустой гараж допустим, старая сборка сама не создаётся', legacyGarage.vehicles.length === 0);
 const importBefore = G.vehicles.length;
 const importCount = importGarage(JSON.stringify({ vehicles: [{ id: 'v-import-test', name: 'Импорт', notes: 'Из файла', build: { body: bodyPart.item.id } }] }));
 const imported = G.vehicles[G.vehicles.length - 1];
@@ -438,7 +443,7 @@ check('РО: ассоциация и членство по правилам', no
   && normalizeROStatus('Ацуши', RO_STATUS.membership, 60) === RO_STATUS.membership
   && normalizeROStatus('Хиллз', RO_STATUS.association, 0) === RO_STATUS.association);
 const roHtml = character.render({ ...ctx, char: { ...blankChar(), ro: { ...blankRO(), 'Ацуши': 35 }, roStatus: { ...blankROStatus(), 'Ацуши': RO_STATUS.association } } });
-check('РО: карточка показывает фракции, ранг, статус и лимит БМЕТ', roHtml.includes('data-p="ro.Ацуши"') && roHtml.includes('data-p="ro.ГРА"') && roHtml.includes('data-p="roStatus.Ацуши"') && roHtml.includes('Ранг +2') && roHtml.includes('Лимит БМЕТ: 2'));
+check('РО: карточка показывает фракции, ранг и статус', roHtml.includes('data-p="ro.Ацуши"') && roHtml.includes('data-p="ro.ГРА"') && roHtml.includes('data-p="roStatus.Ацуши"') && roHtml.includes('Ранг 2'));
 const roMemberHtml = character.render({ ...ctx, char: { ...blankChar(), ro: { ...blankRO(), 'Ацуши': 60 } } });
 check('РО: членство появляется только при 60+', roMemberHtml.includes(`value="${RO_STATUS.membership}"`) && !roHtml.includes(`value="${RO_STATUS.membership}"`));
 
@@ -458,7 +463,7 @@ const extraLHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x0
 check('звери: «Я Особенный» добавляет слот Л', extraLHtml.includes('+1 Л') && extraLHtml.includes('Л 1'));
 
 check('БД: порядковый номер предмета из data.json', databases.itemRow(d.items[0], '', { ord: 1 }).includes('row-no') && databases.itemRow(d.items[0], '', { ord: 1 }).includes('>#1<'));
-check('БД: последний предмет — №623', databases.itemRow(d.items[d.items.length - 1], '', { ord: d.items.length }).includes('>#623<'));
+check('БД: номер последнего предмета совпадает с размером базы', databases.itemRow(d.items[d.items.length - 1], '', { ord: d.items.length }).includes(`>#${d.items.length}<`));
 check('БД: порядковый номер карты', databases.cardRow(d.cards[0], '', { ord: 1 }).includes('>#1<'));
 check('БД: номер не зависит от сортировки', databases.itemRow(d.items[10], '', { ord: 11 }).includes('>#11<'));
 
@@ -474,8 +479,8 @@ robotStore.active = 'r-test-bmet';
 check('роботы: БМЕТ требует «Атсуши продвинутый робософт»', !robotRequirement(robotStore.robots[0], d, noImp).ok
   && robotRequirement(robotStore.robots[0], d, { ...noImp, implants: ['0x1ac'] }).ok);
 const bmetHtml = robotsView.render({ ...ctx, char: { ...noImp, implants: ['0x1ac'] } });
-check('роботы: мастерская показывает БМЕТ, ОЗ и уникальный эффект', bmetHtml.includes('БМЕТ') && bmetHtml.includes('Уникальные эффекты')
-  && bmetHtml.includes('250') && bmetHtml.includes('разведка') && !/undefined|NaN/.test(bmetHtml));
+check('роботы: мастерская показывает БМЕТ, ОЗ и уникальный эффект', bmetHtml.includes('БМЕТ') && bmetHtml.includes('250')
+  && bmetHtml.includes('разведка') && bmetHtml.includes(esc(bmetOrion.description)) && !/undefined|NaN/.test(bmetHtml));
 
 const prismChar = {
   ...blankChar(), class: 'Техник', implants: ['0x189'],
@@ -494,23 +499,41 @@ const techHtml = character.render({ ...ctx, char: { ...prismChar, robots: ['r-te
 check('Техник: карточка показывает робота, ОЗ и снаряжение', techHtml.includes('Роботы Техника') && techHtml.includes('data-robot-use="r-test-prism"')
   && techHtml.includes('Надето роботов: 1') && techHtml.includes(robotModule.name) && !/undefined|NaN/.test(techHtml));
 
-// АТК — по текущему оружию, модули учитываются только с активацией.
+// АТК — по текущему оружию; пассивные модули учитываются всегда, активные — по галочке.
 const weapon2 = d.items.find((i) => i.category === 'Оружие' && i.id !== robotWeapon.id);
 const atkModule = d.items.find((i) => i.id === '0x1d5');
+const activeModule = d.items.find((i) => i.id === '0x16c');
 robotStore.robots = [normRobot({
   id: 'r-atk', name: 'АТК', base: prism.id,
   weapons: [robotWeapon.id, weapon2.id], weapon: 0,
   modules: [atkModule.id, null, null, null, null],
 })];
 robotStore.active = 'r-atk';
+const passiveAtk = parsePart(atkModule.description).atk;
 const atkOff = robotStats(robotStore.robots[0], d).total.atk;
 const atkOn = robotStats({ ...robotStore.robots[0], weapon: 1, modulesActive: [true, false, false, false, false] }, d).total.atk;
-check('роботы: АТК считается по выбранному оружию, а не суммой', atkOff === parsePart(robotWeapon.description).atk, atkOff);
-check('роботы: активный модуль добавляет параметры', atkOn === parsePart(weapon2.description).atk + parsePart(atkModule.description).atk
-  && !moduleActive(robotStore.robots[0], 0), `${atkOn}`);
-const atkHtml = character.render({ ...ctx, char: { ...prismChar, robots: ['r-atk'] } });
-check('роботы: в карточке есть выбор оружия и активация модулей', atkHtml.includes('data-robot-weapon="r-atk"')
-  && atkHtml.includes('data-robot-module="r-atk.0"') && atkHtml.includes('выкл'));
+check('роботы: АТК считается по выбранному оружию, а не суммой', atkOff === parsePart(robotWeapon.description).atk + passiveAtk, atkOff);
+check('роботы: смена текущего оружия меняет АТК', atkOn === parsePart(weapon2.description).atk + passiveAtk, `${atkOn}`);
+check('роботы: пассивный модуль учитывается без активации', moduleEnabled(robotStore.robots[0], 0, atkModule)
+  && !moduleChecked(robotStore.robots[0], 0), `${atkOn}`);
+check('роботы: активный модуль без активации не учитывается', moduleIsActive(activeModule)
+  && !moduleEnabled(robotStore.robots[0], 0, activeModule)
+  && moduleEnabled({ ...robotStore.robots[0], modulesActive: [true, false, false, false, false] }, 0, activeModule));
+robotStore.robots = [normRobot({ id: 'r-active', name: 'Активный', base: prism.id, modules: [activeModule.id, null, null, null, null] })];
+const atkHtml = character.render({ ...ctx, char: { ...prismChar, robots: ['r-active'] } });
+check('роботы: в карточке есть выбор оружия и активация активных модулей', atkHtml.includes('data-robot-weapon="r-active"')
+  && atkHtml.includes('data-robot-module="r-active.0"') && atkHtml.includes('выкл'));
+
+// «Перераспределитель энерго-ядра»: управляет Ядром и Призмой, отдаёт параметры SAT.
+const core = d.items.find((i) => i.name === 'Ядро-III');
+const coreChar = { ...blankChar(), class: 'Техник', implants: ['0x271'], pockets: [{ id: core.id, qty: 1 }, { id: prism.id, qty: 1 }, { id: robotWeapon.id, qty: 1 }] };
+robotStore.robots = [normRobot({ id: 'r-core', name: 'Ядро', base: core.id, weapons: [robotWeapon.id, null], weapon: 0 })];
+robotStore.active = 'r-core';
+const coreStats = robotStats(robotStore.robots[0], d, coreChar).total;
+check('роботы: Ядро управляется Перераспределителем и получает +20 АТК/+10 ТЧН', robotRequirement(robotStore.robots[0], d, coreChar).ok
+  && coreStats.atk === parsePart(robotWeapon.description).atk + 20
+  && coreStats.tchn === parsePart(robotWeapon.description).accuracy + 10);
+check('роботы: Перераспределитель подходит и Призме', robotRequirement({ ...robotStore.robots[0], base: prism.id }, d, coreChar).ok);
 
 // Сборка из любых деталей и плашка о недостающем.
 const emptyTech = { ...blankChar(), class: 'Техник', implants: ['0x189'] };

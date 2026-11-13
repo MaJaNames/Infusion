@@ -10,7 +10,7 @@ const OPEN_PART = new Set(); // раскрытые карточки устано
 let OPEN_SOURCE = null; // раскрытый параметр в «Итогах»
 
 // Параметры робота, которые раскрываются по клику в «Итогах» (стоимость — отдельно, своей карточкой).
-const ROBOT_TOTALS = [['hp', 'ОЗ'], ['defP', 'ДЕФ.П'], ['defA', 'ДЕФ.А'], ['evasion', 'УКЛ'], ['atk', 'АТК'], ['speed', 'Скороход'], ['flight', 'Полёт']];
+const ROBOT_TOTALS = [['hp', 'ОЗ'], ['defP', 'ДЕФ.П'], ['defA', 'ДЕФ.А'], ['evasion', 'УКЛ'], ['atk', 'АТК'], ['tchn', 'ТЧН'], ['speed', 'Скороход'], ['flight', 'Полёт']];
 
 const robotById = (id) => R.robots.find((r) => r.id === id);
 
@@ -78,7 +78,7 @@ const reqText = (needs) => (needs.length ? `Нужен имплант: ${needs.j
 // Подсказка при наведении на робота: те же параметры, что и в чипах сверху (как у транспорта в Автомастерской).
 const robotStatsTip = (r, ctx) => {
   const b = robotBase(r, ctx.data), k = robotKind(b);
-  const st = robotStats(r, ctx.data).total;
+  const full = robotStats(r, ctx.data, ctx.char), st = full.total;
   const hpTxt = r.currentHp != null ? `${num(r.currentHp)} / ${num(st.hp)}` : num(st.hp);
   return [
     k ? robotKindLabel[k] : 'Основа не выбрана',
@@ -87,6 +87,13 @@ const robotStatsTip = (r, ctx) => {
     `Деф.а: ${num(st.defA)}`,
     `УКЛ: ${num(st.evasion)}`,
     `АТК: ${num(st.atk)}`,
+    ...(full.weapon ? [
+      `Оружие: ${label(full.weapon)}`,
+      `КШ: ${num(full.weaponStats?.ksh || 0)}`,
+      `ТЧН: ${num(st.tchn)}`,
+      `АВХ: ${num(full.weaponStats?.avx || 0)}`,
+      `КЦ: ${num(full.weaponStats?.kc ?? 1)}`,
+    ] : []),
     st.speed ? `Скороход: ${num(st.speed)}` : '',
     st.flight ? `Полёт: ${num(st.flight)}` : '',
     `Стоимость: ${num(st.cost)}`,
@@ -121,7 +128,7 @@ export function render(ctx) {
   }
 
   const base = robotBase(robot, ctx.data), kind = robotKind(base);
-  const stats = robotStats(robot, ctx.data);
+  const stats = robotStats(robot, ctx.data, c);
   const total = stats.total;
   const showBmet = hasImplant(c, ctx.data, ROBOT_IMPLANTS.bmet);
   const bmets = R.robots.filter((r) => isBmet(robotBase(r, ctx.data))).length;
@@ -191,7 +198,8 @@ export function render(ctx) {
     <div class="garage-topline">
       <div class="chips garage-summary">
         ${kind ? `<span class="chip">${robotKindLabel[kind]}</span>` : '<span class="chip warn">Основа не выбрана</span>'}
-        <span class="chip">ОЗ: ${hp}</span>${chip('ДЕФ.П', total.defP)}${chip('ДЕФ.А', total.defA)}${chip('УКЛ', total.evasion)}${chip('АТК', total.atk)}${total.speed ? chip('Скороход', total.speed) : ''}${total.flight ? chip('Полёт', total.flight) : ''}
+        <span class="chip">ОЗ: ${hp}</span>${chip('ДЕФ.П', total.defP)}${chip('ДЕФ.А', total.defA)}${chip('УКЛ', total.evasion)}${chip('АТК', total.atk)}${total.tchn ? chip('ТЧН', total.tchn) : ''}${total.speed ? chip('Скороход', total.speed) : ''}${total.flight ? chip('Полёт', total.flight) : ''}
+        ${stats.weapon ? `<span class="chip total">${esc(label(stats.weapon))}</span><span class="chip">КШ ${num(stats.weaponStats?.ksh || 0)}</span><span class="chip">АВХ ${num(stats.weaponStats?.avx || 0)}</span><span class="chip">КЦ ${num(stats.weaponStats?.kc ?? 1)}</span>` : ''}
         <span class="chip">Стоимость: ${money(total.cost)}</span>
         ${showBmet ? `<span class="chip${bmets > limit ? ' bad' : ''}">БМЕТ: ${num(bmets)} / ${num(limit)}</span>` : ''}
       </div>

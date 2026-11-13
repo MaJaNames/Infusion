@@ -9,7 +9,7 @@ export const blankChar = () => ({
   overrides: { freePoints: null, hpMax: null, kronosMax: null, shards: {} },
 });
 // Старые карточки могли не иметь новых полей — дополняем их при загрузке.
-const normChar = (c) => {
+export const normChar = (c) => {
   const b = blankChar();
   return {
     ...b, ...c,

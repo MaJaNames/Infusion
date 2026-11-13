@@ -42,3 +42,4 @@ transport.json
 # Локальная памятка для агентов (не коммитится)
 AGENTS.md
 
+/MobMaker/Effects
