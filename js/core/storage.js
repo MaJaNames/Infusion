@@ -6,6 +6,7 @@ export const blankChar = () => ({
   stats: { strength: 5, dexterity: 5, intelligence: 5, will: 5, charisma: 5, perception: 5, technique: 5, luck: 5, constitution: 5 },
   skills: [], abilities: [], pockets: [], equipment: [], implants: [], repository: [], beasts: [], beastPath: null, storage: null, notes: '', clinicImplants: [],
   transport: null, ro: blankRO(), roStatus: blankROStatus(), robots: [],
+  statsWeapon: null, statsToggles: { sources: {}, effects: {} },
   overrides: { freePoints: null, hpMax: null, kronosMax: null, shards: {} },
 });
 // Старые карточки могли не иметь новых полей — дополняем их при загрузке.
@@ -17,6 +18,10 @@ export const normChar = (c) => {
     ro: { ...b.ro, ...(c?.ro || {}) },
     roStatus: { ...b.roStatus, ...(c?.roStatus || {}) },
     robots: Array.isArray(c?.robots) ? c.robots : b.robots,
+    statsToggles: {
+      sources: { ...(c?.statsToggles?.sources || {}) },
+      effects: { ...(c?.statsToggles?.effects || {}) },
+    },
     overrides: { ...b.overrides, ...(c?.overrides || {}), shards: { ...b.overrides.shards, ...(c?.overrides?.shards || {}) } },
   };
 };

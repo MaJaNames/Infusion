@@ -3,8 +3,9 @@ import { readFileSync } from 'node:fs';
 import { indexData, optLabel, num, esc } from '../js/core/util.js';
 import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
-import { blankChar } from '../js/core/storage.js';
+import { blankChar, normChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
+import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER, STAT_OVERRIDES } from '../js/character/stats.js';
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
 import * as databases from '../js/views/databases.js';
@@ -149,6 +150,12 @@ clickDbTab('cards');
 const cardsDb = databases.render(ctx);
 check('база: у карт фильтры по классу, школе и сущности', ['classes', 'school', 'essence', 'creation', 'consumable', 'iconic'].every((k) => cardsDb.includes(`data-k="${k}"`)));
 check('база: цена карт с иконкой тали', cardsDb.includes('assets/icons/tali.webp'));
+check('база: галочка «Показывать ID» в фильтрах', cardsDb.includes('data-show-ids') && cardsDb.includes('Показывать ID') && !dbRes.innerHTML.includes('row-id'));
+dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: true } });
+check('база карт: ID из БД показываются по галочке', dbRes.innerHTML.includes('row-id')
+  && d.cards.some((c) => dbRes.innerHTML.includes(`ID ${c.id}`)));
+dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: false } });
+check('база: ID снова скрываются', !dbRes.innerHTML.includes('row-id'));
 clickDbTab('parts');
 const partsDb = databases.render(ctx);
 check('база: у деталей фильтры по типу и организации', partsDb.includes('data-k="kind"') && partsDb.includes('data-k="organization"'));
@@ -157,6 +164,10 @@ const rulesDb = databases.render(ctx);
 check('справочник: разделы «Константы», «Способности», «Зверь», «Черта», «Навыки»', ['Константы', 'Способности', 'Зверь', 'Черта', 'Навыки'].every((x) => rulesDb.includes(`>${x}<`)));
 check('справочник: подразделы «Ранги» и «Сущности»', rulesDb.includes('>Ранги<') && rulesDb.includes('>Сущности<'));
 check('справочник: фильтры, сортировка и бесконечная лента', rulesDb.includes('data-k="group"') && rulesDb.includes('data-k="sub"') && rulesDb.includes('data-sort="rules"') && rulesDb.includes('data-more="rules"') && rulesDb.includes('data-more-sentinel') && !rulesDb.includes('data-pager'));
+dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: true } });
+check('справочник: ID из БД показываются по галочке', dbRes.innerHTML.includes('row-id')
+  && d.essences.some((e) => dbRes.innerHTML.includes(`ID ${e.id}`)));
+dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: false } });
 dbRoot.onchange({ target: { dataset: { k: 'group' }, value: '' } });
 const initialRules = (dbRes.innerHTML.match(/<details/g) || []).length;
 dbRoot.onclick({ target: { closest: (s) => (s === '[data-more]' ? { dataset: { more: 'rules' } } : null) } });
@@ -169,6 +180,10 @@ dbRoot.onchange({ target: { dataset: { k: 'organization' }, value: 'Хиллз' 
 const hillz = d.items.filter((i) => i.organization === 'Хиллз').length;
 check('база: фильтр по организации работает', dbRes.innerHTML.includes(`Найдено: ${hillz}`), hillz);
 check('база: в описании нет порядкового номера строки', !/<div class="body">\s*\d/.test(dbRes.innerHTML), dbRes.innerHTML.match(/<div class="body">\s*\d/)?.[0]);
+dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: true } });
+check('база предметов: ID из БД показываются по галочке', dbRes.innerHTML.includes('row-id')
+  && d.items.some((i) => dbRes.innerHTML.includes(`ID ${i.id}`)));
+dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: false } });
 
 // Нечёткий поиск: часть слова, опечатка и порядок по точности.
 check('fuzzy: часть слова, опечатка и отсутствие совпадений', fuzzyScore('рем', 'D.P.L Рем-перчатка') > 0 && fuzzyScore('перчатко', 'D.P.L Рем-перчатка') > 0 && fuzzyScore('xyz', 'D.P.L Рем-перчатка') === 0);
@@ -192,7 +207,23 @@ check('калькулятор: вер 15 = цель 86', targetFromVer(15) === 8
 utilities.setRoute('calc');
 const calcHtml = utilities.render(ctx);
 check('утилиты: калькулятор с полем «Вер» и без «Атаки»', ['data-calc="stat"', 'data-calc="bonus"', 'data-calc="target"', 'data-calc="ver"', 'data-calc="mode"', 'data-calc-out', 'Результат D100'].every((x) => calcHtml.includes(x)) && !calcHtml.includes('data-calc="attack"') && !calcHtml.includes('Формула'));
-check('утилиты: режим персонажа убран, есть описание навыка', !calcHtml.includes('charMode') && !calcHtml.includes('Режим Персонажа') && calcHtml.includes('5 × уровень'));
+check('утилиты: обычный режим подсказывает про 5 × уровень', !calcHtml.includes('data-calc="skillPick"') && calcHtml.includes('5 × уровень'));
+
+// Режим персонажа: стат из карточки, бонус навыка 5 × уровень и карточка навыка снизу.
+const calcRoot = {};
+utilities.bind(calcRoot, ctx);
+calcRoot.oninput({ target: { dataset: { calc: 'charMode' }, type: 'checkbox', checked: true } });
+calcRoot.oninput({ target: { dataset: { calc: 'source' }, type: 'select-one', value: 'skill' } });
+const charCalcHtml = utilities.render(ctx);
+const firstSkill = d.skills[0];
+check('утилиты: режим персонажа с выбором навыка', charCalcHtml.includes('data-calc="charMode"') && charCalcHtml.includes('Режим Персонажа')
+  && charCalcHtml.includes('data-calc="skillPick"') && charCalcHtml.includes(`value="${c.stats.strength}"`) && charCalcHtml.includes('value="25"'));
+check('утилиты: карточка выбранного навыка внизу', charCalcHtml.includes('data-skill-card')
+  && charCalcHtml.includes(firstSkill.name) && charCalcHtml.includes(firstSkill.description.slice(0, 20))
+  && charCalcHtml.indexOf('data-calc-out') < charCalcHtml.indexOf('data-skill-card'));
+calcRoot.oninput({ target: { dataset: { calc: 'charMode' }, type: 'checkbox', checked: false } });
+const plainCalcHtml = utilities.render(ctx);
+check('утилиты: без режима персонажа карточки навыка нет', !plainCalcHtml.includes('data-skill-card') && !plainCalcHtml.includes('data-calc="skillPick"'));
 check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
 utilities.setRoute('robots');
 utilities.setRoute('');
@@ -597,6 +628,120 @@ const importedRobots = importRobots(JSON.stringify({ robots: [{ id: 'r-import-te
 check('роботы: импорт добавляет с новым ID', importedRobots === 1 && robotStore.robots.length === robotsBefore + 1
   && robotStore.robots[robotStore.robots.length - 1].id !== 'r-import-test'
   && robotStore.robots[robotStore.robots.length - 1].name === 'Импорт');
+
+// --- Сводка статов персонажа: формулы, источники, условия и активные эффекты ---
+check('статы: формулы 5n, n/2 и 1 + n/4', evalStatFormula('5n', 3) === 15 && evalStatFormula('n/2', 3) === 1 && evalStatFormula('1 + n/4', 4) === 2);
+check('статы: ОП — это Скороход, расстояние и стоимость ОД не считаются', (() => {
+  const speed = parseStatEffects('Скороход +2', { n: 0 });
+  const op = parseStatEffects('+2 ОП', { n: 0 });
+  const far = parseStatEffects('Вы можете переместиться на 3 ОП', { n: 0 });
+  const cost = parseStatEffects('Потратив 1 ОД, вы получаете +5 КШ', { n: 0 });
+  return speed.some((e) => e.stat === 'speed' && e.value === 2)
+    && op.some((e) => e.stat === 'speed' && e.value === 2)
+    && !far.some((e) => e.stat === 'speed')
+    && cost.some((e) => e.stat === 'ksh' && e.value === 5)
+    && !cost.some((e) => e.stat === 'od');
+})());
+check('статы: Деф.а и обратный порядок «2 Скороход»', (() => {
+  const def = parseStatEffects('Деф.а 5, Деф.п 2', { n: 0 });
+  const rev = parseStatEffects('2 Скороход', { n: 0 });
+  return def.some((e) => e.stat === 'defA' && e.value === 5)
+    && def.some((e) => e.stat === 'defP' && e.value === 2)
+    && rev.some((e) => e.stat === 'speed' && e.value === 2);
+})());
+const statFormula = parseStatEffects('**+4n АТК ближним оружием -4n АТК дальним оружием. Где n ранг персонажа**', { n: 5 });
+check('статы: формула с n и условные ближний/дальний бой', statFormula.length === 2
+  && statFormula.every((e) => e.stat === 'atk' && e.conditional)
+  && statFormula.some((e) => e.value === 20) && statFormula.some((e) => e.value === -20));
+check('статы: ручная правка способности заменяет автобонусы и задаёт n', (() => {
+  const ovId = d.abilities[0].id;
+  STAT_OVERRIDES[ovId] = {
+    n: 'beast',
+    effects: [
+      { stat: 'atk', value: '2n', text: 'тест: пассивно' },
+      { stat: 'ksh', value: 1, active: true, conditional: true, text: 'тест: условие' },
+    ],
+  };
+  const s = collectCharacterStats({ ...blankChar(), rank: 5, abilities: [ovId], beasts: ['x', 'y'] }, d);
+  delete STAT_OVERRIDES[ovId];
+  return s.totals.atk === 4 && s.totals.ksh === 0
+    && s.conditional.some((x) => x.stat === 'ksh' && x.value === 1 && !x.enabled)
+    && !s.sources.some((x) => x.effects.some((e) => e.stat === 'od'));
+})());
+
+const statWeaponA = d.itemMap.get('0x0c9');
+const statWeaponB = d.itemMap.get('0x0cb');
+const statCondItem = d.itemMap.get('0x0d7');
+const statActiveAbility = d.abilityMap.get('0x026');
+const statBeast = d.beasts.find((b) => b.id === '0x001');
+const statChar = {
+  ...blankChar(), rank: 5,
+  equipment: [statWeaponA.id, statWeaponB.id, statCondItem.id],
+  abilities: [statActiveAbility.id], beasts: [statBeast.id],
+  statsWeapon: statWeaponA.id,
+};
+const charStats = collectCharacterStats(statChar, d);
+check('статы: профиль строится по выбранному оружию', charStats.weapon?.id === statWeaponA.id
+  && charStats.weaponStats.atk === 53 && charStats.weaponStats.tchn === 15 && charStats.weaponStats.kc === 1,
+  JSON.stringify(charStats.weaponStats));
+check('статы: второе оружие не суммируется', charStats.ignoredWeapons.length === 1
+  && charStats.totals.atk === 53 && charStats.totals.tchn === 15);
+check('статы: способность зверя даёт КЦ 1 + n/4', charStats.totals.kc === 2, charStats.totals.kc);
+check('статы: условные бонусы по умолчанию выключены', charStats.totals.atk === 53
+  && charStats.conditional.some((x) => x.sourceName.includes('Суставный') && x.value === 15 && !x.enabled)
+  && charStats.conditional.some((x) => x.sourceName.includes('Метка') && x.value === 10 && !x.enabled));
+const condEffectKey = charStats.conditional.find((x) => x.sourceName.includes('Суставный'))?.effectKey;
+const activeSourceKey = charStats.sources.find((x) => String(x.label).includes('Метка'))?.key;
+const activeEffectKey = charStats.conditional.find((x) => x.sourceName.includes('Метка'))?.effectKey;
+check('статы: условный пассивный бонус включается одной галочкой', collectCharacterStats({
+  ...statChar, statsToggles: { sources: {}, effects: { [condEffectKey]: true } },
+}, d).totals.atk === 68);
+check('статы: активный условный бонус требует источник и условие', (() => {
+  const srcOnly = collectCharacterStats({ ...statChar, statsToggles: { sources: { [activeSourceKey]: true }, effects: {} } }, d);
+  const both = collectCharacterStats({
+    ...statChar, statsToggles: { sources: { [activeSourceKey]: true }, effects: { [activeEffectKey]: true } },
+  }, d);
+  return srcOnly.totals.atk === 53 && both.totals.atk === 63;
+})());
+check('статы: активный источник по умолчанию выключен', charStats.sources.some((x) => x.key === activeSourceKey && x.hasActive && !x.sourceOn));
+check('статы: перераспределитель энерго-ядра — не оружие', !isWeaponItem(d.itemMap.get('0x271')));
+const coreImplantStats = collectCharacterStats({ ...blankChar(), implants: ['0x271'] }, d);
+check('статы: параметры перераспределителя уходят SAT, а не персонажу', coreImplantStats.totals.atk === 0
+  && coreImplantStats.totals.tchn === 0 && coreImplantStats.sources.length === 0);
+const statNorm = normChar({ name: 'Норм', statsToggles: { effects: { e: true } } });
+check('карточка: переключатели статов нормализуются', statNorm.statsWeapon === null
+  && statNorm.statsToggles.sources !== undefined && statNorm.statsToggles.effects.e === true);
+character.setRoute('stats');
+check('подссылки: #char/stats', character.currentRoute() === 'stats');
+const statsHtmlRender = character.render({ ...ctx, char: statChar });
+check('статы: карточки всех параметров и выбор оружия', !/undefined|NaN|\[object/.test(statsHtmlRender)
+  && CHAR_STAT_ORDER.every((k) => statsHtmlRender.includes(`data-stat-source="${k}"`))
+  && statsHtmlRender.includes('data-stats-weapon'));
+check('статы: источники, условия и активные галочки в интерфейсе', statsHtmlRender.includes('Условные бонусы')
+  && statsHtmlRender.includes(`data-stats-effect="${condEffectKey}"`)
+  && statsHtmlRender.includes(`data-stats-effect="${activeEffectKey}"`)
+  && statsHtmlRender.includes(`data-stats-source="${activeSourceKey}"`));
+character.setRoute('pockets');
+check('статы: возврат на карточку', character.currentRoute() === 'pockets');
+let pageRoute = '';
+const pageRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(pageRoot, { ...ctx, char: statChar, save() {}, rerender() {}, route(sub) { pageRoute = sub; } });
+pageRoot.onclick({ target: { closest: (s) => (s === '[data-page-tab]' ? { dataset: { pageTab: 'stats' } } : null) } });
+check('статы: переключатель «Карточка / Статы» меняет маршрут', character.currentRoute() === 'stats' && pageRoute === 'stats');
+pageRoot.onclick({ target: { closest: (s) => (s === '[data-page-tab]' ? { dataset: { pageTab: 'sheet' } } : null) } });
+check('статы: возврат по переключателю на карточку', character.currentRoute() === 'pockets' && pageRoute === 'pockets');
+
+const statToggleChar = { ...statChar, statsToggles: { sources: {}, effects: {} } };
+const statToggleCtx = { ...ctx, char: statToggleChar, save() {}, rerender() {} };
+const statToggleRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(statToggleRoot, statToggleCtx);
+statToggleRoot.onchange({ target: { dataset: { statsEffect: condEffectKey }, checked: true, type: 'checkbox' } });
+statToggleRoot.onchange({ target: { dataset: { statsSource: activeSourceKey }, checked: true, type: 'checkbox' } });
+statToggleRoot.onchange({ target: { dataset: { statsWeapon: statWeaponB.id }, value: statWeaponB.id, type: 'select-one' } });
+check('статы: галочки и оружие сохраняются в карточке',
+  statToggleChar.statsToggles.effects[condEffectKey] === true
+  && statToggleChar.statsToggles.sources[activeSourceKey] === true
+  && statToggleChar.statsWeapon === statWeaponB.id);
 
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');
 process.exit(fail ? 1 : 0);

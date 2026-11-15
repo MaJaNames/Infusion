@@ -6,6 +6,9 @@ import {
   BEAST_SLOTS, BEAST_RARITIES, BEAST_EXTRA_L_ABILITY, ROBOT_IMPLANTS,
 } from '../character/rules.js';
 import { exportChar, importChar, blankChar } from '../core/storage.js';
+import {
+  collectCharacterStats, CHAR_STAT_LABELS, CHAR_STAT_ORDER, STAT_SOURCE_TYPE_LABEL,
+} from '../character/stats.js';
 import { itemRow, cardRow } from './databases.js';
 import { G, partCount } from '../modules/autoshop/store.js';
 import { partsOf, statChips } from '../modules/autoshop/parts.js';
@@ -21,6 +24,8 @@ import { fuzzyScore } from '../core/fuzzy.js';
 
 const OPEN = new Set(); // раскрытые описания навыков, чтобы состояние переживало перерисовку
 const OPEN_ROWS = new Set(); // раскрытые карточки предметов и карт
+const OPEN_STATS = new Set(); // раскрытые карточки источников на вкладке «Статы»
+let OPEN_STAT = null; // выбранный параметр в «Итогах» на вкладке «Статы»
 // Порядок характеристик в интерфейсе не зависит от порядка строк в базе.
 const STAT_ORDER = ['strength', 'dexterity', 'intelligence', 'will', 'charisma', 'perception', 'technique', 'luck', 'constitution'];
 const STORAGE_TAG = 'K';
@@ -90,6 +95,7 @@ const comboRows = (kind, c, d) => (kind.startsWith('abilities.') ? abilityRows(d
 
 // Состояние подвкладок и сортировки переживает перерисовку, как и OPEN у навыков.
 const UI = {
+  page: 'sheet',
   tab: 'pockets',
   sort: {
     pockets: ['id', 1], equipment: ['id', 1], implants: ['id', 1],
@@ -524,6 +530,93 @@ function inventoryPanel(c, d, r, race) {
   </section>`;
 }
 
+const statSigned = (v) => `${v > 0 ? '+' : ''}${num(v)}`;
+
+// Переключатель «Карточка / Статы» живёт на уровне всей вкладки «Персонаж».
+function pageTabs() {
+  const tabs = [['sheet', 'Карточка'], ['stats', 'Статы (WIP)']];
+  return `<div class="subtabs page-tabs" role="tablist" aria-label="Разделы персонажа">${tabs.map(([id, text]) => `<button type="button" role="tab" data-page-tab="${id}" class="${UI.page === id ? 'on' : ''}" aria-selected="${UI.page === id}">${text}</button>`).join('')}</div>
+  <select class="subtabs-select" data-page-select aria-label="Раздел персонажа">${tabs.map(([id, text]) => `<option value="${id}"${UI.page === id ? ' selected' : ''}>${text}</option>`).join('')}</select>`;
+}
+
+const statsSourceToggle = (src) => (src.hasActive
+  ? `<label class="mod-flag${src.sourceOn ? ' on' : ''}" title="Активный источник: бонусы учитываются только после включения"><input type="checkbox" data-stats-source="${esc(src.key)}"${src.sourceOn ? ' checked' : ''}> Активация</label>`
+  : '<span class="mod-flag passive">Пассивный</span>');
+
+function statsEffectChip(e) {
+  const flags = [];
+  if (e.conditional) flags.push('условие');
+  if (e.active) flags.push(e.enabled ? 'включён' : 'выключен');
+  return `<span class="chip stat-effect${e.enabled ? ' on' : ''}${e.conditional ? ' cond' : ''}">${esc(statSigned(e.value))} ${esc(CHAR_STAT_LABELS[e.stat] || e.stat)}${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>`;
+}
+
+const statsConditionalRow = (e) => `<label class="cond-row${e.enabled ? ' on' : ''}">
+    <input type="checkbox" data-stats-effect="${esc(e.effectKey)}"${e.toggled ? ' checked' : ''}>
+    <span class="cond-val">${esc(statSigned(e.value))} ${esc(CHAR_STAT_LABELS[e.stat] || e.stat)}</span>
+    <span class="cond-text meta">${esc(e.text || '')}${e.active ? ' · нужен активный источник' : ''}</span>
+  </label>`;
+
+function statsPanel(c, d) {
+  const s = collectCharacterStats(c, d);
+  if (OPEN_STAT && !CHAR_STAT_ORDER.includes(OPEN_STAT)) OPEN_STAT = null;
+  const weaponOptions = s.weapons.map((w) => `<option value="${esc(w.id)}"${s.weapon?.id === w.id ? ' selected' : ''}>${esc(w.label)}</option>`).join('');
+  const weaponSelect = s.weapons.length
+    ? `<div class="stats-weapon-row"><label class="stats-weapon" title="Профиль оружия (АТК, КШ, ТЧН, АВХ, КЦ) берётся только у текущего оружия">Текущее оружие<select data-stats-weapon>${weaponOptions}</select></label>${s.ignoredWeapons.length ? `<p class="meta">Другое оружие в профиль не входит: ${s.ignoredWeapons.map((x) => esc(x)).join(', ')}.</p>` : ''}</div>`
+    : '<p class="meta">Оружие не выбрано: наденьте оружие в экипировку или имплант-клинок. Профиль оружия (АТК, КШ, ТЧН, АВХ, КЦ) без него не считается.</p>';
+  const statCards = CHAR_STAT_ORDER.map((k) => `<button type="button" class="stat-card${OPEN_STAT === k ? ' on' : ''}${s.totals[k] ? '' : ' zero'}" data-stat-source="${k}" aria-expanded="${OPEN_STAT === k}"><span>${esc(CHAR_STAT_LABELS[k])}</span><b>${num(s.totals[k])}</b></button>`).join('');
+  const srcRows = OPEN_STAT ? (s.byStat[OPEN_STAT] || []) : [];
+  const srcBlock = OPEN_STAT ? `<div class="sources">
+    <div class="sources-head"><h3>Источники: ${esc(CHAR_STAT_LABELS[OPEN_STAT])}</h3><button type="button" class="x" data-stat-close title="Закрыть">✕</button></div>
+    ${srcRows.length ? `<ul>${srcRows.map((x) => `<li><span>${esc(x.name)}${x.conditional ? ' <span class="chip">условие</span>' : ''}${x.active ? ' <span class="chip">активный</span>' : ''}</span><b>${esc(statSigned(x.value))}</b></li>`).join('')}</ul>` : '<p class="meta">Нет источников: параметр равен нулю.</p>'}
+    <p class="sources-total">Итого: <b>${num(s.totals[OPEN_STAT])}</b></p>
+  </div>` : '';
+
+  const sourceCards = s.sources.map((src) => {
+    const conds = src.effects.filter((e) => e.conditional);
+    return `<details class="part-card stats-source${src.hasActive && !src.sourceOn ? ' off' : ''}" data-stats-row="${esc(src.key)}"${OPEN_STATS.has(src.key) ? ' open' : ''}>
+      <summary>
+        <div class="part-main">
+          <div class="part-slot">${esc(STAT_SOURCE_TYPE_LABEL[src.type] || src.type)}</div>
+          <b>${esc(src.label)}</b>
+          <div class="chips">${src.effects.map(statsEffectChip).join('')}</div>
+        </div>
+        ${statsSourceToggle(src)}
+      </summary>
+      <div class="part-desc">
+        <p class="desc">${esc(src.description || 'Описание не заполнено.')}</p>
+        ${conds.length ? `<div class="cond-list"><h4>Условные бонусы источника</h4>${conds.map(statsConditionalRow).join('')}</div>` : ''}
+      </div>
+    </details>`;
+  }).join('');
+
+  const groups = new Map();
+  for (const e of s.conditional) {
+    if (!groups.has(e.sourceKey)) groups.set(e.sourceKey, { name: e.sourceName, rows: [] });
+    groups.get(e.sourceKey).rows.push(e);
+  }
+  const condBlock = s.conditional.length
+    ? [...groups.values()].map((g) => `<div class="cond-group"><h3>${esc(g.name)}</h3>${g.rows.map(statsConditionalRow).join('')}</div>`).join('')
+    : '<p class="empty">Условных бонусов нет.</p>';
+
+  return `<section class="panel stats-panel">
+    <div class="inv-head"><div><h2>Статы (РАЗРАБОТКА В ПРОЦЕССЕ)</h2>
+      <p class="meta">Сумма бонусов от экипировки, имплантов, способностей, мутаций и способностей зверя. Базовые характеристики персонажа сюда не входят; транспорт и роботы не учитываются.</p></div>
+      <div class="chips"><span class="chip">Источников: ${num(s.sources.length)}</span><span class="chip${s.conditional.length ? ' warn' : ''}">Условных: ${num(s.conditional.length)}</span></div>
+    </div>
+    ${weaponSelect}
+    <div class="stat-grid">${statCards}</div>
+    ${srcBlock}
+  </section>
+  <section class="panel"><h2>Источники</h2>
+    <p class="meta">Пассивные бонусы учитываются сразу. Активные источники включаются галочкой, условные бонусы — отдельно.</p>
+    ${sourceCards ? `<div class="part-list">${sourceCards}</div>` : '<p class="empty">Нет источников с бонусами. Наденьте экипировку, импланты или выберите способности.</p>'}
+  </section>
+  <section class="panel"><h2>Условные бонусы</h2>
+    <p class="meta">Бонусы вида «если…», «только в ближнем бою», «при…» в итог по умолчанию не входят. Отметьте нужные вручную — они добавятся к сумме.</p>
+    ${condBlock}
+  </section>`;
+}
+
 const stockItems = (c, d, predicate) => {
   const found = new Map();
   for (const e of c.pockets || []) {
@@ -707,7 +800,9 @@ export function render(ctx) {
   const full = r.skillCount >= r.skillLimit;
   const issues = Object.entries(r.statIssues);
 
-  return `<div class="char-layout">
+  if (UI.page === 'stats') return `${pageTabs()}${statsPanel(c, d)}`;
+
+  return `${pageTabs()}<div class="char-layout">
     <div class="char-col">
       <section class="panel"><div class="grid">
         <label>Имя<input data-p="name" value="${esc(c.name)}"></label><label>Игрок<input data-p="player" value="${esc(c.player)}"></label>
@@ -808,6 +903,31 @@ export function bind(root, ctx) {
     select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
   root.onchange = (e) => {
+    if (e.target.dataset.pageSelect !== undefined) {
+      UI.page = e.target.value === 'stats' ? 'stats' : 'sheet';
+      ctx.route?.(UI.page === 'stats' ? 'stats' : UI.tab);
+      ctx.rerender();
+      return;
+    }
+    if (e.target.dataset.statsWeapon !== undefined) {
+      c.statsWeapon = e.target.value || null;
+      done();
+      return;
+    }
+    if (e.target.dataset.statsSource !== undefined) {
+      if (!c.statsToggles) c.statsToggles = { sources: {}, effects: {} };
+      if (!c.statsToggles.sources) c.statsToggles.sources = {};
+      c.statsToggles.sources[e.target.dataset.statsSource] = !!e.target.checked;
+      done();
+      return;
+    }
+    if (e.target.dataset.statsEffect !== undefined) {
+      if (!c.statsToggles) c.statsToggles = { sources: {}, effects: {} };
+      if (!c.statsToggles.effects) c.statsToggles.effects = {};
+      c.statsToggles.effects[e.target.dataset.statsEffect] = !!e.target.checked;
+      done();
+      return;
+    }
     if (e.target.dataset.pFreeBonus !== undefined) {
       const path = e.target.dataset.pFreeBonus;
       const raw = e.target.value;
@@ -937,6 +1057,24 @@ export function bind(root, ctx) {
     }
   };
   root.onclick = (e) => {
+    const pageTab = e.target.closest('[data-page-tab]');
+    if (pageTab) {
+      UI.page = pageTab.dataset.pageTab === 'stats' ? 'stats' : 'sheet';
+      ctx.route?.(UI.page === 'stats' ? 'stats' : UI.tab);
+      ctx.rerender();
+      return;
+    }
+    const statBtn = e.target.closest('[data-stat-source]');
+    if (statBtn) {
+      OPEN_STAT = OPEN_STAT === statBtn.dataset.statSource ? null : statBtn.dataset.statSource;
+      ctx.rerender();
+      return;
+    }
+    if (e.target.closest('[data-stat-close]')) {
+      OPEN_STAT = null;
+      ctx.rerender();
+      return;
+    }
     const action = e.target.closest('[data-a]')?.dataset.a;
     if (action === 'export-char') { exportChar(ctx.char); return; }
     if (action === 'reset-char' && (typeof confirm !== 'function' || confirm('Сбросить персонажа? Гараж, роботы и настройки останутся.'))) {
@@ -1034,6 +1172,14 @@ export function bind(root, ctx) {
     };
     root.addEventListener('toggle', root._rowToggle, true);
   }
+  if (!root._statsToggle) {
+    root._statsToggle = (e) => {
+      const det = e.target.closest?.('details.stats-source[data-stats-row]');
+      if (!det) return;
+      if (det.open) OPEN_STATS.add(det.dataset.statsRow); else OPEN_STATS.delete(det.dataset.statsRow);
+    };
+    root.addEventListener('toggle', root._statsToggle, true);
+  }
   if (!root._comboKeys) {
     root._comboKeys = comboKeydown;
     root.addEventListener('keydown', root._comboKeys);
@@ -1041,12 +1187,13 @@ export function bind(root, ctx) {
   installComboClose();
 }
 
-// Подссылки вида #char/beasts открывают нужную вкладку инвентаря.
+// Подссылки вида #char/beasts открывают нужную вкладку инвентаря, #char/stats — сводку статов.
 const TAB_IDS = new Set(['pockets', 'equipment', 'implants', 'repository', 'beasts']);
 export function setRoute(sub) {
+  if (sub === 'stats') { UI.page = 'stats'; return; }
   // Пустой подраздел не сбрасывает выбор: при возврате на вкладку остаётся последняя подвкладка.
-  if (TAB_IDS.has(sub)) UI.tab = sub;
+  if (TAB_IDS.has(sub)) { UI.page = 'sheet'; UI.tab = sub; }
 }
 export function currentRoute() {
-  return UI.tab;
+  return UI.page === 'stats' ? 'stats' : UI.tab;
 }

@@ -129,6 +129,8 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .db-filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end}
 .db-filters select{min-width:9rem}
 .db-filters .sortbar{margin-left:0}
+.db-show-ids{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .55rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--mute);font-size:.88rem;cursor:pointer;width:fit-content;min-height:2.5rem}
+.db-show-ids input{width:auto;flex:0 0 auto;min-height:0}
 .filters-btn,.filters-head,.filters-apply{display:none}
 .filters-backdrop{display:none}
 
@@ -166,6 +168,12 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .calc-modes{margin:.5rem 0 .2rem}
 .calc-modes .chip.total{border-color:var(--acc);color:var(--acc);font-weight:600}
 .calc-note{max-width:80ch}
+.calc-skill{margin:.7rem 0 .1rem;padding:.65rem .8rem;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.calc-skill-head{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.calc-skill-head b{font-size:1rem}
+.calc-skill-head .meta{margin:0}
+.calc-skill .desc{margin:.35rem 0 0;max-width:80ch}
+.calc-skill-empty{margin:.7rem 0 .1rem}
 
 /* ===== Автомастерская: гараж, сборка и итоги ===== */
 .garage-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap}
@@ -226,6 +234,30 @@ button.stat-card:hover{border-color:var(--mute)}
 .sources li b{white-space:nowrap}
 .sources-total{margin:.35rem 0 0;font-size:.9rem}
 .sources-total b{color:var(--acc)}
+
+/* ===== Вкладка «Статы» персонажа ===== */
+.page-tabs{margin-top:0}
+.stats-panel{margin-bottom:0}
+.stats-weapon-row{display:flex;align-items:flex-end;gap:.6rem;flex-wrap:wrap;margin:.4rem 0 .7rem}
+.stats-weapon{display:grid;gap:.2rem;font-size:.8rem;color:var(--mute);flex:0 1 22rem;min-width:0}
+.stats-weapon select{width:100%}
+.stats-weapon-row .meta{margin:0;flex:1 1 14rem}
+.stat-card.zero b{color:var(--mute)}
+.stat-effect.cond{border-style:dashed}
+.stat-effect.on{border-color:var(--acc);color:var(--acc)}
+.stats-source.off{opacity:.72}
+.stats-source.off .part-main b{color:var(--mute)}
+.stats-source .mod-flag{flex:0 0 auto}
+.cond-list{margin-top:.5rem;padding-top:.45rem;border-top:1px dashed var(--line)}
+.cond-list h4{margin:0 0 .3rem;font-size:.78rem;color:var(--mute)}
+.cond-group{margin-top:.6rem}
+.cond-group h3{margin:0 0 .25rem;font-size:.85rem}
+.cond-row{display:flex;align-items:flex-start;gap:.5rem;padding:.3rem .4rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer;font-size:.9rem}
+.cond-row+.cond-row{margin-top:.3rem}
+.cond-row.on{border-color:var(--acc)}
+.cond-row input{width:auto;margin:.2rem 0 0}
+.cond-val{font-weight:600;white-space:nowrap}
+.cond-text{flex:1;min-width:0;font-size:.78rem;overflow-wrap:anywhere}
 .part-list{display:grid;gap:.4rem}
 .part-card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--rc,var(--c));border-radius:6px;min-width:0}
 .part-card:last-child{margin-bottom:0}
@@ -338,6 +370,7 @@ button.stat-card:hover{border-color:var(--mute)}
 :root[data-ui=mobile] .transport-slot>label{max-width:none;width:100%}
 body.drawer-open{overflow:hidden}
 .row-no{display:inline-block;margin-right:.45rem;font-size:.75rem;color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 .3rem;background:var(--bg);font-variant-numeric:tabular-nums}
+.row-id{display:inline-block;margin-left:.35rem;padding:0 .3rem;font-size:.72rem;color:var(--mute);border:1px solid var(--line);border-radius:4px;background:var(--bg);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:nowrap}
 .chip.rar-c{border-color:var(--line);color:var(--mute);background:#fff}
 :root[data-theme=dark] .chip.rar-c{background:transparent;color:#fff;border-color:#fff}
 .chip.rar-r{border-color:var(--r);color:var(--r)}

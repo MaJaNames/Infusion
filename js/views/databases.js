@@ -14,6 +14,8 @@ const S = {
     rules: { group: '', sub: '', rar: '' },
   },
   sort: { items: ['id', 1], cards: ['id', 1], parts: ['id', 1], rules: ['group', 1] },
+  // ID из БД скрыты по умолчанию; включаются галочкой в фильтрах.
+  showIds: false,
 };
 // Бесконечная лента: сколько записей подгружается за раз и сколько уже показано.
 const BATCH = { items: 40, cards: 40, parts: 40, rules: 30 };
@@ -24,7 +26,7 @@ const RULE_GROUP_RANK = new Map(RULE_GROUPS.map((g, i) => [g, i]));
 const RULE_SUB_RANK = new Map([['Ранги', 0], ['Сущности', 1], ['Способности', 2], ['Мутации', 3], ['Черты', 4]]);
 
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}</div></div>${o.badge || ''}<span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div>${o.badge || ''}<span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 const credits = (n) => money(n, 'credits');
 const tali = (n) => money(n, 'tali');
@@ -50,8 +52,8 @@ export const cardRow = (c, controls = '', o = {}) => row(RC[c.rarity] || 'c', `<
   `${controls}<div class="chips">${(c.classes || []).map((x) => `<span class="chip">${esc(x)}</span>`).join('')}${c.consumable ? '<span class="chip warn">расходуется</span>' : ''}</div>
    <p class="desc">${esc(c.mechanics)}</p>${dl([['Параметры', c.params], ['Тип урона', c.damage_type], ['Дальность', c.distance], ['Срабатывание', c.activation], ['Эффекты', c.effects], ['Испытание', c.test], ['Усиление', c.amplify], ['Сотворение', c.creation === 'Базис' ? '' : c.creation]])}`, o);
 
-const partRow = (p) => row(RC[p.item.rarity] || 'c', `<span class="tag">${KIND_LABEL[p.stats.kind] || '?'}</span><b>${esc(p.item.name)}</b>`, esc(p.item.rarity), credits(p.item.cost),
-  `<div class="chips">${p.drone ? `${droneChips(p.drone)}<span class="chip drone">Дрон</span>` : statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`);
+const partRow = (p, id = null) => row(RC[p.item.rarity] || 'c', `<span class="tag">${KIND_LABEL[p.stats.kind] || '?'}</span><b>${esc(p.item.name)}</b>`, esc(p.item.rarity), credits(p.item.cost),
+  `<div class="chips">${p.drone ? `${droneChips(p.drone)}<span class="chip drone">Дрон</span>` : statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`, { id });
 
 const ITEM_SORT = {
   name: sdef('Название', (it) => label(it)),
@@ -183,18 +185,18 @@ function sortRows(kind, rows, scores = null) {
 function rulesRows(d) {
   const rows = [];
   d.ranks.forEach((x) => rows.push({ id: `rank-${x.level}`, group: 'Константы', sub: 'Ранги', type: 'Ранг', name: `${x.level}. ${x.name}`, sortName: `${String(x.level).padStart(3, '0')} ${x.name}`, rarity: '', detail: `Уровень ${x.level}`, description: `ОЗ ${x.hp_base}, Кронос ${x.kronos_max}` }));
-  d.essences.forEach((x) => rows.push({ id: `essence-${x.id}`, group: 'Константы', sub: 'Сущности', type: 'Сущность', name: x.name, rarity: '', detail: x.full_name || '', description: x.description }));
-  d.abilities.forEach((x) => rows.push({ id: `ability-${x.id}`, group: 'Способности', sub: x.kind === 'mutation' ? 'Мутации' : 'Способности', type: x.kind === 'mutation' ? 'Мутация' : 'Способность', name: x.name, rarity: '', detail: x.class_requirement || '', description: x.description }));
-  d.beasts.forEach((x) => rows.push({ id: `beast-${x.id}`, group: 'Зверь', sub: x.group_name || 'Без группы', type: 'Зверь', name: x.name, rarity: x.rarity || '', detail: x.group_name || '', description: x.description, rc: RC[x.rarity] }));
-  d.traits.forEach((x) => rows.push({ id: `trait-${x.id}`, group: 'Черта', sub: 'Черты', type: 'Черта', name: x.name, rarity: '', detail: '', description: x.description }));
-  d.skills.forEach((x) => rows.push({ id: `skill-${x.id}`, group: 'Навыки', sub: d.statMap.get(x.stat)?.name || x.stat, type: 'Навык', name: x.name, rarity: x.rarity || '', detail: `${d.statMap.get(x.stat)?.name || x.stat} ${x.tier}`, description: x.description }));
+  d.essences.forEach((x) => rows.push({ id: `essence-${x.id}`, dbId: x.id, group: 'Константы', sub: 'Сущности', type: 'Сущность', name: x.name, rarity: '', detail: x.full_name || '', description: x.description }));
+  d.abilities.forEach((x) => rows.push({ id: `ability-${x.id}`, dbId: x.id, group: 'Способности', sub: x.kind === 'mutation' ? 'Мутации' : 'Способности', type: x.kind === 'mutation' ? 'Мутация' : 'Способность', name: x.name, rarity: '', detail: x.class_requirement || '', description: x.description }));
+  d.beasts.forEach((x) => rows.push({ id: `beast-${x.id}`, dbId: x.id, group: 'Зверь', sub: x.group_name || 'Без группы', type: 'Зверь', name: x.name, rarity: x.rarity || '', detail: x.group_name || '', description: x.description, rc: RC[x.rarity] }));
+  d.traits.forEach((x) => rows.push({ id: `trait-${x.id}`, dbId: x.id, group: 'Черта', sub: 'Черты', type: 'Черта', name: x.name, rarity: '', detail: '', description: x.description }));
+  d.skills.forEach((x) => rows.push({ id: `skill-${x.id}`, dbId: x.id, group: 'Навыки', sub: d.statMap.get(x.stat)?.name || x.stat, type: 'Навык', name: x.name, rarity: x.rarity || '', detail: `${d.statMap.get(x.stat)?.name || x.stat} ${x.tier}`, description: x.description }));
   return rows;
 }
 
 const RULE_COLOR = { 'Ранг': 'c', 'Сущность': 'e', 'Способность': 'u', 'Мутация': 'u', 'Зверь': 'r', 'Черта': 'l', 'Навык': 'c' };
-const ruleRow = (r) => row(r.rc || RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
+const ruleRow = (r, id = null) => row(r.rc || RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
   `${esc(r.group)}${r.detail ? ' · ' + esc(r.detail) : ''}${r.rarity ? ' · ' + esc(r.rarity) : ''}`, '',
-  `<p class="desc">${esc(r.description)}</p>`);
+  `<p class="desc">${esc(r.description)}</p>`, { id });
 
 function subOptions(d, group) {
   const seen = new Map();
@@ -258,21 +260,25 @@ function collect(d) {
   if (S.tab === 'items') {
     ({ rows, scores } = fuzzyFilter(d.items.filter((i) => matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f)),
       q, (i) => `${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`));
-    draw = itemRow; sortKind = 'items';
+    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null });
+    sortKind = 'items';
     ord = new Map(d.items.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'cards') {
     ({ rows, scores } = fuzzyFilter(d.cards.filter((c) => matches({ rar: c.rarity, classes: c.classes, school: c.school, essence: c.essence, creation: c.creation, consumable: c.consumable ? '1' : '0', iconic: c.iconic ? '1' : '0' }, f)),
       q, (c) => `${c.name} ${c.mechanics} ${c.school} ${arr(c.classes)} ${c.essence || ''}`));
-    draw = cardRow; sortKind = 'cards';
+    draw = (cd, controls, o = {}) => cardRow(cd, controls, { ...o, id: S.showIds ? cd.id : null });
+    sortKind = 'cards';
     ord = new Map(d.cards.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'parts') {
     ({ rows, scores } = fuzzyFilter(partsOf(d).filter((p) => matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f)),
       q, (p) => `${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`));
-    draw = partRow; sortKind = 'parts';
+    draw = (p) => partRow(p, S.showIds ? p.item.id : null);
+    sortKind = 'parts';
   } else {
     ({ rows, scores } = fuzzyFilter(rulesRows(d).filter((r) => matches({ group: r.group, sub: r.sub, rar: r.rarity }, f)),
       q, (r) => `${r.name} ${r.description} ${r.detail} ${r.group} ${r.sub}`));
-    draw = ruleRow; sortKind = 'rules';
+    draw = (r) => ruleRow(r, S.showIds ? r.dbId : null);
+    sortKind = 'rules';
   }
   // При поиске первична точность совпадения, выбранная сортировка — вторична.
   if (sortKind) rows = sortRows(sortKind, rows, scores);
@@ -326,6 +332,7 @@ export function render(ctx) {
       <div class="db-filters" data-filters-panel>
         <div class="filters-head"><b>Фильтры и сортировка</b><button type="button" class="x" data-filters-close title="Закрыть">✕</button></div>
         ${filterDefs(d, S.tab).map((f) => sel(f.k, f.label, f.options, cur[f.k] || '')).join('')}${sortBar(S.tab)}
+        <label class="db-show-ids"><input type="checkbox" data-show-ids${S.showIds ? ' checked' : ''}> Показывать ID</label>
         <button type="button" class="filters-apply" data-filters-close>Готово</button>
       </div></div>
     <div class="filters-backdrop" data-filters-close hidden></div>
@@ -377,6 +384,11 @@ export function bind(root, ctx) {
     S.q = e.target.value; resetShown(S.tab); res();
   };
   root.onchange = (e) => {
+    if (e.target.dataset.showIds !== undefined) {
+      S.showIds = !!e.target.checked;
+      res();
+      return;
+    }
     const k = e.target.dataset.k;
     if (k === 'q') return;
     if (k) {
