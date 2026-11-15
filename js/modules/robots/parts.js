@@ -49,6 +49,7 @@ export function robotStats(robot, d, c = null) {
     .filter(({ i, it }) => it && moduleEnabled(robot, i, it))
     .map(({ it }) => it);
   const weapon = kind === 'bmet' ? null : currentWeapon(robot, d);
+  const weaponStats = weapon ? parsePart(weapon.description) : null;
   // Стоимость считаем по всем установленным деталям, даже если модуль пока не активирован.
   const allModules = kind === 'bmet' ? [] : (robot?.modules || []).map((id) => (id ? d.itemMap.get(id) : null)).filter(Boolean);
   const parts = [base, ...weapons, ...allModules].filter(Boolean);
@@ -58,7 +59,7 @@ export function robotStats(robot, d, c = null) {
     const defA = Number((String(it.description || '').match(/(\d+)\s*ДЕФ\s*\(?а/i) || [])[1]) || 0;
     return { ...s, defA };
   });
-  const total = { hp: 0, defP: 0, defA: 0, evasion: 0, atk: 0, tchn: 0, speed: 0, flight: 0, cost: 0 };
+  const total = { hp: 0, defP: 0, defA: 0, evasion: 0, atk: 0, tchn: 0, ksh: 0, avx: 0, kc: 0, speed: 0, flight: 0, cost: 0 };
   for (const s of stats) {
     total.hp += s.hp || 0;
     total.defP += s.defP || 0;
@@ -75,8 +76,10 @@ export function robotStats(robot, d, c = null) {
   const weaponAtk = weapon ? (parsePart(weapon.description).atk || 0) : 0;
   total.atk = (weapon ? weaponAtk : baseAtk) + moduleAtk + coreBonus.atk;
   total.tchn += coreBonus.tchn;
+  total.ksh = weaponStats?.ksh || 0;
+  total.avx = weaponStats?.avx || 0;
+  total.kc = weaponStats?.kc ?? 0;
   total.cost = parts.reduce((a, it) => a + (it.cost || 0), 0);
-  const weaponStats = weapon ? parsePart(weapon.description) : null;
 
   // Источники для каждого параметра: какая деталь дала значение. Нужны для раскрытия по клику («Итоги»).
   const byPart = (f) => statParts.map((it, i) => ({ item: it, value: f(stats[i]) || 0 })).filter((x) => x.value);
@@ -96,6 +99,9 @@ export function robotStats(robot, d, c = null) {
       ...byPart((s) => s.accuracy),
       ...(coreBonus.tchn ? [{ item: { name: CORE_IMPLANT.name }, value: coreBonus.tchn }] : []),
     ],
+    ksh: weapon && weaponStats.ksh ? [{ item: weapon, value: weaponStats.ksh }] : [],
+    avx: weapon && weaponStats.avx ? [{ item: weapon, value: weaponStats.avx }] : [],
+    kc: weapon && weaponStats.kc ? [{ item: weapon, value: weaponStats.kc }] : [],
     cost: parts.filter((it) => it.cost).map((it) => ({ item: it, value: it.cost })),
   };
   return { total, base, kind, parts, weapon, weaponStats, weaponIndex: weaponIndex(robot, d), modules, sources };

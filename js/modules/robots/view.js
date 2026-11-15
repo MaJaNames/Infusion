@@ -10,7 +10,9 @@ const OPEN_PART = new Set(); // раскрытые карточки устано
 let OPEN_SOURCE = null; // раскрытый параметр в «Итогах»
 
 // Параметры робота, которые раскрываются по клику в «Итогах» (стоимость — отдельно, своей карточкой).
-const ROBOT_TOTALS = [['hp', 'ОЗ'], ['defP', 'ДЕФ.П'], ['defA', 'ДЕФ.А'], ['evasion', 'УКЛ'], ['atk', 'АТК'], ['tchn', 'ТЧН'], ['speed', 'Скороход'], ['flight', 'Полёт']];
+const ROBOT_TOTALS = [['hp', 'ОЗ'], ['defP', 'ДЕФ.П'], ['defA', 'ДЕФ.А'], ['evasion', 'УКЛ'], ['atk', 'АТК'], ['ksh', 'КШ'], ['tchn', 'ТЧН'], ['avx', 'АВХ'], ['kc', 'КЦ'], ['speed', 'Скороход'], ['flight', 'Полёт']];
+// КШ, АВХ и КЦ зависят только от текущего оружия — без него карточки не показываем.
+const WEAPON_ONLY_TOTALS = new Set(['ksh', 'avx', 'kc']);
 
 const robotById = (id) => R.robots.find((r) => r.id === id);
 
@@ -73,6 +75,11 @@ function picker(path, robot, ctx, slot, extra = '') {
 }
 
 const chip = (t, v) => (v ? `<span class="chip">${t} ${num(v)}</span>` : '');
+// У оружия показываем все четыре боевых параметра, включая нули и КЦ 1.
+const weaponChips = (it) => {
+  const s = parsePart(it.description);
+  return `<span class="chip">КШ ${num(s.ksh || 0)}</span><span class="chip">ТЧН ${num(s.accuracy || 0)}</span><span class="chip">АВХ ${num(s.avx || 0)}</span><span class="chip">КЦ ${num(s.kc ?? 1)}</span>`;
+};
 const reqText = (needs) => (needs.length ? `Нужен имплант: ${needs.join(', ')}` : '');
 
 // Подсказка при наведении на робота: те же параметры, что и в чипах сверху (как у транспорта в Автомастерской).
@@ -129,6 +136,7 @@ export function render(ctx) {
 
   const base = robotBase(robot, ctx.data), kind = robotKind(base);
   const stats = robotStats(robot, ctx.data, c);
+  if (OPEN_SOURCE && WEAPON_ONLY_TOTALS.has(OPEN_SOURCE) && !stats.weapon) OPEN_SOURCE = null;
   const total = stats.total;
   const showBmet = hasImplant(c, ctx.data, ROBOT_IMPLANTS.bmet);
   const bmets = R.robots.filter((r) => isBmet(robotBase(r, ctx.data))).length;
@@ -154,6 +162,7 @@ export function render(ctx) {
 
   const srcLabel = [...ROBOT_TOTALS, ['cost', 'Стоимость']].find(([k]) => k === OPEN_SOURCE)?.[1] || '';
   const srcRows = OPEN_SOURCE ? (stats.sources[OPEN_SOURCE] || []).map((x) => ({ name: label(x.item), value: x.value })) : [];
+  const totals = ROBOT_TOTALS.filter(([k]) => !WEAPON_ONLY_TOTALS.has(k) || stats.weapon);
 
   const composition = [
     ['Основа', robot.base, null],
@@ -166,12 +175,13 @@ export function render(ctx) {
     if (!it) return '';
     const off = modIndex !== null && moduleIsActive(it) && !moduleChecked(robot, modIndex);
     const key = `${robot.id}:${slot}:${id}`;
+    const isWeapon = slot.startsWith('Оружие');
     return `<details class="part-card ${RC[it.rarity] || 'c'}" data-part-row="${esc(key)}"${OPEN_PART.has(key) ? ' open' : ''}>
       <summary>
         <div class="part-main">
           <div class="part-slot">${esc(slot)}</div>
           <b>${esc(label(it))}</b>
-          <div class="chips">${statChips(parsePart(it.description))}</div>
+          <div class="chips">${isWeapon ? weaponChips(it) : statChips(parsePart(it.description))}</div>
           ${off ? '<span class="meta">Активный модуль выключен — параметры не учитываются.</span>' : ''}
         </div>
         <span class="price">${money(it.cost)}</span>
@@ -235,7 +245,7 @@ export function render(ctx) {
   </section>
   <section class="panel">
     <h2>Итоги</h2>
-    <div class="stat-grid">${ROBOT_TOTALS.map(([k, t]) => `<button type="button" class="stat-card${OPEN_SOURCE === k ? ' on' : ''}" data-source="${k}" aria-expanded="${OPEN_SOURCE === k}"><span>${t}</span><b>${num(total[k])}</b></button>`).join('')}
+    <div class="stat-grid">${totals.map(([k, t]) => `<button type="button" class="stat-card${OPEN_SOURCE === k ? ' on' : ''}" data-source="${k}" aria-expanded="${OPEN_SOURCE === k}"><span>${t}</span><b>${num(total[k])}</b></button>`).join('')}
       <button type="button" class="stat-card cost${OPEN_SOURCE === 'cost' ? ' on' : ''}" data-source="cost" aria-expanded="${OPEN_SOURCE === 'cost'}"><span>Стоимость</span><b>${money(total.cost)}</b></button></div>
     ${OPEN_SOURCE ? `<div class="sources">
       <div class="sources-head"><h3>Источники: ${esc(srcLabel)}</h3><button type="button" class="x" data-source-close title="Закрыть">✕</button></div>

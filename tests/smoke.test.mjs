@@ -192,13 +192,16 @@ check('калькулятор: вер 15 = цель 86', targetFromVer(15) === 8
 utilities.setRoute('calc');
 const calcHtml = utilities.render(ctx);
 check('утилиты: калькулятор с полем «Вер» и без «Атаки»', ['data-calc="stat"', 'data-calc="bonus"', 'data-calc="target"', 'data-calc="ver"', 'data-calc="mode"', 'data-calc-out', 'Результат D100'].every((x) => calcHtml.includes(x)) && !calcHtml.includes('data-calc="attack"') && !calcHtml.includes('Формула'));
+check('утилиты: режим персонажа убран, есть описание навыка', !calcHtml.includes('charMode') && !calcHtml.includes('Режим Персонажа') && calcHtml.includes('5 × уровень'));
 check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
 utilities.setRoute('robots');
 utilities.setRoute('');
-check('утилиты: пустой подраздел открывает первую вкладку', utilities.currentRoute() === 'nomad');
+check('утилиты: пустой подраздел сохраняет последнюю вкладку', utilities.currentRoute() === 'robots');
 utilities.setRoute('nomad');
 databases.setRoute('cards');
 check('подссылки: #db/cards', databases.currentRoute() === 'cards');
+databases.setRoute('');
+check('база: пустой подраздел сохраняет последнюю вкладку', databases.currentRoute() === 'cards');
 databases.setRoute('items');
 character.setRoute('repository');
 check('подссылки: #char/repository', character.currentRoute() === 'repository');
@@ -514,6 +517,17 @@ const atkOff = robotStats(robotStore.robots[0], d).total.atk;
 const atkOn = robotStats({ ...robotStore.robots[0], weapon: 1, modulesActive: [true, false, false, false, false] }, d).total.atk;
 check('роботы: АТК считается по выбранному оружию, а не суммой', atkOff === parsePart(robotWeapon.description).atk + passiveAtk, atkOff);
 check('роботы: смена текущего оружия меняет АТК', atkOn === parsePart(weapon2.description).atk + passiveAtk, `${atkOn}`);
+const weaponStats = parsePart(robotWeapon.description);
+const atkTotals = robotStats(robotStore.robots[0], d).total;
+check('роботы: КШ, ТЧН, АВХ и КЦ берутся из текущего оружия',
+  atkTotals.ksh === (weaponStats.ksh || 0) && atkTotals.avx === (weaponStats.avx || 0)
+  && atkTotals.kc === (weaponStats.kc ?? 1) && atkTotals.tchn === (weaponStats.accuracy || 0),
+  `${atkTotals.ksh}/${atkTotals.tchn}/${atkTotals.avx}/${atkTotals.kc}`);
+const atkPage = robotsView.render({ ...ctx, char: prismChar });
+check('роботы: КШ, ТЧН, АВХ и КЦ есть в «Итогах»', ['ksh', 'tchn', 'avx', 'kc'].every((k) => atkPage.includes(`data-source="${k}"`)));
+check('роботы: у оружия выводятся все четыре боевых параметра',
+  atkPage.includes(`КШ ${weaponStats.ksh || 0}`) && atkPage.includes(`ТЧН ${weaponStats.accuracy || 0}`)
+  && atkPage.includes(`АВХ ${weaponStats.avx || 0}`) && atkPage.includes(`КЦ ${weaponStats.kc ?? 1}`));
 check('роботы: пассивный модуль учитывается без активации', moduleEnabled(robotStore.robots[0], 0, atkModule)
   && !moduleChecked(robotStore.robots[0], 0), `${atkOn}`);
 check('роботы: активный модуль без активации не учитывается', moduleIsActive(activeModule)

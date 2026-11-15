@@ -160,6 +160,7 @@ let immunities = {};
 let nextAttackId = 1;
 let lastOutputText = "";
 let currentBudget = { spent: 0, max: 0 };
+let calcAttackId = null;
 
 // M6: Переменные для вкладок и сохранений
 let savedMobs = {};
@@ -576,6 +577,8 @@ function renderAttackEditor(attack, index, wasOpen = null) {
                 <input type="text" class="attack-name-input" data-field="name" value="${esc(attack.name)}"
                     placeholder="Название атаки" oninput="updateAttackField(${attack.id}, 'name', this.value)">
                 <div class="attack-head-actions">
+                    <button type="button" class="btn-icon" title="Переместить выше" onclick="moveAttack(${attack.id}, -1)">↑</button>
+                    <button type="button" class="btn-icon" title="Переместить ниже" onclick="moveAttack(${attack.id}, 1)">↓</button>
                     <button type="button" class="btn-icon" title="Дублировать атаку" onclick="duplicateAttack(${attack.id})">⧉</button>
                     <button type="button" class="btn-icon danger" title="Удалить атаку" onclick="removeAttack(${attack.id})">✕</button>
                 </div>
@@ -853,6 +856,17 @@ function duplicateAttack(attackId) {
 
 function removeAttack(attackId) {
     attacks = attacks.filter(a => a.id !== Number(attackId));
+    renderAttacks();
+    recalcStats();
+}
+
+// Перемещение атаки кнопками — удобно на телефоне, где drag-and-drop недоступен.
+function moveAttack(attackId, delta) {
+    const from = attacks.findIndex(a => a.id === Number(attackId));
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= attacks.length) return;
+    const [moved] = attacks.splice(from, 1);
+    attacks.splice(to, 0, moved);
     renderAttacks();
     recalcStats();
 }
@@ -1858,50 +1872,69 @@ function handleDragEnd(e) {
 function updateDamageCalc() {
     const el = document.getElementById("damageCalcResult");
     if (!el) return;
-    
+    const select = document.getElementById("calcAttack");
+
     const stat = Number(document.getElementById("calcStat").value) || 5;
     const bonus = Number(document.getElementById("calcBonus").value) || 0;
     const defP = Number(document.getElementById("calcDefP").value) || 0;
-    
+
     // Множитель СТАТА (1 = 0.6, 5 = 1.0, 10 = 1.5)
     const mult = 1 + (stat - 5) * 0.1;
-    
-    if (attacks.length === 0) {
+
+    if (!attacks.length) {
+        if (select) {
+            select.innerHTML = '<option value="">— нет атак —</option>';
+            select.disabled = true;
+            delete select.dataset.optionsKey;
+        }
         el.innerHTML = "Нет атак для расчета.";
         return;
     }
-    
-    let results = attacks.map(a => {
-        const eff = effectiveAttackStats(a);
-        
-        // Нам нужно: D100 * mult + bonus > eff.atk
-        // Отсюда: D100 > (eff.atk - bonus) / mult
-        const target = (eff.atk - bonus) / mult;
-        let reqD100 = Math.floor(target) + 1;
-        
-        let evadeText = "";
-        if (reqD100 <= 1) {
-            evadeText = `<span style="color: var(--ok-color); font-weight: 700;">Уклонение при любом броске</span>`;
-        } else if (reqD100 > 100) {
-            evadeText = `<span style="color: var(--p1-color); font-weight: 700;">Невозможно уклониться</span>`;
-        } else {
-            evadeText = `нужно выкинуть <b>${reqD100}+</b> на D100`;
+
+    if (select) {
+        select.disabled = false;
+        // Запоминаем выбор до пересборки списка: иначе переименование атаки сбросит выбор на первую.
+        const before = Number(select.value);
+        if (attacks.some(a => a.id === before)) calcAttackId = before;
+        const optionsKey = attacks.map(a => `${a.id}:${a.name}`).join("|");
+        if (select.dataset.optionsKey !== optionsKey) {
+            select.innerHTML = attacks.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join("");
+            select.dataset.optionsKey = optionsKey;
         }
-        
-        // Если уклонение провалено (игрок выкинул меньше), считаем урон
-        let hitText = "";
-        if (reqD100 <= 100) {
-            // ВНИМАНИЕ: Здесь мы берем АТК как урон. Если урон оружия фиксирован, 
-            // формулу нужно будет поменять на фактический урон оружия.
-            const dmgPerHit = Math.max(0, eff.atk - defP); 
-            const totalDmg = dmgPerHit * eff.avh;
-            hitText = ` (при провале: ~${totalDmg} урона)`;
-        }
-        
-        return `<b>${esc(a.name)}</b> (АТК ${eff.atk}): ${evadeText}${hitText}`;
-    });
-    
-    el.innerHTML = results.join("<br>");
+        // Если выбранную атаку удалили — берём первую.
+        const chosen = attacks.find(a => a.id === calcAttackId) || attacks[0];
+        calcAttackId = chosen.id;
+        select.value = String(chosen.id);
+    }
+
+    const attack = attacks.find(a => a.id === calcAttackId) || attacks[0];
+    const eff = effectiveAttackStats(attack);
+
+    // Нам нужно: D100 * mult + bonus > eff.atk
+    // Отсюда: D100 > (eff.atk - bonus) / mult
+    const target = (eff.atk - bonus) / mult;
+    const reqD100 = Math.floor(target) + 1;
+
+    let evadeText = "";
+    if (reqD100 <= 1) {
+        evadeText = `<span style="color: var(--ok-color); font-weight: 700;">Уклонение при любом броске</span>`;
+    } else if (reqD100 > 100) {
+        evadeText = `<span style="color: var(--p1-color); font-weight: 700;">Невозможно уклониться</span>`;
+    } else {
+        evadeText = `нужно выкинуть <b>${reqD100}+</b> на D100`;
+    }
+
+    // Если уклонение провалено (игрок выкинул меньше), считаем урон
+    let hitText = "";
+    if (reqD100 <= 100) {
+        // ВНИМАНИЕ: Здесь мы берем АТК как урон. Если урон оружия фиксирован,
+        // формулу нужно будет поменять на фактический урон оружия.
+        const dmgPerHit = Math.max(0, eff.atk - defP);
+        const totalDmg = dmgPerHit * eff.avh;
+        hitText = ` (при провале: ~${totalDmg} урона)`;
+    }
+
+    el.innerHTML = `<b>${esc(attack.name)}</b> (АТК ${eff.atk}): ${evadeText}${hitText}`;
 }
 
 init();

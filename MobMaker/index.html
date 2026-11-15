@@ -13,13 +13,10 @@
 <body>
 
 <div class="container">
-    <div class="mob-tabs-container" style="margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-    <div class="mob-tabs" id="mobTabs" style="display: flex; gap: 5px; overflow-x: auto; flex: 1;"></div>
-    <div class="mob-tabs-container" style="margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-    <div class="mob-tabs" id="mobTabs" style="display: flex; gap: 5px; overflow-x: auto; flex: 1;"></div>
-    <button type="button" class="btn btn-small" onclick="addNewTab()">+ Новый моб</button>
-    <button type="button" class="btn btn-small btn-outline" onclick="clearCurrentMob()" style="border-color: var(--p1-color); color: #fca5a5;" title="Сбросить все поля текущего моба">Очистить</button>
-    </div>
+    <div class="mob-tabs-container">
+        <div class="mob-tabs" id="mobTabs"></div>
+        <button type="button" class="btn btn-small" onclick="addNewTab()">+ Новый моб</button>
+        <button type="button" class="btn btn-small btn-outline" onclick="clearCurrentMob()" style="border-color: var(--p1-color); color: #fca5a5;" title="Сбросить все поля текущего моба">Очистить</button>
     </div>
     <header>
         <h1>Конструктор Мобов</h1>
@@ -254,17 +251,21 @@
         <div class="sheet-section" style="margin-bottom: 20px; border-bottom: 1px dashed var(--border); padding-bottom: 20px;">
             <div class="sheet-section-title">Калькулятор уклонения (Инструмент ГМа)</div>
             <div class="grid-4" style="margin-bottom: 8px;">
+                <div style="grid-column: 1 / -1;">
+                    <label for="calcAttack">Атака для проверки</label>
+                    <select id="calcAttack" onchange="updateDamageCalc()" aria-label="Атака для проверки урона и уклонения"></select>
+                </div>
                 <div>
                     <label>СТАТ игрока (1-10)</label>
-                    <input type="number" id="calcStat" value="5" min="1" max="10" oninput="updateDamageCalc()">
+                    <input type="number" id="calcStat" value="5" min="1" max="10" inputmode="numeric" oninput="updateDamageCalc()">
                 </div>
                 <div>
                     <label>Бонус к УКЛ</label>
-                    <input type="number" id="calcBonus" value="20" oninput="updateDamageCalc()">
+                    <input type="number" id="calcBonus" value="20" inputmode="numeric" oninput="updateDamageCalc()">
                 </div>
                 <div>
                     <label>Деф(П) игрока</label>
-                    <input type="number" id="calcDefP" value="10" oninput="updateDamageCalc()">
+                    <input type="number" id="calcDefP" value="10" inputmode="numeric" oninput="updateDamageCalc()">
                 </div>
             </div>
             <div id="damageCalcResult" class="hint" style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6;"></div>

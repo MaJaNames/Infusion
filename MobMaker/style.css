@@ -818,11 +818,31 @@ pre {
     background: linear-gradient(90deg, var(--p2-color), var(--p1-color));
 }
 
+.mob-tabs-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.mob-tabs {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    flex: 1 1 240px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
 .mob-tab {
     display: flex; align-items: center; gap: 8px; background: var(--bg-card); 
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; 
     cursor: pointer; font-size: 0.85rem; color: var(--text-muted);
     transition: all 0.15s;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 .mob-tab:hover { border-color: var(--accent); }
 .mob-tab.active { background: var(--bg-input); border-color: var(--accent); color: var(--text-main); font-weight: 600; }
@@ -872,7 +892,8 @@ pre {
     .card { padding: 12px; }
     header { flex-direction: column; align-items: flex-start; gap: 8px; }
     .pills-wrap { width: 100%; justify-content: space-between; }
-    .grid-2, .grid-4, .grid-attrs { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-4, .grid-attrs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .active-effect-row,
     .selected-effect-row,
     .immunity-settings-row { grid-template-columns: 1fr; gap: 6px; }
@@ -886,4 +907,25 @@ pre {
     .mob-name { font-size: 1.1rem; }
     .action-buttons { flex-direction: column; height: auto; }
     .action-buttons .btn { width: 100%; flex: none; height: auto; }
+
+    /* Крупные поля и кнопки — без зума на iOS и с удобными касаниями. */
+    input[type="text"], input[type="number"], select, textarea { font-size: 16px; min-height: 44px; }
+    .btn, .btn-small { min-height: 44px; }
+    .btn-icon { width: 44px; height: 44px; font-size: 1.05rem; }
+    .effect-chip { padding: 10px 12px; }
+    .effect-top input[type="checkbox"] { width: 22px; height: 22px; }
+    .effects-grid { grid-template-columns: 1fr; }
+    .mob-tabs-container { gap: 6px; }
+    .mob-tabs { flex-basis: 100%; order: 0; }
+    .mob-tabs-container .btn-small { flex: 1 1 auto; order: 1; }
+    .attack-cost-line { justify-content: flex-start; gap: 8px; }
+    .sheet-budget { flex-wrap: wrap; }
+    .sheet-budget-label { width: 100%; }
+    .custom-immunity { flex-wrap: wrap; }
+    .output-card pre { font-size: 0.8rem; }
+}
+
+@media (max-width: 380px) {
+    .grid-4, .grid-attrs { grid-template-columns: 1fr; }
+    .attack-head-actions { width: 100%; justify-content: flex-end; }
 }
