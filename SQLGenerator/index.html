@@ -131,44 +131,7 @@
       margin-top: 0.125rem;
     }
 
-    /* Tabs */
-    .tabs-wrapper {
-      display: flex;
-      background-color: var(--cyber-bg);
-      padding: 0.25rem;
-      border-radius: 0.5rem;
-      border: 1px solid var(--cyber-border);
-      align-self: flex-start;
-    }
-    @media (min-width: 640px) {
-      .tabs-wrapper {
-        align-self: center;
-      }
-    }
-
-    .tab-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 0.375rem;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .tab-btn:hover {
-      color: #fff;
-      background-color: var(--cyber-hover);
-    }
-    .tab-btn.active {
-      background-color: var(--cyber-accent);
-      color: #fff;
-      box-shadow: 0 4px 6px -1px rgba(0, 168, 204, 0.3);
-    }
+    /* Counter */
     .tab-counter {
       margin-left: 0.25rem;
       padding: 0.05rem 0.4rem;
@@ -221,17 +184,6 @@
       color: var(--cyber-rose);
     }
 
-    .toggle-custom-btn {
-      font-size: 0.6875rem;
-      color: var(--cyber-neon);
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-    .toggle-custom-btn:hover {
-      text-decoration: underline;
-    }
-
     input[type="text"], select, textarea {
       width: 100%;
       background-color: var(--cyber-input);
@@ -248,29 +200,6 @@
     }
     textarea {
       resize: vertical;
-    }
-
-    /* Checkbox styling */
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      padding-top: 0.5rem;
-    }
-    .checkbox-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      user-select: none;
-      font-size: 0.8125rem;
-      color: #e2e8f0;
-    }
-    .checkbox-label input[type="checkbox"] {
-      width: 1.125rem;
-      height: 1.125rem;
-      accent-color: var(--cyber-accent);
-      cursor: pointer;
     }
 
     /* Section Header inside Form */
@@ -490,6 +419,22 @@
       background-color: rgba(0, 212, 255, 0.2);
       color: var(--cyber-neon);
       border: 1px solid rgba(0, 212, 255, 0.4);
+      padding: 0 0.25rem;
+      border-radius: 0.25rem;
+    }
+    .tag-insert {
+      font-size: 0.625rem;
+      background-color: rgba(16, 185, 129, 0.18);
+      color: var(--cyber-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 0 0.25rem;
+      border-radius: 0.25rem;
+    }
+    .tag-update {
+      font-size: 0.625rem;
+      background-color: rgba(2, 132, 199, 0.18);
+      color: #7dd3fc;
+      border: 1px solid rgba(2, 132, 199, 0.4);
       padding: 0 0.25rem;
       border-radius: 0.25rem;
     }
@@ -721,332 +666,22 @@
             <span>✦ INFUSION</span>
             <span class="badge-tag">BATCH ENGINE</span>
           </h1>
-          <p class="subtitle-text">Генератор SQL для базы данных: пакетная вставка и редактирование записей</p>
+          <p class="subtitle-text">Создание и редактирование записей любой таблицы: INSERT, UPDATE и пакетный SQL</p>
         </div>
-      </div>
-
-      <!-- Tab Buttons -->
-      <div class="tabs-wrapper">
-        <button id="tab-btn-items" class="tab-btn active">
-          <svg class="icon-svg" viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          Предметы
-          <span id="badge-count-items" class="tab counter hidden">0</span>
-        </button>
-
-        <button id="tab-btn-cards" class="tab-btn">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1V4c0-.6-.4-1-1-1H3c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h2"></path><path d="M14 17H9"></path><path d="M10 21h4"></path><rect x="5" y="7" width="14" height="10" rx="1"></rect></svg>
-          Карты / Базисы
-          <span id="badge-count-cards" class="tab counter hidden">0</span>
-        </button>
-
-        <button id="tab-btn-editor" class="tab-btn">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-          Редактор БД
-        </button>
       </div>
     </header>
 
     <!-- Main Section -->
     <main>
-      <!-- ================= ITEMS VIEW ================= -->
-      <div id="view-items" class="space-y">
-        <form id="form-item" class="panel" style="margin-bottom: 1.5rem;">
-          <div class="form-header">
-            <h2 class="form-header-title">
-              <svg class="icon-svg" style="color: var(--cyber-accent)" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
-              <span id="item-form-header-text">Конфигурация предмета</span>
-            </h2>
-            <span class="subtitle-text">ID генерируется автоматически БД, если оставлен пустым</span>
-          </div>
-
-          <div class="form-grid">
-            <!-- ID -->
-            <div class="form-group">
-              <label>ID (опционально, авто БД):</label>
-              <input type="text" id="item-id" placeholder="Оставьте пустым для авто-ID" />
-            </div>
-
-            <!-- Tag -->
-            <div class="form-group">
-              <label>Тег (ручной ввод):</label>
-              <input type="text" id="item-tag" placeholder="Например: item_cyber_01" />
-            </div>
-
-            <!-- Name -->
-            <div class="form-group">
-              <label>Название <span class="required-star">*</span>:</label>
-              <input type="text" id="item-name" required placeholder="Название предмета..." />
-            </div>
-
-            <!-- Category -->
-            <div class="form-group" id="group-item-category"></div>
-
-            <!-- Rarity -->
-            <div class="form-group" id="group-item-rarity"></div>
-
-            <!-- Cost -->
-            <div class="form-group">
-              <label>Стоимость (Cost):</label>
-              <input type="text" id="item-cost" value="0" />
-            </div>
-
-            <!-- Organization -->
-            <div class="form-group" id="group-item-organization"></div>
-
-            <!-- Iconic -->
-            <div class="form-group checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" id="item-iconic" />
-                <span>Культовый (iconic)</span>
-              </label>
-            </div>
-
-            <!-- Description -->
-            <div class="form-group col-span-full">
-              <label>Описание / Эффекты:</label>
-              <textarea id="item-description" rows="3" placeholder="Подробное описание или свойства предмета..."></textarea>
-            </div>
-          </div>
-
-          <div style="padding-top: 1rem; display: flex; gap: 0.75rem;">
-            <button type="submit" id="btn-item-submit" class="btn btn-add">
-              <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
-              <span id="btn-item-submit-text">Добавить в пакет</span>
-            </button>
-            <button type="button" id="btn-item-cancel" class="btn btn-cancel hidden">Отмена</button>
-          </div>
-        </form>
-
-        <!-- Batch Actions -->
-        <div class="panel actions-bar" style="margin-bottom: 1.5rem;">
-          <div class="actions-left">
-            <button id="btn-item-generate" class="btn btn-generate" disabled>
-              <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              Сгенерировать SQL
-            </button>
-            <button id="btn-item-clear" class="btn btn-clear" disabled>
-              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              Очистить
-            </button>
-          </div>
-          <div id="badge-item-count" class="batch-count-badge">📦 В пакете: 0 предметов</div>
-        </div>
-
-        <!-- Batch Items Preview List -->
-        <div id="container-items-preview" class="panel hidden" style="margin-bottom: 1.5rem;">
-          <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
-            Содержимое пакета (нажмите на элемент для редактирования):
-          </h3>
-          <div id="list-items-batch" class="cards-grid"></div>
-        </div>
-
-        <!-- SQL Output -->
-        <div id="container-items-sql" class="panel hidden">
-          <div class="form-header">
-            <h3 class="title-text" style="font-size: 0.8125rem;">
-              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-              Сгенерированный SQL (Items)
-            </h3>
-            <button id="btn-items-copy" class="btn btn-copy">
-              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              <span id="txt-items-copy">Скопировать SQL</span>
-            </button>
-          </div>
-          <textarea id="sql-output-items" class="sql-output-area" rows="10" readonly></textarea>
-        </div>
-      </div>
-
-      <!-- ================= CARDS VIEW ================= -->
-      <div id="view-cards" class="space-y hidden">
-        <form id="form-card" class="panel" style="margin-bottom: 1.5rem;">
-          <div class="form-header">
-            <h2 class="form-header-title">
-              <svg class="icon-svg" style="color: var(--cyber-accent)" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
-              <span id="card-form-header-text">Конфигурация карты / базиса</span>
-            </h2>
-            <span class="subtitle-text">ID генерируется автоматически БД, если оставлен пустым</span>
-          </div>
-
-          <div class="form-grid">
-            <!-- ID -->
-            <div class="form-group">
-              <label>ID (опционально, авто БД):</label>
-              <input type="text" id="card-id" placeholder="Оставьте пустым для авто-ID" />
-            </div>
-
-            <!-- Tag -->
-            <div class="form-group">
-              <label>Тег (ручной ввод):</label>
-              <input type="text" id="card-tag" placeholder="Например: card_fireball" />
-            </div>
-
-            <!-- Name -->
-            <div class="form-group">
-              <label>Название <span class="required-star">*</span>:</label>
-              <input type="text" id="card-name" required placeholder="Название карты..." />
-            </div>
-
-            <!-- Rarity -->
-            <div class="form-group">
-              <label>Редкость:</label>
-              <select id="card-rarity"></select>
-            </div>
-
-            <!-- Classes -->
-            <div class="form-group">
-              <label>Классы (через запятую):</label>
-              <input type="text" id="card-classes" value="Общие" placeholder="Общие, Маг..." />
-            </div>
-
-            <!-- School -->
-            <div class="form-group">
-              <label>Школа:</label>
-              <select id="card-school"></select>
-            </div>
-
-            <!-- Essence -->
-            <div class="form-group">
-              <label>Сущность (essence):</label>
-              <select id="card-essence"></select>
-            </div>
-
-            <!-- Params -->
-            <div class="form-group">
-              <label>Параметры (params):</label>
-              <input type="text" id="card-params" placeholder="Параметры..." />
-            </div>
-
-            <!-- Damage Type -->
-            <div class="form-group">
-              <label>Тип урона:</label>
-              <select id="card-damage_type"></select>
-            </div>
-
-            <!-- Distance -->
-            <div class="form-group">
-              <label>Дистанция (distance):</label>
-              <input type="text" id="card-distance" />
-            </div>
-
-            <!-- Activation -->
-            <div class="form-group">
-              <label>Срабатывание (activation):</label>
-              <input type="text" id="card-activation" />
-            </div>
-
-            <!-- Effects -->
-            <div class="form-group">
-              <label>Эффекты (effects):</label>
-              <input type="text" id="card-effects" />
-            </div>
-
-            <!-- Test -->
-            <div class="form-group">
-              <label>Испытание (test):</label>
-              <input type="text" id="card-test" />
-            </div>
-
-            <!-- Amplify -->
-            <div class="form-group">
-              <label>Усиление (amplify):</label>
-              <select id="card-amplify"></select>
-            </div>
-
-            <!-- Kronos -->
-            <div class="form-group">
-              <label>Затраты Кроноса:</label>
-              <input type="text" id="card-kronos" value="0" placeholder="0" />
-            </div>
-
-            <!-- Price Tali -->
-            <div class="form-group">
-              <label>Цена (Тали):</label>
-              <input type="text" id="card-price_tali" value="0" placeholder="0" />
-            </div>
-
-            <!-- Creation -->
-            <div class="form-group">
-              <label>Сотворение:</label>
-              <select id="card-creation"></select>
-            </div>
-
-            <!-- Checkboxes -->
-            <div class="form-group checkbox-group col-span-full">
-              <label class="checkbox-label">
-                <input type="checkbox" id="card-consumable" />
-                <span>Consumable (Расходуется)</span>
-              </label>
-
-              <label class="checkbox-label">
-                <input type="checkbox" id="card-iconic" />
-                <span>Iconic (Культовое)</span>
-              </label>
-            </div>
-
-            <!-- Mechanics -->
-            <div class="form-group col-span-full">
-              <label>Механика / Описание:</label>
-              <textarea id="card-mechanics" rows="3" placeholder="Подробная механика или описание карты..."></textarea>
-            </div>
-          </div>
-
-          <div style="padding-top: 1rem; display: flex; gap: 0.75rem;">
-            <button type="submit" id="btn-card-submit" class="btn btn-add">
-              <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg>
-              <span id="btn-card-submit-text">Добавить в пакет</span>
-            </button>
-            <button type="button" id="btn-card-cancel" class="btn btn-cancel hidden">Отмена</button>
-          </div>
-        </form>
-
-        <!-- Batch Actions -->
-        <div class="panel actions-bar" style="margin-bottom: 1.5rem;">
-          <div class="actions-left">
-            <button id="btn-card-generate" class="btn btn-generate" disabled>
-              <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              Сгенерировать SQL
-            </button>
-            <button id="btn-card-clear" class="btn btn-clear" disabled>
-              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              Очистить
-            </button>
-          </div>
-          <div id="badge-card-count" class="batch-count-badge">📜 В пакете: 0 карт</div>
-        </div>
-
-        <!-- Batch Cards Preview List -->
-        <div id="container-cards-preview" class="panel hidden" style="margin-bottom: 1.5rem;">
-          <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
-            Содержимое пакета (нажмите на элемент для редактирования):
-          </h3>
-          <div id="list-cards-batch" class="cards-grid"></div>
-        </div>
-
-        <!-- SQL Output -->
-        <div id="container-cards-sql" class="panel hidden">
-          <div class="form-header">
-            <h3 class="title-text" style="font-size: 0.8125rem;">
-              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-              Сгенерированный SQL (Cards)
-            </h3>
-            <button id="btn-cards-copy" class="btn btn-copy">
-              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              <span id="txt-cards-copy">Скопировать SQL</span>
-            </button>
-          </div>
-          <textarea id="sql-output-cards" class="sql-output-area" rows="10" readonly></textarea>
-        </div>
-      </div>
-
       <!-- ===== DATABASE EDITOR ===== -->
-      <div id="view-editor" class="space-y hidden">
+      <div id="view-editor" class="space-y">
         <section class="panel" style="margin-bottom: 1.5rem;">
           <div class="form-header">
             <h2 class="form-header-title">
               <svg class="icon-svg" style="color: var(--cyber-accent)" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
               Редактор записей
             </h2>
-            <span class="subtitle-text">UPDATE только для изменённых полей</span>
+            <span class="subtitle-text">INSERT и UPDATE для любой таблицы</span>
           </div>
           <div class="editor-toolbar">
             <div class="form-group">
@@ -1060,14 +695,15 @@
                 <option value="snapshot">data.json (снимок)</option>
               </select>
             </div>
-            <button type="button" id="btn-editor-load" class="btn btn-add">Загрузить</button>
+            <button type="button" id="btn-editor-load" class="btn btn-copy">Загрузить</button>
+            <button type="button" id="btn-editor-new" class="btn btn-add">Новая запись</button>
             <div id="editor-status" class="editor-status"></div>
             <p class="editor-note">
-              Публичный ключ Supabase работает только на чтение. Сгенерированный UPDATE выполните
+              Публичный ключ Supabase работает только на чтение. Сгенерированный SQL выполните
               в Supabase → SQL Editor (или через service_role). Пустое числовое поле и слово
               <code>NULL</code> в тексте дают SQL <code>NULL</code>; элементы <code>text[]</code>
-              вводятся по одному на строку, JSON — как обычный JSON.
-            </p>
+              вводятся по одному на строку, JSON — как обычный JSON. Без изменений UPDATE не
+              генерируется, а новая запись собирается в INSERT.</p>
           </div>
         </section>
 
@@ -1075,7 +711,7 @@
           <section class="panel editor-list-panel">
             <div class="form-header">
               <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase;">Записи</h3>
-              <span id="editor-count" class="tab counter">0</span>
+              <span id="editor-count" class="tab-counter">0</span>
             </div>
             <input type="text" id="editor-search" placeholder="Поиск по ID, названию, тегу..." />
             <div id="editor-list" class="editor-list"></div>
@@ -1091,15 +727,17 @@
               <div id="editor-pk" class="editor-pk-badge"></div>
               <div id="editor-fields" class="form-grid"></div>
               <div class="editor-actions">
-                <button type="submit" class="btn btn-generate">
+                <button type="submit" id="btn-editor-submit" class="btn btn-generate">
                   <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                  Сгенерировать UPDATE
+                  <span id="btn-editor-submit-text">Сгенерировать UPDATE</span>
                 </button>
                 <button type="button" id="btn-editor-add-batch" class="btn btn-add">
                   <svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   Добавить в пакет
                 </button>
-                <button type="button" id="btn-editor-reset" class="btn btn-cancel">Сбросить изменения</button>
+                <button type="button" id="btn-editor-reset" class="btn btn-cancel">
+                  <span id="btn-editor-reset-text">Сбросить изменения</span>
+                </button>
               </div>
             </form>
           </section>
@@ -1150,30 +788,6 @@
       const CACHE_KEY = 'infusion_sql_generator_cache_v1';
       const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-      // CONSTANTS
-      const ITEM_CATEGORIES = [
-        "Расходник", "Техник", "Аксессуар", "Имплант", "Кочевник", 
-        "Особое", "Контейнер", "Оружие", "Одежда", "Экзо-Синты", 
-        "Недвижимость", "Скрипт", "Транспорт", "Артефакт", "Граната", "Рокер", "Обвес"
-      ];
-      const ITEM_RARITIES = [
-        "Обычный", "Необычный", "Редкий", "Эпический", "Легендарный", "Культовый", "ГРА"
-      ];
-      const ITEM_ORGANIZATIONS = [
-        "Общедоступно", "Создание", "Чёрный Рынок", "Ацуши", "Хиллз", 
-        "Неизвестно", "Именной", "Гончие", "Икс-Экшен", "Синопсис", "ГРА"
-      ];
-      const CARD_RARITIES = ["Обычный", "Необычный", "Редкий", "Эпический", "Легендарный"];
-      const CARD_SCHOOLS = ["Трансгрессия", "Инкарнация", "Авангард", "Нейромантия", "Медикус", "Общие"];
-      const CARD_ESSENCES = ["NULL", "Кроно", "Термо", "Кеми", "Крио", "Аква", "Электро", "Пси", "Хроно", "Радио", "Физик"];
-      const CARD_DAMAGE_TYPES = [
-        "NULL", "Кронотический", "Термический", "Криотический", "Химический", 
-        "Кинетический", "Электрический", "Радиоактивный", "Гидравлический", 
-        "Псионический", "Хронотопический", "Психический"
-      ];
-      const CARD_AMPLIFY_OPTIONS = ["Да", "Нет", "АТК", "АВХ", "АВХ, АТК", "АТК, Каскад", "АТК, АВХ"];
-      const CARD_CREATION_OPTIONS = ["Базис", "Модификатор"];
-
       // ===== DATABASE EDITOR =====
       // Публичный ключ Supabase даёт только чтение — этого достаточно, чтобы
       // загрузить записи и собрать UPDATE, который потом выполняется в SQL Editor.
@@ -1199,159 +813,116 @@
         note: "Примечание", key: "Ключ"
       };
 
-      // Колонки, доступные для UPDATE. PK и updated_at не редактируются.
+      // Колонки для UPDATE и INSERT. PK и updated_at в UPDATE не редактируются.
+      // insertPk — PK задаётся вручную (нет default); required — обязательные поля;
+      // defaults — стартовые значения новой записи.
       const EDIT_TABLES = {
         items: {
           label: "Предметы", pk: "id", order: "id", wide: ["description", "issue"],
           columns: ["tag", "name", "description", "cost", "category", "rarity", "iconic", "organization", "sell_price", "issue", "props"],
-          types: { cost: "int", sell_price: "int", iconic: "bool", props: "jsonb" }
+          types: { cost: "int", sell_price: "int", iconic: "bool", props: "jsonb" },
+          insertPk: false, required: ["name"],
+          defaults: { cost: 0, category: "Расходник", rarity: "Обычный", iconic: false, organization: "Общедоступно", props: {} }
         },
         cards: {
           label: "Карты / базисы", pk: "id", order: "id", wide: ["params", "mechanics"],
           columns: ["tag", "name", "rarity", "classes", "school", "essence", "params", "damage_type", "distance", "activation", "effects", "test", "mechanics", "amplify", "consumable", "kronos", "price_tali", "creation", "iconic", "props"],
-          types: { classes: "text[]", activation: "text[]", effects: "text[]", amplify: "text[]", consumable: "bool", iconic: "bool", kronos: "int", price_tali: "int", props: "jsonb" }
+          types: { classes: "text[]", activation: "text[]", effects: "text[]", amplify: "text[]", consumable: "bool", iconic: "bool", kronos: "int", price_tali: "int", props: "jsonb" },
+          insertPk: false, required: ["name"],
+          defaults: {
+            rarity: "Обычный", classes: ["Общие"], school: "Трансгрессия", essence: "NULL",
+            damage_type: "NULL", activation: [], effects: [], amplify: ["Нет"],
+            consumable: false, kronos: 0, price_tali: 0, creation: "Базис", iconic: false, props: {}
+          }
         },
         skills: {
           label: "Навыки", pk: "id", order: "id", wide: ["description"],
           columns: ["name", "stat", "tier", "rarity", "description"],
-          types: { tier: "int" }
+          types: { tier: "int" },
+          insertPk: false, required: ["name", "stat"],
+          defaults: { tier: 1, rarity: "Обычный" }
         },
         abilities: {
           label: "Способности и мутации", pk: "id", order: "id", wide: ["description"],
           columns: ["name", "kind", "class_requirement", "description"],
-          types: {}
+          types: {},
+          insertPk: false, required: ["name", "kind"],
+          defaults: { kind: "ability" }
         },
         beasts: {
           label: "Способности зверя", pk: "id", order: "id", wide: ["description"],
           columns: ["group_name", "name", "rarity", "description"],
-          types: {}
+          types: {},
+          insertPk: false, required: ["name"],
+          defaults: { rarity: "Обычный" }
         },
         traits: {
           label: "Черты", pk: "id", order: "id", wide: ["description"],
           columns: ["name", "description"],
-          types: {}
+          types: {},
+          insertPk: false, required: ["name"],
+          defaults: {}
         },
         essences: {
           label: "Сущности", pk: "id", order: "id", wide: ["description"],
           columns: ["name", "full_name", "description"],
-          types: {}
+          types: {},
+          insertPk: false, required: ["name"],
+          defaults: {}
         },
         races: {
           label: "Расы", pk: "id", order: "id", wide: ["description"],
           columns: ["name", "has_kronos", "implants_allowed", "description"],
-          types: { has_kronos: "bool", implants_allowed: "bool" }
+          types: { has_kronos: "bool", implants_allowed: "bool" },
+          insertPk: false, required: ["name"],
+          defaults: { has_kronos: false, implants_allowed: false }
         },
         classes: {
           label: "Классы", pk: "name", order: "name", wide: [],
-          columns: ["name"], types: {}
+          columns: ["name"], types: {},
+          insertPk: true, required: []
         },
         stats: {
           label: "Характеристики", pk: "key", order: "key", wide: [],
-          columns: ["name", "max"], types: { max: "int" }
+          columns: ["name", "max"], types: { max: "int" },
+          insertPk: true, required: ["name"],
+          defaults: { max: 10 }
         },
         ranks: {
           label: "Ранги", pk: "level", order: "level", wide: [],
           columns: ["name", "hp_base", "kronos_max"],
-          types: { hp_base: "int", kronos_max: "int" }
+          types: { level: "int", hp_base: "int", kronos_max: "int" },
+          insertPk: true, required: ["name"],
+          defaults: { hp_base: 0, kronos_max: 0 }
         },
         slots: {
           label: "Слоты", pk: "tag", order: "tag", wide: [],
-          columns: ["grp", "max_count"], types: { max_count: "int" }
+          columns: ["grp", "max_count"], types: { max_count: "int" },
+          insertPk: true, required: ["grp"],
+          defaults: { grp: "gear", max_count: 1 }
         },
         implant_combos: {
           label: "Комбинации имплантов", pk: "name", order: "name", wide: ["note"],
           columns: ["uses", "ich", "note"],
-          types: { uses: "jsonb", ich: "numeric" }
+          types: { uses: "jsonb", ich: "numeric" },
+          insertPk: true, required: [],
+          defaults: { uses: {}, ich: 0 }
         }
       };
 
       // STATE
-      let activeTab = 'items';
-      let itemsBatch = [];
-      let cardsBatch = [];
-      let itemsSql = "";
-      let cardsSql = "";
-      let editingItemIndex = null;
-      let editingCardIndex = null;
-
       // Database editor state
       let editorSource = 'supabase';
       let editorTable = 'items';
       let editorRows = [];
       let editorSelectedIndex = -1;
+      let editorMode = 'update';  // 'update' | 'insert'
       let editorSearch = '';
       let editorSql = '';
       let editorCache = {};       // `${source}:${table}` -> { rows, at }
-      let editorLoadedOnce = false;
       let editorSnapshotPromise = null;
       let editorLoadToken = 0;
       let editorBatch = [];       // [{ uid, table, tableLabel, pk, pkValue, pkLiteral, label, sets, values, changed }]
-
-      // Dynamic Free-Combo State tracking
-      const comboStates = {
-        category: false,
-        rarity: false,
-        organization: false
-      };
-
-      // DEFAULTS
-      const defaultItemForm = () => ({
-        id: "", tag: "", name: "", description: "", cost: "0",
-        category: "Расходник", rarity: "Обычный", organization: "Общедоступно", iconic: false
-      });
-
-      const defaultCardForm = () => ({
-        id: "", tag: "", name: "", rarity: "Обычный", classes: "Общие", school: "Трансгрессия",
-        essence: "NULL", params: "", damage_type: "NULL", distance: "", activation: "",
-        effects: "", test: "", amplify: "Нет", kronos: "0", price_tali: "0", creation: "Базис",
-        consumable: false, mechanics: "", iconic: false
-      });
-
-      // INIT DYNAMIC FREE COMBO INPUTS
-      function initFreeCombo(containerId, fieldKey, labelText, options, defaultValue) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = `
-          <div class="form-label-row">
-            <label>${labelText}</label>
-            <button type="button" class="toggle-custom-btn" id="toggle-combo-${fieldKey}">+ Своё значение</button>
-          </div>
-          <div id="combo-input-wrapper-${fieldKey}"></div>
-        `;
-
-        const toggleBtn = document.getElementById(`toggle-combo-${fieldKey}`);
-        toggleBtn.addEventListener('click', () => {
-          comboStates[fieldKey] = !comboStates[fieldKey];
-          renderComboInput(fieldKey, options, getComboValue(fieldKey));
-        });
-
-        renderComboInput(fieldKey, options, defaultValue);
-      }
-
-      function renderComboInput(fieldKey, options, currentValue) {
-        const wrapper = document.getElementById(`combo-input-wrapper-${fieldKey}`);
-        const toggleBtn = document.getElementById(`toggle-combo-${fieldKey}`);
-        const isCustom = comboStates[fieldKey];
-
-        toggleBtn.textContent = isCustom ? "← Выбрать из списка" : "+ Своё значение";
-
-        if (isCustom) {
-          wrapper.innerHTML = `<input type="text" id="combo-field-${fieldKey}" value="${escapeHtml(currentValue)}" placeholder="Введите значение..." />`;
-        } else {
-          const optsHtml = options.map(opt => `<option value="${escapeHtml(opt)}" ${opt === currentValue ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('');
-          wrapper.innerHTML = `<select id="combo-field-${fieldKey}">${optsHtml}</select>`;
-        }
-      }
-
-      function getComboValue(fieldKey) {
-        const el = document.getElementById(`combo-field-${fieldKey}`);
-        return el ? el.value : '';
-      }
-
-      function setComboValue(fieldKey, value, options) {
-        const isCustom = !options.includes(value) && value !== "";
-        comboStates[fieldKey] = isCustom;
-        renderComboInput(fieldKey, options, value);
-      }
 
       // UTILS
       function escapeHtml(str) {
@@ -1368,8 +939,6 @@
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
             timestamp: Date.now(),
-            itemsBatch,
-            cardsBatch,
             editorBatch
           }));
         } catch (e) {
@@ -1383,13 +952,11 @@
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Date.now() - (parsed.timestamp || 0) < CACHE_TTL_MS) {
-              if (Array.isArray(parsed.itemsBatch)) itemsBatch = parsed.itemsBatch;
-              if (Array.isArray(parsed.cardsBatch)) cardsBatch = parsed.cardsBatch;
               if (Array.isArray(parsed.editorBatch)) {
                 editorBatch = parsed.editorBatch
-                  .filter((entry) => entry && entry.table && entry.pk && Array.isArray(entry.sets))
+                  .filter((entry) => entry && entry.table && entry.pk && (Array.isArray(entry.sets) || entry.kind === 'insert'))
                   .map(normalizeEditorBatchEntry)
-                  .filter((entry) => entry.sets.length > 0);
+                  .filter((entry) => (entry.kind === 'insert' ? entry.insertColumns.length > 0 : entry.sets.length > 0));
               }
             } else {
               localStorage.removeItem(CACHE_KEY);
@@ -1397,37 +964,6 @@
           }
         } catch (e) {
           console.warn("Could not load cache", e);
-        }
-      }
-
-      function populateSelectOptions(selectId, options, selectedVal) {
-        const select = document.getElementById(selectId);
-        select.innerHTML = options.map(opt => 
-          `<option value="${escapeHtml(opt)}" ${opt === selectedVal ? 'selected' : ''}>${escapeHtml(opt)}</option>`
-        ).join('');
-      }
-
-      // TAB SWITCHING
-      function setTab(tab) {
-        activeTab = tab;
-        const buttons = {
-          items: document.getElementById('tab-btn-items'),
-          cards: document.getElementById('tab-btn-cards'),
-          editor: document.getElementById('tab-btn-editor')
-        };
-        const views = {
-          items: document.getElementById('view-items'),
-          cards: document.getElementById('view-cards'),
-          editor: document.getElementById('view-editor')
-        };
-
-        Object.entries(buttons).forEach(([key, btn]) => btn.classList.toggle('active', key === tab));
-        Object.entries(views).forEach(([key, view]) => view.classList.toggle('hidden', key !== tab));
-
-        // Редактор подгружает записи при первом открытии вкладки.
-        if (tab === 'editor' && !editorLoadedOnce) {
-          editorLoadedOnce = true;
-          loadEditorTable();
         }
       }
 
@@ -1536,9 +1072,45 @@
         return `${count} записей`;
       }
 
-      function editorFieldHtml(col, row, meta) {
+      function editorFormColumns(meta, mode) {
+        if (mode !== 'insert') return meta.columns;
+        const columns = [...meta.columns];
+        if (meta.insertPk) {
+          if (!columns.includes(meta.pk)) columns.unshift(meta.pk);
+        } else if (meta.pk === 'id') {
+          columns.unshift('id');
+        }
+        return columns;
+      }
+
+      function editorNewRow(meta) {
+        const row = {};
+        for (const col of editorFormColumns(meta, 'insert')) {
+          const type = meta.types[col] || 'text';
+          if (meta.defaults && Object.prototype.hasOwnProperty.call(meta.defaults, col)) {
+            row[col] = meta.defaults[col];
+          } else if (type === 'bool') row[col] = false;
+          else if (type === 'text[]') row[col] = [];
+          else if (type === 'jsonb') row[col] = {};
+          else row[col] = '';
+        }
+        return row;
+      }
+
+      function editorRequiredFields(meta) {
+        const fields = new Set(meta.required || []);
+        if (meta.insertPk) fields.add(meta.pk);
+        return fields;
+      }
+
+      function editorFieldHtml(col, row, meta, mode) {
         const type = meta.types[col] || 'text';
-        const label = EDIT_LABELS[col] || col;
+        let label = EDIT_LABELS[col] || col;
+        if (mode === 'insert' && col === meta.pk) {
+          label = meta.insertPk ? `${label} · PK` : `${label} (пусто = авто)`;
+        }
+        const required = mode === 'insert' && editorRequiredFields(meta).has(col);
+        const labelHtml = `${escapeHtml(label)}${required ? ' <span class="required-star">*</span>' : ''}`;
         const value = row[col];
         const wide = (meta.wide || []).includes(col) || type === 'text[]' || type === 'jsonb';
         const span = wide ? ' col-span-full' : '';
@@ -1552,7 +1124,7 @@
 
         if (type === 'bool') {
           return `<div class="form-group${span}">
-            <div class="form-label-row"><label>${escapeHtml(label)}</label>${hint}</div>
+            <div class="form-label-row"><label>${labelHtml}</label>${hint}</div>
             <label class="editor-check"><input type="checkbox" data-editor-field="${escapeHtml(col)}"${value ? ' checked' : ''}> включено</label>
           </div>`;
         }
@@ -1561,15 +1133,15 @@
         if (wide || type === 'jsonb' || type === 'text[]') {
           const rows = type === 'jsonb' ? 5 : 3;
           return `<div class="form-group${span}">
-            <div class="form-label-row"><label>${escapeHtml(label)}</label>${hint}</div>
+            <div class="form-label-row"><label>${labelHtml}</label>${hint}</div>
             <textarea data-editor-field="${escapeHtml(col)}" rows="${rows}" spellcheck="false">${escapeHtml(display)}</textarea>
           </div>`;
         }
 
-        const mode = type === 'int' || type === 'numeric' ? ' inputmode="numeric"' : '';
+        const numeric = type === 'int' || type === 'numeric' ? ' inputmode="numeric"' : '';
         return `<div class="form-group${span}">
-          <div class="form-label-row"><label>${escapeHtml(label)}</label>${hint}</div>
-          <input type="text" data-editor-field="${escapeHtml(col)}" value="${escapeHtml(display)}"${mode} />
+          <div class="form-label-row"><label>${labelHtml}</label>${hint}</div>
+          <input type="text" data-editor-field="${escapeHtml(col)}" value="${escapeHtml(display)}"${numeric} />
         </div>`;
       }
 
@@ -1623,29 +1195,55 @@
         const title = document.getElementById('editor-record-title');
         const where = document.getElementById('editor-record-where');
         const pk = document.getElementById('editor-pk');
-        const row = editorRows[editorSelectedIndex];
+        const submitText = document.getElementById('btn-editor-submit-text');
+        const resetText = document.getElementById('btn-editor-reset-text');
+        const isInsert = editorMode === 'insert';
+        const row = isInsert ? editorNewRow(meta) : editorRows[editorSelectedIndex];
+
+        submitText.textContent = isInsert ? 'Сгенерировать INSERT' : 'Сгенерировать UPDATE';
+        resetText.textContent = isInsert ? 'Отмена' : 'Сбросить изменения';
 
         if (!row) {
           form.classList.add('hidden');
           empty.classList.remove('hidden');
-          empty.textContent = editorRows.length ? 'Выберите запись в списке слева.' : 'Загрузите записи, чтобы начать.';
+          empty.textContent = editorRows.length ? 'Выберите запись в списке слева или создайте новую.' : 'Загрузите записи или создайте новую.';
           renderEditorBatch();
           return;
         }
 
         empty.classList.add('hidden');
         form.classList.remove('hidden');
-        title.textContent = editorRowIdentity(row, meta);
-        where.textContent = `${editorTable} · WHERE ${meta.pk} = ${String(row[meta.pk] ?? '')}`;
-        pk.textContent = `${EDIT_LABELS[meta.pk] || meta.pk}: ${String(row[meta.pk] ?? '')}`;
-        fields.innerHTML = meta.columns.map((col) => editorFieldHtml(col, row, meta)).join('');
+        if (isInsert) {
+          title.textContent = 'Новая запись';
+          where.textContent = `${editorTable} · INSERT`;
+          pk.textContent = meta.insertPk
+            ? `PK ${meta.pk}: укажите вручную`
+            : `PK ${meta.pk}: генерируется БД (можно задать вручную)`;
+        } else {
+          title.textContent = editorRowIdentity(row, meta);
+          where.textContent = `${editorTable} · WHERE ${meta.pk} = ${String(row[meta.pk] ?? '')}`;
+          pk.textContent = `${EDIT_LABELS[meta.pk] || meta.pk}: ${String(row[meta.pk] ?? '')}`;
+        }
+        fields.innerHTML = editorFormColumns(meta, editorMode)
+          .map((col) => editorFieldHtml(col, row, meta, editorMode))
+          .join('');
         renderEditorBatch();
       }
 
       function selectEditorRow(index) {
+        editorMode = 'update';
         editorSelectedIndex = Number.isInteger(index) ? index : -1;
         hideEditorSql();
         editorSetStatus('');
+        renderEditorList();
+        renderEditorForm();
+      }
+
+      function startEditorInsert() {
+        editorMode = 'insert';
+        editorSelectedIndex = -1;
+        hideEditorSql();
+        editorSetStatus(`Новая запись в таблице «${editorMeta().label}». Заполните поля и сгенерируйте INSERT.`);
         renderEditorList();
         renderEditorForm();
       }
@@ -1693,16 +1291,82 @@
         return { meta, row, sets, changed, values };
       }
 
+      // Собирает все поля новой записи для INSERT.
+      function collectEditorInsert() {
+        const meta = editorMeta();
+        const columns = editorFormColumns(meta, 'insert');
+        const required = editorRequiredFields(meta);
+        const values = {};
+        const rawValues = {};
+        const missing = [];
+
+        for (const col of columns) {
+          const el = document.querySelector(`[data-editor-field="${col}"]`);
+          if (!el) continue;
+          const type = meta.types[col] || 'text';
+          const label = EDIT_LABELS[col] || col;
+          let value;
+          try {
+            value = readEditorValue(el, type);
+          } catch (err) {
+            return { error: `Поле «${label}»: ${err.message}` };
+          }
+
+          const optionalPk = col === meta.pk && !meta.insertPk;
+          if (optionalPk && String(el.value).trim() === '') continue;
+
+          if (required.has(col)) {
+            const empty = value == null
+              || (typeof value === 'string' && value.trim() === '')
+              || (Array.isArray(value) && value.length === 0);
+            if (empty) {
+              missing.push(label);
+              continue;
+            }
+          }
+
+          values[col] = value;
+          rawValues[col] = type === 'bool' ? !!el.checked : el.value;
+        }
+
+        if (missing.length) return { error: `Заполните обязательные поля: ${missing.join(', ')}.` };
+        const cols = Object.keys(values);
+        if (!cols.length) return { error: 'Нет данных для INSERT.' };
+
+        const sql = `insert into ${editorTable} (${cols.map(sqlIdent).join(', ')})\nvalues (${cols.map((col) => sqlLiteral(values[col], meta.types[col] || 'text')).join(', ')});`;
+        const label = values.name || values.full_name || values.key || values.tag || values.level || values[meta.pk] || 'Новая запись';
+        return { meta, columns: cols, values, rawValues, sql, label: String(label) };
+      }
+
       function normalizeEditorBatchEntry(entry) {
-        const sets = entry.sets.filter((set) => set && set.col && typeof set.sql === 'string');
+        const tableMeta = EDIT_TABLES[entry.table];
+        if (entry.kind === 'insert') {
+          const insertColumns = Array.isArray(entry.insertColumns) ? entry.insertColumns.filter((col) => typeof col === 'string') : [];
+          const insertValues = entry.insertValues && typeof entry.insertValues === 'object' ? entry.insertValues : {};
+          return {
+            ...entry,
+            kind: 'insert',
+            sets: [],
+            insertColumns,
+            insertValues,
+            changed: insertColumns,
+            values: entry.values && typeof entry.values === 'object' ? entry.values : {},
+            pkValue: '',
+            tableLabel: entry.tableLabel || (tableMeta ? tableMeta.label : entry.table),
+            label: entry.label || 'Новая запись'
+          };
+        }
+
+        const sets = Array.isArray(entry.sets) ? entry.sets.filter((set) => set && set.col && typeof set.sql === 'string') : [];
         const pkValue = entry.pkValue != null ? String(entry.pkValue) : '';
         return {
           ...entry,
+          kind: 'update',
           sets,
           changed: sets.map((set) => set.col),
           values: entry.values && typeof entry.values === 'object' ? entry.values : {},
           pkValue,
-          tableLabel: entry.tableLabel || (EDIT_TABLES[entry.table] ? EDIT_TABLES[entry.table].label : entry.table),
+          tableLabel: entry.tableLabel || (tableMeta ? tableMeta.label : entry.table),
           label: entry.label || pkValue || entry.pk,
           pkLiteral: entry.pkLiteral || sqlLiteral(pkValue, 'text')
         };
@@ -1712,6 +1376,7 @@
         const pkValue = result.row[result.meta.pk];
         return {
           uid: `${editorTable}:${String(pkValue)}`,
+          kind: 'update',
           table: editorTable,
           tableLabel: result.meta.label,
           pk: result.meta.pk,
@@ -1724,7 +1389,33 @@
         };
       }
 
+      function buildEditorInsertEntry(result) {
+        return {
+          uid: `insert:${editorTable}:${Date.now()}:${Math.random().toString(36).slice(2, 7)}`,
+          kind: 'insert',
+          table: editorTable,
+          tableLabel: result.meta.label,
+          pk: result.meta.pk,
+          pkValue: '',
+          pkLiteral: '',
+          label: result.label,
+          sets: [],
+          insertColumns: result.columns,
+          insertValues: result.values,
+          values: result.rawValues,
+          changed: result.columns
+        };
+      }
+
       function editorBatchStatement(entry) {
+        if (entry.kind === 'insert') {
+          const tableTypes = (EDIT_TABLES[entry.table] && EDIT_TABLES[entry.table].types) || {};
+          const cols = entry.insertColumns.map(sqlIdent).join(', ');
+          const vals = entry.insertColumns
+            .map((col) => sqlLiteral(entry.insertValues[col], tableTypes[col] || 'text'))
+            .join(', ');
+          return `insert into ${entry.table} (${cols})\nvalues (${vals});`;
+        }
         const sets = entry.sets.map((set) => `  ${sqlIdent(set.col)} = ${set.sql}`).join(',\n');
         return `update ${entry.table} set\n${sets}\nwhere ${sqlIdent(entry.pk)} = ${entry.pkLiteral};`;
       }
@@ -1756,15 +1447,18 @@
 
         const activeUid = currentEditorUid();
         list.innerHTML = editorBatch.map((entry, index) => {
+          const isInsert = entry.kind === 'insert';
           const fields = entry.changed.map((col) => EDIT_LABELS[col] || col).join(', ');
           const editing = entry.uid === activeUid;
+          const where = isInsert ? 'новая запись' : `${entry.pk} = ${entry.pkValue}`;
           return `<div class="batch-item-card${editing ? ' editing' : ''}" data-editor-batch-open="${index}" role="button" tabindex="0">
               <div class="card-info">
                 <div class="card-title">
                   <span>${escapeHtml(entry.label)}</span>
+                  ${isInsert ? '<span class="tag-insert">INSERT</span>' : '<span class="tag-update">UPDATE</span>'}
                   ${editing ? '<span class="tag-editing">Открыта</span>' : ''}
                 </div>
-                <div class="card-sub"><span>${escapeHtml(entry.tableLabel)}</span> • <span>${escapeHtml(entry.pk)} = ${escapeHtml(entry.pkValue)}</span></div>
+                <div class="card-sub"><span>${escapeHtml(entry.tableLabel)}</span> • <span>${escapeHtml(where)}</span></div>
                 <div class="card-mono-tag">${escapeHtml(fields)}</div>
               </div>
               <button type="button" class="btn-remove-item" data-editor-batch-remove="${index}" title="Удалить из пакета">
@@ -1793,7 +1487,41 @@
         document.getElementById('container-editor-sql').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
+      function generateEditorInsert() {
+        const result = collectEditorInsert();
+        if (result.error) {
+          editorSetStatus(result.error, true);
+          return;
+        }
+
+        const entry = buildEditorInsertEntry(result);
+        const sql = `-- ${entry.tableLabel}: новая запись\n-- Колонок: ${result.columns.length}\n${editorBatchStatement(entry)}\n`;
+        showEditorSql(sql, 'Сгенерированный INSERT');
+        editorSetStatus(`Готово: INSERT в «${entry.tableLabel}».`);
+        document.getElementById('container-editor-sql').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      function generateEditorSql() {
+        if (editorMode === 'insert') generateEditorInsert();
+        else generateEditorUpdate();
+      }
+
       function addEditorToBatch() {
+        if (editorMode === 'insert') {
+          const result = collectEditorInsert();
+          if (result.error) {
+            editorSetStatus(result.error, true);
+            return;
+          }
+          const entry = buildEditorInsertEntry(result);
+          editorBatch.push(entry);
+          saveCache();
+          hideEditorSql();
+          renderEditorForm();
+          editorSetStatus(`Добавлено в пакет: INSERT «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}.`);
+          return;
+        }
+
         const result = collectEditorChanges();
         if (result.error) {
           editorSetStatus(result.error, true);
@@ -1830,7 +1558,7 @@
         saveCache();
         hideEditorSql();
         renderEditorBatch();
-        editorSetStatus('Пакет обновлений очищен.');
+        editorSetStatus('Пакет очищен.');
       }
 
       function generateEditorBatchSql() {
@@ -1854,10 +1582,22 @@
         const search = document.getElementById('editor-search');
         if (search) search.value = '';
 
-        if (editorTable !== entry.table || !editorRows.length) {
+        if (editorTable !== entry.table || (!editorRows.length && entry.kind !== 'insert')) {
           editorTable = entry.table;
           document.getElementById('editor-table').value = entry.table;
           await loadEditorTable();
+        }
+
+        if (entry.kind === 'insert') {
+          startEditorInsert();
+          for (const [col, value] of Object.entries(entry.values || {})) {
+            const el = document.querySelector(`[data-editor-field="${col}"]`);
+            if (!el) continue;
+            if (el.type === 'checkbox') el.checked = !!value;
+            else el.value = value;
+          }
+          editorSetStatus(`Открыта запись из пакета: INSERT «${entry.label}». Полей — ${entry.changed.length}.`);
+          return;
         }
 
         const meta = editorMeta();
@@ -1906,6 +1646,14 @@
         return rows.slice();
       }
 
+      // Статус после загрузки таблицы: в режиме новой записи напоминаем про INSERT.
+      function editorLoadStatus(text, isError) {
+        const hint = editorMode === 'insert'
+          ? ` Новая запись в «${editorMeta().label}»: заполните поля и сгенерируйте INSERT.`
+          : '';
+        editorSetStatus(text + hint, isError);
+      }
+
       async function loadEditorTable(options = {}) {
         const source = editorSource;
         const tableKey = editorTable;
@@ -1921,7 +1669,7 @@
           editorSelectedIndex = -1;
           renderEditorList();
           renderEditorForm();
-          editorSetStatus(`Из кэша: ${editorRecordsLabel(editorRows.length)} (${meta.label}).`);
+          editorLoadStatus(`Из кэша: ${editorRecordsLabel(editorRows.length)} (${meta.label}).`);
           return;
         }
 
@@ -1940,7 +1688,7 @@
           renderEditorList();
           renderEditorForm();
           const srcLabel = source === 'supabase' ? 'Supabase' : 'data.json';
-          editorSetStatus(`${srcLabel}: ${editorRecordsLabel(rows.length)} (${meta.label}).`);
+          editorLoadStatus(`${srcLabel}: ${editorRecordsLabel(rows.length)} (${meta.label}).`);
         } catch (err) {
           if (token !== editorLoadToken) return;
           if (source === 'supabase') {
@@ -1955,401 +1703,28 @@
               editorSelectedIndex = -1;
               renderEditorList();
               renderEditorForm();
-              editorSetStatus(`Supabase недоступен (${err.message}). Загружен снимок data.json: ${editorRecordsLabel(rows.length)}.`, true);
+              editorLoadStatus(`Supabase недоступен (${err.message}). Загружен снимок data.json: ${editorRecordsLabel(rows.length)}.`, true);
             } catch (fallbackErr) {
               if (token !== editorLoadToken) return;
               editorRows = [];
               editorSelectedIndex = -1;
               renderEditorList();
               renderEditorForm();
-              editorSetStatus(`Supabase: ${err.message}. data.json: ${fallbackErr.message}`, true);
+              editorLoadStatus(`Supabase: ${err.message}. data.json: ${fallbackErr.message}`, true);
             }
           } else {
             editorRows = [];
             editorSelectedIndex = -1;
             renderEditorList();
             renderEditorForm();
-            editorSetStatus(`Не удалось загрузить data.json: ${err.message}`, true);
+            editorLoadStatus(`Не удалось загрузить data.json: ${err.message}`, true);
           }
         } finally {
           if (token === editorLoadToken) loadBtn.disabled = false;
         }
       }
 
-      // ITEM FORM HANDLERS
-      function getFormItemValues() {
-        return {
-          id: document.getElementById('item-id').value,
-          tag: document.getElementById('item-tag').value,
-          name: document.getElementById('item-name').value,
-          category: getComboValue('category'),
-          rarity: getComboValue('rarity'),
-          cost: document.getElementById('item-cost').value,
-          organization: getComboValue('organization'),
-          iconic: document.getElementById('item-iconic').checked,
-          description: document.getElementById('item-description').value
-        };
-      }
-
-      function setFormItemValues(data) {
-        document.getElementById('item-id').value = data.id || '';
-        document.getElementById('item-tag').value = data.tag || '';
-        document.getElementById('item-name').value = data.name || '';
-        setComboValue('category', data.category || ITEM_CATEGORIES[0], ITEM_CATEGORIES);
-        setComboValue('rarity', data.rarity || ITEM_RARITIES[0], ITEM_RARITIES);
-        document.getElementById('item-cost').value = data.cost || '0';
-        setComboValue('organization', data.organization || ITEM_ORGANIZATIONS[0], ITEM_ORGANIZATIONS);
-        document.getElementById('item-iconic').checked = !!data.iconic;
-        document.getElementById('item-description').value = data.description || '';
-      }
-
-      function resetItemForm() {
-        editingItemIndex = null;
-        setFormItemValues(defaultItemForm());
-        updateItemFormUI();
-      }
-
-      function updateItemFormUI() {
-        const formPanel = document.getElementById('form-item');
-        const headerText = document.getElementById('item-form-header-text');
-        const submitBtnText = document.getElementById('btn-item-submit-text');
-        const submitBtn = document.getElementById('btn-item-submit');
-        const cancelBtn = document.getElementById('btn-item-cancel');
-
-        if (editingItemIndex !== null) {
-          formPanel.classList.add('panel-active-edit');
-          headerText.textContent = `Редактирование предмета #${editingItemIndex + 1}`;
-          submitBtnText.textContent = "Сохранить изменения";
-          submitBtn.className = "btn btn-save";
-          cancelBtn.classList.remove('hidden');
-        } else {
-          formPanel.classList.remove('panel-active-edit');
-          headerText.textContent = "Конфигурация предмета";
-          submitBtnText.textContent = "Добавить в пакет";
-          submitBtn.className = "btn btn-add";
-          cancelBtn.classList.add('hidden');
-        }
-      }
-
-      function renderItemsBatch() {
-        const container = document.getElementById('container-items-preview');
-        const list = document.getElementById('list-items-batch');
-        const badgeCount = document.getElementById('badge-item-count');
-        const tabBadge = document.getElementById('badge-count-items');
-        const btnGen = document.getElementById('btn-item-generate');
-        const btnClr = document.getElementById('btn-item-clear');
-
-        badgeCount.textContent = `📦 В пакете: ${itemsBatch.length} предметов`;
-        if (itemsBatch.length > 0) {
-          tabBadge.textContent = itemsBatch.length;
-          tabBadge.classList.remove('hidden');
-          container.classList.remove('hidden');
-          btnGen.disabled = false;
-          btnClr.disabled = false;
-        } else {
-          tabBadge.classList.add('hidden');
-          container.classList.add('hidden');
-          btnGen.disabled = true;
-          btnClr.disabled = !itemsSql;
-        }
-
-        list.innerHTML = itemsBatch.map((it, idx) => {
-          const isEditing = editingItemIndex === idx;
-          return `
-            <div class="batch-item-card ${isEditing ? 'editing' : ''}" onclick="window.appEditItem(${idx})">
-              <div class="card-info">
-                <div class="card-title">
-                  <span>${escapeHtml(it.name)}</span>
-                  ${it.iconic ? '<span class="tag-iconic">Iconic</span>' : ''}
-                  ${isEditing ? '<span class="tag-editing">Редактируется</span>' : ''}
-                </div>
-                <div class="card-sub">
-                  <span>Кат: ${escapeHtml(it.category)}</span> • <span>Ред: ${escapeHtml(it.rarity)}</span>
-                </div>
-                ${it.id ? `<div class="card-mono-tag">ID: ${escapeHtml(it.id)}</div>` : ''}
-                ${it.tag ? `<div class="card-mono-tag">Tag: ${escapeHtml(it.tag)}</div>` : ''}
-              </div>
-              <button type="button" class="btn-remove-item" onclick="window.appRemoveItem(${idx}, event)" title="Удалить">
-                <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
-          `;
-        }).join('');
-      }
-
-      function generateItemsSql() {
-        if (itemsBatch.length === 0) {
-          itemsSql = "";
-          document.getElementById('container-items-sql').classList.add('hidden');
-          return;
-        }
-
-        const hasExplicitId = itemsBatch.some((it) => it.id && it.id.trim() !== "");
-        const hasTag = itemsBatch.some((it) => it.tag && it.tag.trim() !== "");
-
-        let cols = [];
-        if (hasExplicitId) cols.push("id");
-        if (hasTag) cols.push("tag");
-        cols.push("name", "description", "cost", "category", "rarity", "iconic", "organization");
-
-        const values = itemsBatch.map((it) => {
-          const descEsc = (it.description || "").replace(/'/g, "''");
-          const nameEsc = (it.name || "").replace(/'/g, "''");
-          const costVal = (it.cost || "0").trim() === "" ? "0" : it.cost.trim();
-
-          let parts = [];
-          if (hasExplicitId) parts.push(it.id && it.id.trim() !== "" ? `'${it.id.trim()}'` : "DEFAULT");
-          if (hasTag) parts.push(`'${(it.tag || "").replace(/'/g, "''")}'`);
-
-          parts.push(`'${nameEsc}'`);
-          parts.push(`'${descEsc}'`);
-          parts.push(costVal);
-          parts.push(`'${(it.category || "").replace(/'/g, "''")}'`);
-          parts.push(`'${(it.rarity || "").replace(/'/g, "''")}'`);
-          parts.push(it.iconic ? "true" : "false");
-          parts.push(`'${(it.organization || "").replace(/'/g, "''")}'`);
-
-          return `(${parts.join(", ")})`;
-        });
-
-        const colsStr = cols.map((c) => `"${c}"`).join(", ");
-        itemsSql = `insert into items (${colsStr})\nvalues\n${values.join(",\n")};`;
-        document.getElementById('sql-output-items').value = itemsSql;
-        document.getElementById('container-items-sql').classList.remove('hidden');
-      }
-
-      // CARD FORM HANDLERS
-      function getFormCardValues() {
-        return {
-          id: document.getElementById('card-id').value,
-          tag: document.getElementById('card-tag').value,
-          name: document.getElementById('card-name').value,
-          rarity: document.getElementById('card-rarity').value,
-          classes: document.getElementById('card-classes').value,
-          school: document.getElementById('card-school').value,
-          essence: document.getElementById('card-essence').value,
-          params: document.getElementById('card-params').value,
-          damage_type: document.getElementById('card-damage_type').value,
-          distance: document.getElementById('card-distance').value,
-          activation: document.getElementById('card-activation').value,
-          effects: document.getElementById('card-effects').value,
-          test: document.getElementById('card-test').value,
-          amplify: document.getElementById('card-amplify').value,
-          kronos: document.getElementById('card-kronos').value,
-          price_tali: document.getElementById('card-price_tali').value,
-          creation: document.getElementById('card-creation').value,
-          consumable: document.getElementById('card-consumable').checked,
-          iconic: document.getElementById('card-iconic').checked,
-          mechanics: document.getElementById('card-mechanics').value
-        };
-      }
-
-      function setFormCardValues(data) {
-        document.getElementById('card-id').value = data.id || '';
-        document.getElementById('card-tag').value = data.tag || '';
-        document.getElementById('card-name').value = data.name || '';
-        document.getElementById('card-rarity').value = data.rarity || CARD_RARITIES[0];
-        document.getElementById('card-classes').value = data.classes || 'Общие';
-        document.getElementById('card-school').value = data.school || CARD_SCHOOLS[0];
-        document.getElementById('card-essence').value = data.essence || CARD_ESSENCES[0];
-        document.getElementById('card-params').value = data.params || '';
-        document.getElementById('card-damage_type').value = data.damage_type || CARD_DAMAGE_TYPES[0];
-        document.getElementById('card-distance').value = data.distance || '';
-        document.getElementById('card-activation').value = data.activation || '';
-        document.getElementById('card-effects').value = data.effects || '';
-        document.getElementById('card-test').value = data.test || '';
-        document.getElementById('card-amplify').value = data.amplify || CARD_AMPLIFY_OPTIONS[1];
-        document.getElementById('card-kronos').value = data.kronos || '0';
-        document.getElementById('card-price_tali').value = data.price_tali || '0';
-        document.getElementById('card-creation').value = data.creation || CARD_CREATION_OPTIONS[0];
-        document.getElementById('card-consumable').checked = !!data.consumable;
-        document.getElementById('card-iconic').checked = !!data.iconic;
-        document.getElementById('card-mechanics').value = data.mechanics || '';
-      }
-
-      function resetCardForm() {
-        editingCardIndex = null;
-        setFormCardValues(defaultCardForm());
-        updateCardFormUI();
-      }
-
-      function updateCardFormUI() {
-        const formPanel = document.getElementById('form-card');
-        const headerText = document.getElementById('card-form-header-text');
-        const submitBtnText = document.getElementById('btn-card-submit-text');
-        const submitBtn = document.getElementById('btn-card-submit');
-        const cancelBtn = document.getElementById('btn-card-cancel');
-
-        if (editingCardIndex !== null) {
-          formPanel.classList.add('panel-active-edit');
-          headerText.textContent = `Редактирование карты #${editingCardIndex + 1}`;
-          submitBtnText.textContent = "Сохранить изменения";
-          submitBtn.className = "btn btn-save";
-          cancelBtn.classList.remove('hidden');
-        } else {
-          formPanel.classList.remove('panel-active-edit');
-          headerText.textContent = "Конфигурация карты / базиса";
-          submitBtnText.textContent = "Добавить в пакет";
-          submitBtn.className = "btn btn-add";
-          cancelBtn.classList.add('hidden');
-        }
-      }
-
-      function renderCardsBatch() {
-        const container = document.getElementById('container-cards-preview');
-        const list = document.getElementById('list-cards-batch');
-        const badgeCount = document.getElementById('badge-card-count');
-        const tabBadge = document.getElementById('badge-count-cards');
-        const btnGen = document.getElementById('btn-card-generate');
-        const btnClr = document.getElementById('btn-card-clear');
-
-        badgeCount.textContent = `📜 В пакете: ${cardsBatch.length} карт`;
-        if (cardsBatch.length > 0) {
-          tabBadge.textContent = cardsBatch.length;
-          tabBadge.classList.remove('hidden');
-          container.classList.remove('hidden');
-          btnGen.disabled = false;
-          btnClr.disabled = false;
-        } else {
-          tabBadge.classList.add('hidden');
-          container.classList.add('hidden');
-          btnGen.disabled = true;
-          btnClr.disabled = !cardsSql;
-        }
-
-        list.innerHTML = cardsBatch.map((c, idx) => {
-          const isEditing = editingCardIndex === idx;
-          return `
-            <div class="batch-item-card ${isEditing ? 'editing' : ''}" onclick="window.appEditCard(${idx})">
-              <div class="card-info">
-                <div class="card-title">
-                  <span>${escapeHtml(c.name)}</span>
-                  ${c.iconic ? '<span class="tag-iconic">Iconic</span>' : ''}
-                  ${isEditing ? '<span class="tag-editing">Редактируется</span>' : ''}
-                </div>
-                <div class="card-sub">
-                  <span>Школа: ${escapeHtml(c.school)}</span> • <span>Ред: ${escapeHtml(c.rarity)}</span>
-                </div>
-                ${c.id ? `<div class="card-mono-tag">ID: ${escapeHtml(c.id)}</div>` : ''}
-                ${c.tag ? `<div class="card-mono-tag">Tag: ${escapeHtml(c.tag)}</div>` : ''}
-              </div>
-              <button type="button" class="btn-remove-item" onclick="window.appRemoveCard(${idx}, event)" title="Удалить">
-                <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
-          `;
-        }).join('');
-      }
-
-      function generateCardsSql() {
-        if (cardsBatch.length === 0) {
-          cardsSql = "";
-          document.getElementById('container-cards-sql').classList.add('hidden');
-          return;
-        }
-
-        const hasExplicitId = cardsBatch.some((c) => c.id && c.id.trim() !== "");
-        const hasTag = cardsBatch.some((c) => c.tag && c.tag.trim() !== "");
-
-        let cols = [];
-        if (hasExplicitId) cols.push("id");
-        if (hasTag) cols.push("tag");
-
-        cols.push(
-          "name", "rarity", "classes", "school", "essence", "params",
-          "damage_type", "distance", "activation", "effects", "test", "amplify",
-          "kronos", "price_tali", "creation", "consumable", "mechanics", "iconic"
-        );
-
-        const values = cardsBatch.map((c) => {
-          const nameEsc = (c.name || "").replace(/'/g, "''");
-          const mechEsc = (c.mechanics || "").replace(/'/g, "''");
-
-          const classesArr = (c.classes || "")
-            .split(",")
-            .map((s) => `"${s.trim()}"`)
-            .join(",");
-          const classesFmt = `{${classesArr}}`;
-
-          const essenceFmt = c.essence === "NULL" ? "null" : `'${c.essence}'`;
-          const dmgFmt = c.damage_type === "NULL" ? "null" : `'${c.damage_type}'`;
-          const kronosVal = (c.kronos || "0").trim() === "" ? "0" : c.kronos.trim();
-          const taliVal = (c.price_tali || "0").trim() === "" ? "0" : c.price_tali.trim();
-
-          let parts = [];
-          if (hasExplicitId) parts.push(c.id && c.id.trim() !== "" ? `'${c.id.trim()}'` : "DEFAULT");
-          if (hasTag) parts.push(`'${(c.tag || "").replace(/'/g, "''")}'`);
-
-          parts.push(`'${nameEsc}'`);
-          parts.push(`'${c.rarity}'`);
-          parts.push(`'${classesFmt}'::text[]`);
-          parts.push(`'${c.school}'`);
-          parts.push(essenceFmt);
-          parts.push(`'${(c.params || "").replace(/'/g, "''")}'`);
-          parts.push(dmgFmt);
-          parts.push(`'${(c.distance || "").replace(/'/g, "''")}'`);
-          parts.push(`'${(c.activation || "").replace(/'/g, "''")}'`);
-          parts.push(`'${(c.effects || "").replace(/'/g, "''")}'`);
-          parts.push(`'${(c.test || "").replace(/'/g, "''")}'`);
-          parts.push(`'${c.amplify}'`);
-          parts.push(kronosVal);
-          parts.push(taliVal);
-          parts.push(`'${c.creation}'`);
-          parts.push(c.consumable ? "true" : "false");
-          parts.push(`'${mechEsc}'`);
-          parts.push(c.iconic ? "true" : "false");
-
-          return `(${parts.join(", ")})`;
-        });
-
-        const colsStr = cols.map((col) => `"${col}"`).join(", ");
-        cardsSql = `insert into cards (${colsStr})\nvalues\n${values.join(",\n")};`;
-        document.getElementById('sql-output-cards').value = cardsSql;
-        document.getElementById('container-cards-sql').classList.remove('hidden');
-      }
-
-      // GLOBAL BINDINGS FOR CLICK EVENTS
-      window.appEditItem = function(index) {
-        editingItemIndex = index;
-        setFormItemValues(itemsBatch[index]);
-        updateItemFormUI();
-        renderItemsBatch();
-      };
-
-      window.appRemoveItem = function(index, event) {
-        if (event) event.stopPropagation();
-        itemsBatch.splice(index, 1);
-        if (editingItemIndex === index) {
-          resetItemForm();
-        } else if (editingItemIndex !== null && editingItemIndex > index) {
-          editingItemIndex--;
-        }
-        saveCache();
-        renderItemsBatch();
-        updateItemFormUI();
-      };
-
-      window.appEditCard = function(index) {
-        editingCardIndex = index;
-        setFormCardValues(cardsBatch[index]);
-        updateCardFormUI();
-        renderCardsBatch();
-      };
-
-      window.appRemoveCard = function(index, event) {
-        if (event) event.stopPropagation();
-        cardsBatch.splice(index, 1);
-        if (editingCardIndex === index) {
-          resetCardForm();
-        } else if (editingCardIndex !== null && editingCardIndex > index) {
-          editingCardIndex--;
-        }
-        saveCache();
-        renderCardsBatch();
-        updateCardFormUI();
-      };
-
-      // COPY TO CLIPBOARD HANDLER
+      // COPY HELPER
       function handleCopy(text, textSpanId) {
         const textarea = document.createElement("textarea");
         textarea.value = text;
@@ -2371,23 +1746,6 @@
       document.addEventListener('DOMContentLoaded', () => {
         loadCache();
 
-        // Init Free Combos
-        initFreeCombo('group-item-category', 'category', 'Категория:', ITEM_CATEGORIES, ITEM_CATEGORIES[0]);
-        initFreeCombo('group-item-rarity', 'rarity', 'Редкость:', ITEM_RARITIES, ITEM_RARITIES[0]);
-        initFreeCombo('group-item-organization', 'organization', 'Организация:', ITEM_ORGANIZATIONS, ITEM_ORGANIZATIONS[0]);
-
-        // Init Selects for Cards
-        populateSelectOptions('card-rarity', CARD_RARITIES, CARD_RARITIES[0]);
-        populateSelectOptions('card-school', CARD_SCHOOLS, CARD_SCHOOLS[0]);
-        populateSelectOptions('card-essence', CARD_ESSENCES, CARD_ESSENCES[0]);
-        populateSelectOptions('card-damage_type', CARD_DAMAGE_TYPES, CARD_DAMAGE_TYPES[0]);
-        populateSelectOptions('card-amplify', CARD_AMPLIFY_OPTIONS, CARD_AMPLIFY_OPTIONS[1]);
-        populateSelectOptions('card-creation', CARD_CREATION_OPTIONS, CARD_CREATION_OPTIONS[0]);
-
-        // Navigation listeners
-        document.getElementById('tab-btn-items').addEventListener('click', () => setTab('items'));
-        document.getElementById('tab-btn-cards').addEventListener('click', () => setTab('cards'));
-
         // ===== DATABASE EDITOR LISTENERS =====
         const editorTableSelect = document.getElementById('editor-table');
         editorTableSelect.innerHTML = Object.entries(EDIT_TABLES)
@@ -2400,18 +1758,19 @@
           editorSelectedIndex = -1;
           editorSearch = '';
           document.getElementById('editor-search').value = '';
-          document.getElementById('container-editor-sql').classList.add('hidden');
+          hideEditorSql();
           loadEditorTable();
         });
 
         document.getElementById('editor-source').addEventListener('change', (e) => {
           editorSource = e.target.value;
           editorSelectedIndex = -1;
-          document.getElementById('container-editor-sql').classList.add('hidden');
+          hideEditorSql();
           loadEditorTable();
         });
 
         document.getElementById('btn-editor-load').addEventListener('click', () => loadEditorTable({ force: true }));
+        document.getElementById('btn-editor-new').addEventListener('click', startEditorInsert);
 
         document.getElementById('editor-search').addEventListener('input', (e) => {
           editorSearch = e.target.value;
@@ -2426,7 +1785,7 @@
 
         document.getElementById('editor-form').addEventListener('submit', (e) => {
           e.preventDefault();
-          generateEditorUpdate();
+          generateEditorSql();
         });
 
         document.getElementById('btn-editor-add-batch').addEventListener('click', addEditorToBatch);
@@ -2453,8 +1812,16 @@
         });
 
         document.getElementById('btn-editor-reset').addEventListener('click', () => {
-          renderEditorForm();
           hideEditorSql();
+          if (editorMode === 'insert') {
+            editorMode = 'update';
+            editorSelectedIndex = -1;
+            renderEditorList();
+            renderEditorForm();
+            editorSetStatus('Создание новой записи отменено.');
+            return;
+          }
+          renderEditorForm();
           editorSetStatus('Изменения сброшены.');
         });
 
@@ -2462,84 +1829,11 @@
           handleCopy(editorSql, 'txt-editor-copy');
         });
 
-        document.getElementById('tab-btn-editor').addEventListener('click', () => setTab('editor'));
-
-        // Form Submit listeners
-        document.getElementById('form-item').addEventListener('submit', (e) => {
-          e.preventDefault();
-          const vals = getFormItemValues();
-          if (!vals.name.trim()) return;
-
-          if (editingItemIndex !== null) {
-            itemsBatch[editingItemIndex] = vals;
-          } else {
-            itemsBatch.push(vals);
-          }
-
-          resetItemForm();
-          saveCache();
-          renderItemsBatch();
-        });
-
-        document.getElementById('btn-item-cancel').addEventListener('click', () => {
-          resetItemForm();
-          renderItemsBatch();
-        });
-
-        document.getElementById('form-card').addEventListener('submit', (e) => {
-          e.preventDefault();
-          const vals = getFormCardValues();
-          if (!vals.name.trim()) return;
-
-          if (editingCardIndex !== null) {
-            cardsBatch[editingCardIndex] = vals;
-          } else {
-            cardsBatch.push(vals);
-          }
-
-          resetCardForm();
-          saveCache();
-          renderCardsBatch();
-        });
-
-        document.getElementById('btn-card-cancel').addEventListener('click', () => {
-          resetCardForm();
-          renderCardsBatch();
-        });
-
-        // Batch Control listeners
-        document.getElementById('btn-item-generate').addEventListener('click', generateItemsSql);
-        document.getElementById('btn-item-clear').addEventListener('click', () => {
-          itemsBatch = [];
-          itemsSql = "";
-          resetItemForm();
-          saveCache();
-          renderItemsBatch();
-          document.getElementById('container-items-sql').classList.add('hidden');
-        });
-
-        document.getElementById('btn-card-generate').addEventListener('click', generateCardsSql);
-        document.getElementById('btn-card-clear').addEventListener('click', () => {
-          cardsBatch = [];
-          cardsSql = "";
-          resetCardForm();
-          saveCache();
-          renderCardsBatch();
-          document.getElementById('container-cards-sql').classList.add('hidden');
-        });
-
-        // Copy listeners
-        document.getElementById('btn-items-copy').addEventListener('click', () => {
-          handleCopy(itemsSql, 'txt-items-copy');
-        });
-        document.getElementById('btn-cards-copy').addEventListener('click', () => {
-          handleCopy(cardsSql, 'txt-cards-copy');
-        });
-
-        // Initial rendering
-        renderItemsBatch();
-        renderCardsBatch();
+        // Initial rendering: редактор открыт сразу, записи подгружаются.
         renderEditorBatch();
+        renderEditorList();
+        renderEditorForm();
+        loadEditorTable();
       });
     })();
   </script>
