@@ -541,6 +541,168 @@
       height: 1.5rem;
     }
 
+    /* Record editor */
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .editor-toolbar .form-group {
+      flex: 1 1 12rem;
+      min-width: 10rem;
+    }
+    .editor-toolbar .btn {
+      flex: 0 0 auto;
+    }
+    .editor-note {
+      flex: 1 0 100%;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+    .editor-status {
+      flex: 1 0 100%;
+      font-size: 0.75rem;
+      color: var(--cyber-neon);
+      min-height: 1.1em;
+    }
+    .editor-status.error {
+      color: var(--cyber-rose);
+    }
+    .editor-layout {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 960px) {
+      .editor-layout {
+        grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+        align-items: start;
+      }
+    }
+    .editor-list-panel,
+    .editor-form-panel {
+      min-width: 0;
+    }
+    .editor-list {
+      display: grid;
+      gap: 0.35rem;
+      max-height: 68vh;
+      overflow: auto;
+      margin-top: 0.5rem;
+      padding-right: 0.2rem;
+    }
+    .editor-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      width: 100%;
+      text-align: left;
+      background-color: var(--cyber-card);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.7rem;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .editor-row:hover {
+      border-color: var(--cyber-accent);
+    }
+    .editor-row.active {
+      border-color: var(--cyber-neon);
+      background-color: rgba(0, 212, 255, 0.08);
+    }
+    .editor-row-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .editor-row-id {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-family: Consolas, Monaco, monospace;
+      overflow-wrap: anywhere;
+    }
+    .editor-row-empty,
+    .editor-form-empty {
+      padding: 1.25rem 1rem;
+      border: 1px dashed var(--cyber-border);
+      border-radius: 0.5rem;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .editor-record-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+    .editor-record-head h3 {
+      font-size: 0.95rem;
+      color: var(--cyber-neon);
+    }
+    .editor-record-where {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: Consolas, Monaco, monospace;
+      overflow-wrap: anywhere;
+    }
+    .editor-field-hint {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    .editor-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding-top: 1rem;
+    }
+    .editor-pk-badge {
+      display: inline-block;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.72rem;
+      color: var(--cyber-gold);
+      background-color: rgba(255, 200, 50, 0.08);
+      border: 1px solid rgba(255, 200, 50, 0.25);
+      border-radius: 0.25rem;
+      padding: 0.1rem 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .editor-check {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.5rem 0.75rem;
+      background-color: var(--cyber-input);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .editor-check input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--cyber-accent);
+    }
+    .editor-note code {
+      background-color: var(--cyber-input);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.25rem;
+      padding: 0 0.25rem;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.7rem;
+    }
+    #editor-search {
+      margin-top: 0.35rem;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -559,7 +721,7 @@
             <span>✦ INFUSION</span>
             <span class="badge-tag">BATCH ENGINE</span>
           </h1>
-          <p class="subtitle-text">Генератор SQL для базы данных (Предметы & Карты)</p>
+          <p class="subtitle-text">Генератор SQL для базы данных: пакетная вставка и редактирование записей</p>
         </div>
       </div>
 
@@ -575,6 +737,11 @@
           <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1V4c0-.6-.4-1-1-1H3c-.6 0-1 .4-1 1v12c0 .6.4 1 1 1h2"></path><path d="M14 17H9"></path><path d="M10 21h4"></path><rect x="5" y="7" width="14" height="10" rx="1"></rect></svg>
           Карты / Базисы
           <span id="badge-count-cards" class="tab counter hidden">0</span>
+        </button>
+
+        <button id="tab-btn-editor" class="tab-btn">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          Редактор БД
         </button>
       </div>
     </header>
@@ -870,6 +1037,84 @@
           <textarea id="sql-output-cards" class="sql-output-area" rows="10" readonly></textarea>
         </div>
       </div>
+
+      <!-- ===== DATABASE EDITOR ===== -->
+      <div id="view-editor" class="space-y hidden">
+        <section class="panel" style="margin-bottom: 1.5rem;">
+          <div class="form-header">
+            <h2 class="form-header-title">
+              <svg class="icon-svg" style="color: var(--cyber-accent)" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+              Редактор записей
+            </h2>
+            <span class="subtitle-text">UPDATE только для изменённых полей</span>
+          </div>
+          <div class="editor-toolbar">
+            <div class="form-group">
+              <label>Таблица:</label>
+              <select id="editor-table"></select>
+            </div>
+            <div class="form-group">
+              <label>Источник данных:</label>
+              <select id="editor-source">
+                <option value="supabase">Supabase (онлайн)</option>
+                <option value="snapshot">data.json (снимок)</option>
+              </select>
+            </div>
+            <button type="button" id="btn-editor-load" class="btn btn-add">Загрузить</button>
+            <div id="editor-status" class="editor-status"></div>
+            <p class="editor-note">
+              Публичный ключ Supabase работает только на чтение. Сгенерированный UPDATE выполните
+              в Supabase → SQL Editor (или через service_role). Пустое числовое поле и слово
+              <code>NULL</code> в тексте дают SQL <code>NULL</code>; элементы <code>text[]</code>
+              вводятся по одному на строку, JSON — как обычный JSON.
+            </p>
+          </div>
+        </section>
+
+        <div class="editor-layout">
+          <section class="panel editor-list-panel">
+            <div class="form-header">
+              <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase;">Записи</h3>
+              <span id="editor-count" class="tab counter">0</span>
+            </div>
+            <input type="text" id="editor-search" placeholder="Поиск по ID, названию, тегу..." />
+            <div id="editor-list" class="editor-list"></div>
+          </section>
+
+          <section class="panel editor-form-panel">
+            <div id="editor-form-empty" class="editor-form-empty">Выберите запись в списке слева.</div>
+            <form id="editor-form" class="hidden">
+              <div class="editor-record-head">
+                <h3 id="editor-record-title"></h3>
+                <span id="editor-record-where" class="editor-record-where"></span>
+              </div>
+              <div id="editor-pk" class="editor-pk-badge"></div>
+              <div id="editor-fields" class="form-grid"></div>
+              <div class="editor-actions">
+                <button type="submit" class="btn btn-generate">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  Сгенерировать UPDATE
+                </button>
+                <button type="button" id="btn-editor-reset" class="btn btn-cancel">Сбросить изменения</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div id="container-editor-sql" class="panel hidden">
+          <div class="form-header">
+            <h3 class="title-text" style="font-size: 0.8125rem;">
+              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              Сгенерированный UPDATE
+            </h3>
+            <button id="btn-editor-copy" class="btn btn-copy">
+              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="txt-editor-copy">Скопировать SQL</span>
+            </button>
+          </div>
+          <textarea id="sql-output-editor" class="sql-output-area" rows="10" readonly></textarea>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -904,6 +1149,97 @@
       const CARD_AMPLIFY_OPTIONS = ["Да", "Нет", "АТК", "АВХ", "АВХ, АТК", "АТК, Каскад", "АТК, АВХ"];
       const CARD_CREATION_OPTIONS = ["Базис", "Модификатор"];
 
+      // ===== DATABASE EDITOR =====
+      // Публичный ключ Supabase даёт только чтение — этого достаточно, чтобы
+      // загрузить записи и собрать UPDATE, который потом выполняется в SQL Editor.
+      const SUPABASE_REST = "https://awsotgciwopymcornpyg.supabase.co/rest/v1";
+      const SUPABASE_KEY = "sb_publishable_wEyPdxTM_po23ZZqnoIZ5Q_USO6ZwqN";
+
+      const EDIT_LABELS = {
+        id: "ID", tag: "Тег", name: "Название", description: "Описание",
+        cost: "Стоимость", category: "Категория", rarity: "Редкость",
+        iconic: "Культовый", organization: "Организация",
+        sell_price: "Цена продажи", issue: "Пометка об ошибке", props: "Свойства (JSON)",
+        classes: "Классы (text[])", school: "Школа", essence: "Сущность",
+        params: "Параметры", damage_type: "Тип урона", distance: "Дистанция",
+        activation: "Срабатывание (text[])", effects: "Эффекты (text[])",
+        test: "Испытание", mechanics: "Механика", amplify: "Усиление (text[])",
+        consumable: "Расходуемая", kronos: "Кронос", price_tali: "Цена в тали",
+        creation: "Сотворение", stat: "Характеристика", tier: "Тир",
+        kind: "Тип (ability/mutation)", class_requirement: "Требование класса",
+        group_name: "Группа", full_name: "Полное имя", has_kronos: "Есть Кронос",
+        implants_allowed: "Импланты разрешены", level: "Уровень",
+        hp_base: "Базовое ОЗ", kronos_max: "Макс. Кронос", grp: "Группа слота",
+        max_count: "Макс. количество", uses: "Использование (JSON)", ich: "ИЧ",
+        note: "Примечание", key: "Ключ"
+      };
+
+      // Колонки, доступные для UPDATE. PK и updated_at не редактируются.
+      const EDIT_TABLES = {
+        items: {
+          label: "Предметы", pk: "id", order: "id", wide: ["description", "issue"],
+          columns: ["tag", "name", "description", "cost", "category", "rarity", "iconic", "organization", "sell_price", "issue", "props"],
+          types: { cost: "int", sell_price: "int", iconic: "bool", props: "jsonb" }
+        },
+        cards: {
+          label: "Карты / базисы", pk: "id", order: "id", wide: ["params", "mechanics"],
+          columns: ["tag", "name", "rarity", "classes", "school", "essence", "params", "damage_type", "distance", "activation", "effects", "test", "mechanics", "amplify", "consumable", "kronos", "price_tali", "creation", "iconic", "props"],
+          types: { classes: "text[]", activation: "text[]", effects: "text[]", amplify: "text[]", consumable: "bool", iconic: "bool", kronos: "int", price_tali: "int", props: "jsonb" }
+        },
+        skills: {
+          label: "Навыки", pk: "id", order: "id", wide: ["description"],
+          columns: ["name", "stat", "tier", "rarity", "description"],
+          types: { tier: "int" }
+        },
+        abilities: {
+          label: "Способности и мутации", pk: "id", order: "id", wide: ["description"],
+          columns: ["name", "kind", "class_requirement", "description"],
+          types: {}
+        },
+        beasts: {
+          label: "Способности зверя", pk: "id", order: "id", wide: ["description"],
+          columns: ["group_name", "name", "rarity", "description"],
+          types: {}
+        },
+        traits: {
+          label: "Черты", pk: "id", order: "id", wide: ["description"],
+          columns: ["name", "description"],
+          types: {}
+        },
+        essences: {
+          label: "Сущности", pk: "id", order: "id", wide: ["description"],
+          columns: ["name", "full_name", "description"],
+          types: {}
+        },
+        races: {
+          label: "Расы", pk: "id", order: "id", wide: ["description"],
+          columns: ["name", "has_kronos", "implants_allowed", "description"],
+          types: { has_kronos: "bool", implants_allowed: "bool" }
+        },
+        classes: {
+          label: "Классы", pk: "name", order: "name", wide: [],
+          columns: ["name"], types: {}
+        },
+        stats: {
+          label: "Характеристики", pk: "key", order: "key", wide: [],
+          columns: ["name", "max"], types: { max: "int" }
+        },
+        ranks: {
+          label: "Ранги", pk: "level", order: "level", wide: [],
+          columns: ["name", "hp_base", "kronos_max"],
+          types: { hp_base: "int", kronos_max: "int" }
+        },
+        slots: {
+          label: "Слоты", pk: "tag", order: "tag", wide: [],
+          columns: ["grp", "max_count"], types: { max_count: "int" }
+        },
+        implant_combos: {
+          label: "Комбинации имплантов", pk: "name", order: "name", wide: ["note"],
+          columns: ["uses", "ich", "note"],
+          types: { uses: "jsonb", ich: "numeric" }
+        }
+      };
+
       // STATE
       let activeTab = 'items';
       let itemsBatch = [];
@@ -912,6 +1248,18 @@
       let cardsSql = "";
       let editingItemIndex = null;
       let editingCardIndex = null;
+
+      // Database editor state
+      let editorSource = 'supabase';
+      let editorTable = 'items';
+      let editorRows = [];
+      let editorSelectedIndex = -1;
+      let editorSearch = '';
+      let editorSql = '';
+      let editorCache = {};       // `${source}:${table}` -> { rows, at }
+      let editorLoadedOnce = false;
+      let editorSnapshotPromise = null;
+      let editorLoadToken = 0;
 
       // Dynamic Free-Combo State tracking
       const comboStates = {
@@ -1029,21 +1377,388 @@
       // TAB SWITCHING
       function setTab(tab) {
         activeTab = tab;
-        const btnItems = document.getElementById('tab-btn-items');
-        const btnCards = document.getElementById('tab-btn-cards');
-        const viewItems = document.getElementById('view-items');
-        const viewCards = document.getElementById('view-cards');
+        const buttons = {
+          items: document.getElementById('tab-btn-items'),
+          cards: document.getElementById('tab-btn-cards'),
+          editor: document.getElementById('tab-btn-editor')
+        };
+        const views = {
+          items: document.getElementById('view-items'),
+          cards: document.getElementById('view-cards'),
+          editor: document.getElementById('view-editor')
+        };
 
-        if (tab === 'items') {
-          btnItems.classList.add('active');
-          btnCards.classList.remove('active');
-          viewItems.classList.remove('hidden');
-          viewCards.classList.add('hidden');
-        } else {
-          btnCards.classList.add('active');
-          btnItems.classList.remove('active');
-          viewCards.classList.remove('hidden');
-          viewItems.classList.add('hidden');
+        Object.entries(buttons).forEach(([key, btn]) => btn.classList.toggle('active', key === tab));
+        Object.entries(views).forEach(([key, view]) => view.classList.toggle('hidden', key !== tab));
+
+        // Редактор подгружает записи при первом открытии вкладки.
+        if (tab === 'editor' && !editorLoadedOnce) {
+          editorLoadedOnce = true;
+          loadEditorTable();
+        }
+      }
+
+      // ===== DATABASE EDITOR HELPERS =====
+      const editorMeta = () => EDIT_TABLES[editorTable] || EDIT_TABLES.items;
+
+      function editorSetStatus(message, isError) {
+        const el = document.getElementById('editor-status');
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.toggle('error', !!isError);
+      }
+
+      function sqlQuote(value) {
+        return `'${String(value).replace(/'/g, "''")}'`;
+      }
+
+      function sqlIdent(name) {
+        return `"${String(name).replace(/"/g, '""')}"`;
+      }
+
+      function stableJson(value) {
+        if (value === null || typeof value !== 'object') {
+          const json = JSON.stringify(value);
+          return json === undefined ? 'null' : json;
+        }
+        if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+        return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+      }
+
+      // Значение для поля формы.
+      function editorDisplay(value, type) {
+        if (type === 'bool') return !!value;
+        if (type === 'jsonb') return value == null ? '' : JSON.stringify(value, null, 2);
+        if (type === 'text[]') return Array.isArray(value) ? value.join('\n') : value == null ? '' : String(value);
+        return value == null ? '' : String(value);
+      }
+
+      // Канонический вид для сравнения «было / стало».
+      function editorCanonical(value, type) {
+        if (type === 'text[]') return JSON.stringify(Array.isArray(value) ? value.map(String) : []);
+        if (type === 'jsonb') return value == null ? 'null' : stableJson(value);
+        if (type === 'bool') return value ? 'true' : 'false';
+        if (type === 'int' || type === 'numeric') {
+          if (value == null || value === '') return '';
+          const n = Number(value);
+          return Number.isFinite(n) ? String(n) : String(value);
+        }
+        if (value == null) return '';
+        return String(value);
+      }
+
+      function readEditorValue(el, type) {
+        if (type === 'bool') return !!el.checked;
+        const raw = el.value;
+        if (type === 'text[]') {
+          return raw.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+        }
+        if (type === 'jsonb') {
+          const text = raw.trim();
+          if (!text || text === 'NULL') return null;
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            throw new Error('некорректный JSON');
+          }
+        }
+        if (type === 'int' || type === 'numeric') {
+          const text = raw.trim();
+          if (!text || text === 'NULL') return null;
+          if (!/^-?\d+(\.\d+)?$/.test(text)) throw new Error('ожидается число');
+          return text;
+        }
+        return raw === 'NULL' ? null : raw;
+      }
+
+      function sqlLiteral(value, type) {
+        if (type === 'text[]') {
+          const list = Array.isArray(value) ? value : [];
+          return list.length ? `array[${list.map(sqlQuote).join(', ')}]` : 'array[]::text[]';
+        }
+        if (type === 'jsonb') {
+          return value == null ? 'NULL' : `${sqlQuote(JSON.stringify(value))}::jsonb`;
+        }
+        if (value == null) return 'NULL';
+        if (type === 'bool') return value ? 'true' : 'false';
+        if (type === 'int' || type === 'numeric') {
+          const text = String(value).trim();
+          return /^-?\d+(\.\d+)?$/.test(text) ? text : sqlQuote(text);
+        }
+        return sqlQuote(String(value));
+      }
+
+      function editorRowIdentity(row, meta) {
+        for (const key of ['name', 'key', 'tag', 'level']) {
+          if (row[key] != null && String(row[key]).trim() !== '') return String(row[key]);
+        }
+        return String(row[meta.pk] ?? '—');
+      }
+
+      function editorRecordsLabel(count) {
+        const mod10 = count % 10;
+        const mod100 = count % 100;
+        if (mod10 === 1 && mod100 !== 11) return `${count} запись`;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} записи`;
+        return `${count} записей`;
+      }
+
+      function editorFieldHtml(col, row, meta) {
+        const type = meta.types[col] || 'text';
+        const label = EDIT_LABELS[col] || col;
+        const value = row[col];
+        const wide = (meta.wide || []).includes(col) || type === 'text[]' || type === 'jsonb';
+        const span = wide ? ' col-span-full' : '';
+        const hints = {
+          'text[]': 'по одному значению на строку',
+          jsonb: 'JSON; пусто = NULL',
+          int: 'число; пусто = NULL',
+          numeric: 'число; пусто = NULL'
+        };
+        const hint = hints[type] ? `<span class="editor-field-hint">${hints[type]}</span>` : '';
+
+        if (type === 'bool') {
+          return `<div class="form-group${span}">
+            <div class="form-label-row"><label>${escapeHtml(label)}</label>${hint}</div>
+            <label class="editor-check"><input type="checkbox" data-editor-field="${escapeHtml(col)}"${value ? ' checked' : ''}> включено</label>
+          </div>`;
+        }
+
+        const display = editorDisplay(value, type);
+        if (wide || type === 'jsonb' || type === 'text[]') {
+          const rows = type === 'jsonb' ? 5 : 3;
+          return `<div class="form-group${span}">
+            <div class="form-label-row"><label>${escapeHtml(label)}</label>${hint}</div>
+            <textarea data-editor-field="${escapeHtml(col)}" rows="${rows}" spellcheck="false">${escapeHtml(display)}</textarea>
+          </div>`;
+        }
+
+        const mode = type === 'int' || type === 'numeric' ? ' inputmode="numeric"' : '';
+        return `<div class="form-group${span}">
+          <div class="form-label-row"><label>${escapeHtml(label)}</label>${hint}</div>
+          <input type="text" data-editor-field="${escapeHtml(col)}" value="${escapeHtml(display)}"${mode} />
+        </div>`;
+      }
+
+      function editorFilteredRows() {
+        const q = editorSearch.trim().toLowerCase();
+        const meta = editorMeta();
+        const indexed = editorRows.map((row, index) => ({ row, index }));
+        if (!q) return indexed;
+        const keys = [meta.pk, 'id', 'name', 'tag', 'key', 'level', 'group_name', 'full_name'];
+        return indexed.filter(({ row }) => keys
+          .map((key) => row[key])
+          .filter((value) => value != null)
+          .join(' ')
+          .toLowerCase()
+          .includes(q));
+      }
+
+      function renderEditorList() {
+        const meta = editorMeta();
+        const list = document.getElementById('editor-list');
+        const count = document.getElementById('editor-count');
+        if (!list) return;
+
+        const rows = editorFilteredRows();
+        count.textContent = editorSearch.trim() ? `${rows.length} / ${editorRows.length}` : String(editorRows.length);
+
+        if (!editorRows.length) {
+          list.innerHTML = '<div class="editor-row-empty">Записи не загружены.</div>';
+          return;
+        }
+        if (!rows.length) {
+          list.innerHTML = '<div class="editor-row-empty">Ничего не найдено.</div>';
+          return;
+        }
+
+        const shown = rows.slice(0, 500);
+        list.innerHTML = shown.map(({ row, index }) => `<button type="button" class="editor-row${index === editorSelectedIndex ? ' active' : ''}" data-editor-index="${index}">
+            <span class="editor-row-name">${escapeHtml(editorRowIdentity(row, meta))}</span>
+            <span class="editor-row-id">${escapeHtml(String(row[meta.pk] ?? ''))}</span>
+          </button>`).join('')
+          + (rows.length > shown.length
+            ? `<div class="editor-row-empty">Показаны первые ${shown.length} из ${rows.length}. Уточните поиск.</div>`
+            : '');
+      }
+
+      function renderEditorForm() {
+        const meta = editorMeta();
+        const empty = document.getElementById('editor-form-empty');
+        const form = document.getElementById('editor-form');
+        const fields = document.getElementById('editor-fields');
+        const title = document.getElementById('editor-record-title');
+        const where = document.getElementById('editor-record-where');
+        const pk = document.getElementById('editor-pk');
+        const row = editorRows[editorSelectedIndex];
+
+        if (!row) {
+          form.classList.add('hidden');
+          empty.classList.remove('hidden');
+          empty.textContent = editorRows.length ? 'Выберите запись в списке слева.' : 'Загрузите записи, чтобы начать.';
+          return;
+        }
+
+        empty.classList.add('hidden');
+        form.classList.remove('hidden');
+        title.textContent = editorRowIdentity(row, meta);
+        where.textContent = `${editorTable} · WHERE ${meta.pk} = ${String(row[meta.pk] ?? '')}`;
+        pk.textContent = `${EDIT_LABELS[meta.pk] || meta.pk}: ${String(row[meta.pk] ?? '')}`;
+        fields.innerHTML = meta.columns.map((col) => editorFieldHtml(col, row, meta)).join('');
+      }
+
+      function selectEditorRow(index) {
+        editorSelectedIndex = Number.isInteger(index) ? index : -1;
+        editorSql = '';
+        const output = document.getElementById('container-editor-sql');
+        if (output) output.classList.add('hidden');
+        editorSetStatus('');
+        renderEditorList();
+        renderEditorForm();
+      }
+
+      function generateEditorUpdate() {
+        const meta = editorMeta();
+        const row = editorRows[editorSelectedIndex];
+        if (!row) {
+          editorSetStatus('Сначала выберите запись.', true);
+          return;
+        }
+
+        const sets = [];
+        const changed = [];
+        for (const col of meta.columns) {
+          const el = document.querySelector(`[data-editor-field="${col}"]`);
+          if (!el) continue;
+          const type = meta.types[col] || 'text';
+          let value;
+          try {
+            value = readEditorValue(el, type);
+          } catch (err) {
+            editorSetStatus(`Поле «${EDIT_LABELS[col] || col}»: ${err.message}`, true);
+            return;
+          }
+          if (editorCanonical(value, type) !== editorCanonical(row[col], type)) {
+            sets.push(`  ${sqlIdent(col)} = ${sqlLiteral(value, type)}`);
+            changed.push(col);
+          }
+        }
+
+        const output = document.getElementById('container-editor-sql');
+        const area = document.getElementById('sql-output-editor');
+        if (!sets.length) {
+          editorSql = '';
+          area.value = '';
+          output.classList.add('hidden');
+          editorSetStatus('Нет изменений: все поля совпадают с загруженной записью.');
+          return;
+        }
+
+        const pkValue = row[meta.pk];
+        const pkLiteral = typeof pkValue === 'number' ? String(pkValue) : sqlLiteral(pkValue, 'text');
+        editorSql = `-- ${meta.label}: ${editorRowIdentity(row, meta)}\n-- Изменённых полей: ${changed.length}\nupdate ${editorTable} set\n${sets.join(',\n')}\nwhere ${sqlIdent(meta.pk)} = ${pkLiteral};\n`;
+        area.value = editorSql;
+        output.classList.remove('hidden');
+        editorSetStatus(`Готово: изменённых полей — ${changed.length}. UPDATE ниже.`);
+        output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      async function fetchEditorSupabase(meta, tableKey) {
+        const url = `${SUPABASE_REST}/${tableKey}?select=*&order=${encodeURIComponent(meta.order)}.asc&limit=2000`;
+        const res = await fetch(url, {
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+        });
+        if (!res.ok) throw new Error(`Supabase ${res.status} ${res.statusText}`);
+        const rows = await res.json();
+        if (!Array.isArray(rows)) throw new Error('неожиданный ответ Supabase');
+        return rows;
+      }
+
+      async function fetchEditorSnapshot(tableKey) {
+        if (!editorSnapshotPromise) {
+          editorSnapshotPromise = fetch('../data/data.json', { cache: 'no-store' })
+            .then((res) => {
+              if (!res.ok) throw new Error(`data.json ${res.status} ${res.statusText}`);
+              return res.json();
+            })
+            .catch((err) => {
+              editorSnapshotPromise = null;
+              throw err;
+            });
+        }
+        const data = await editorSnapshotPromise;
+        const rows = data[tableKey];
+        if (!Array.isArray(rows)) throw new Error(`в data.json нет таблицы ${tableKey}`);
+        return rows.slice();
+      }
+
+      async function loadEditorTable(options = {}) {
+        const source = editorSource;
+        const tableKey = editorTable;
+        const meta = EDIT_TABLES[tableKey] || EDIT_TABLES.items;
+        const force = !!options.force;
+        const cacheKey = `${source}:${tableKey}`;
+        const cached = editorCache[cacheKey];
+        const loadBtn = document.getElementById('btn-editor-load');
+        const token = ++editorLoadToken;
+
+        if (!force && cached) {
+          editorRows = cached.rows;
+          editorSelectedIndex = -1;
+          renderEditorList();
+          renderEditorForm();
+          editorSetStatus(`Из кэша: ${editorRecordsLabel(editorRows.length)} (${meta.label}).`);
+          return;
+        }
+
+        loadBtn.disabled = true;
+        editorSetStatus(`Загрузка «${meta.label}»...`);
+        editorRows = [];
+        editorSelectedIndex = -1;
+        renderEditorList();
+        renderEditorForm();
+        try {
+          const rows = source === 'supabase' ? await fetchEditorSupabase(meta, tableKey) : await fetchEditorSnapshot(tableKey);
+          if (token !== editorLoadToken) return;
+          editorRows = rows;
+          editorCache[cacheKey] = { rows, at: Date.now() };
+          editorSelectedIndex = -1;
+          renderEditorList();
+          renderEditorForm();
+          const srcLabel = source === 'supabase' ? 'Supabase' : 'data.json';
+          editorSetStatus(`${srcLabel}: ${editorRecordsLabel(rows.length)} (${meta.label}).`);
+        } catch (err) {
+          if (token !== editorLoadToken) return;
+          if (source === 'supabase') {
+            // Офлайн-режим: переключаемся на снимок, чтобы редактор оставался рабочим.
+            editorSource = 'snapshot';
+            document.getElementById('editor-source').value = 'snapshot';
+            try {
+              const rows = await fetchEditorSnapshot(tableKey);
+              if (token !== editorLoadToken) return;
+              editorRows = rows;
+              editorCache[`snapshot:${tableKey}`] = { rows, at: Date.now() };
+              editorSelectedIndex = -1;
+              renderEditorList();
+              renderEditorForm();
+              editorSetStatus(`Supabase недоступен (${err.message}). Загружен снимок data.json: ${editorRecordsLabel(rows.length)}.`, true);
+            } catch (fallbackErr) {
+              if (token !== editorLoadToken) return;
+              editorRows = [];
+              editorSelectedIndex = -1;
+              renderEditorList();
+              renderEditorForm();
+              editorSetStatus(`Supabase: ${err.message}. data.json: ${fallbackErr.message}`, true);
+            }
+          } else {
+            editorRows = [];
+            editorSelectedIndex = -1;
+            renderEditorList();
+            renderEditorForm();
+            editorSetStatus(`Не удалось загрузить data.json: ${err.message}`, true);
+          }
+        } finally {
+          if (token === editorLoadToken) loadBtn.disabled = false;
         }
       }
 
@@ -1458,6 +2173,60 @@
         // Navigation listeners
         document.getElementById('tab-btn-items').addEventListener('click', () => setTab('items'));
         document.getElementById('tab-btn-cards').addEventListener('click', () => setTab('cards'));
+
+        // ===== DATABASE EDITOR LISTENERS =====
+        const editorTableSelect = document.getElementById('editor-table');
+        editorTableSelect.innerHTML = Object.entries(EDIT_TABLES)
+          .map(([key, meta]) => `<option value="${escapeHtml(key)}">${escapeHtml(meta.label)}</option>`)
+          .join('');
+        editorTableSelect.value = editorTable;
+
+        editorTableSelect.addEventListener('change', () => {
+          editorTable = editorTableSelect.value;
+          editorSelectedIndex = -1;
+          editorSearch = '';
+          document.getElementById('editor-search').value = '';
+          document.getElementById('container-editor-sql').classList.add('hidden');
+          loadEditorTable();
+        });
+
+        document.getElementById('editor-source').addEventListener('change', (e) => {
+          editorSource = e.target.value;
+          editorSelectedIndex = -1;
+          document.getElementById('container-editor-sql').classList.add('hidden');
+          loadEditorTable();
+        });
+
+        document.getElementById('btn-editor-load').addEventListener('click', () => loadEditorTable({ force: true }));
+
+        document.getElementById('editor-search').addEventListener('input', (e) => {
+          editorSearch = e.target.value;
+          renderEditorList();
+        });
+
+        document.getElementById('editor-list').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-editor-index]');
+          if (!btn) return;
+          selectEditorRow(Number(btn.dataset.editorIndex));
+        });
+
+        document.getElementById('editor-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          generateEditorUpdate();
+        });
+
+        document.getElementById('btn-editor-reset').addEventListener('click', () => {
+          renderEditorForm();
+          editorSql = '';
+          document.getElementById('container-editor-sql').classList.add('hidden');
+          editorSetStatus('Изменения сброшены.');
+        });
+
+        document.getElementById('btn-editor-copy').addEventListener('click', () => {
+          handleCopy(editorSql, 'txt-editor-copy');
+        });
+
+        document.getElementById('tab-btn-editor').addEventListener('click', () => setTab('editor'));
 
         // Form Submit listeners
         document.getElementById('form-item').addEventListener('submit', (e) => {
