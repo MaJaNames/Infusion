@@ -1095,17 +1095,42 @@
                   <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                   Сгенерировать UPDATE
                 </button>
+                <button type="button" id="btn-editor-add-batch" class="btn btn-add">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  Добавить в пакет
+                </button>
                 <button type="button" id="btn-editor-reset" class="btn btn-cancel">Сбросить изменения</button>
               </div>
             </form>
           </section>
         </div>
 
+        <div class="panel actions-bar" style="margin-bottom: 1.5rem;">
+          <div class="actions-left">
+            <button id="btn-editor-generate-batch" class="btn btn-generate" disabled>
+              <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Сгенерировать пакетный SQL
+            </button>
+            <button id="btn-editor-clear-batch" class="btn btn-clear" disabled>
+              <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Очистить
+            </button>
+          </div>
+          <div id="badge-editor-batch" class="batch-count-badge">📦 В пакете: 0 записей</div>
+        </div>
+
+        <div id="container-editor-batch" class="panel hidden" style="margin-bottom: 1.5rem;">
+          <h3 class="subtitle-text" style="font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">
+            Содержимое пакета (нажмите на запись, чтобы открыть её для правки):
+          </h3>
+          <div id="list-editor-batch" class="cards-grid"></div>
+        </div>
+
         <div id="container-editor-sql" class="panel hidden">
           <div class="form-header">
             <h3 class="title-text" style="font-size: 0.8125rem;">
               <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-              Сгенерированный UPDATE
+              <span id="editor-sql-title">Сгенерированный UPDATE</span>
             </h3>
             <button id="btn-editor-copy" class="btn btn-copy">
               <svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1260,6 +1285,7 @@
       let editorLoadedOnce = false;
       let editorSnapshotPromise = null;
       let editorLoadToken = 0;
+      let editorBatch = [];       // [{ uid, table, tableLabel, pk, pkValue, pkLiteral, label, sets, values, changed }]
 
       // Dynamic Free-Combo State tracking
       const comboStates = {
@@ -1343,7 +1369,8 @@
           localStorage.setItem(CACHE_KEY, JSON.stringify({
             timestamp: Date.now(),
             itemsBatch,
-            cardsBatch
+            cardsBatch,
+            editorBatch
           }));
         } catch (e) {
           console.warn("Could not save cache", e);
@@ -1358,6 +1385,12 @@
             if (Date.now() - (parsed.timestamp || 0) < CACHE_TTL_MS) {
               if (Array.isArray(parsed.itemsBatch)) itemsBatch = parsed.itemsBatch;
               if (Array.isArray(parsed.cardsBatch)) cardsBatch = parsed.cardsBatch;
+              if (Array.isArray(parsed.editorBatch)) {
+                editorBatch = parsed.editorBatch
+                  .filter((entry) => entry && entry.table && entry.pk && Array.isArray(entry.sets))
+                  .map(normalizeEditorBatchEntry)
+                  .filter((entry) => entry.sets.length > 0);
+              }
             } else {
               localStorage.removeItem(CACHE_KEY);
             }
@@ -1596,6 +1629,7 @@
           form.classList.add('hidden');
           empty.classList.remove('hidden');
           empty.textContent = editorRows.length ? 'Выберите запись в списке слева.' : 'Загрузите записи, чтобы начать.';
+          renderEditorBatch();
           return;
         }
 
@@ -1605,28 +1639,41 @@
         where.textContent = `${editorTable} · WHERE ${meta.pk} = ${String(row[meta.pk] ?? '')}`;
         pk.textContent = `${EDIT_LABELS[meta.pk] || meta.pk}: ${String(row[meta.pk] ?? '')}`;
         fields.innerHTML = meta.columns.map((col) => editorFieldHtml(col, row, meta)).join('');
+        renderEditorBatch();
       }
 
       function selectEditorRow(index) {
         editorSelectedIndex = Number.isInteger(index) ? index : -1;
-        editorSql = '';
-        const output = document.getElementById('container-editor-sql');
-        if (output) output.classList.add('hidden');
+        hideEditorSql();
         editorSetStatus('');
         renderEditorList();
         renderEditorForm();
       }
 
-      function generateEditorUpdate() {
+      function hideEditorSql() {
+        editorSql = '';
+        const output = document.getElementById('container-editor-sql');
+        const area = document.getElementById('sql-output-editor');
+        if (output) output.classList.add('hidden');
+        if (area) area.value = '';
+      }
+
+      function showEditorSql(sql, title) {
+        editorSql = sql;
+        document.getElementById('sql-output-editor').value = sql;
+        document.getElementById('editor-sql-title').textContent = title || 'Сгенерированный UPDATE';
+        document.getElementById('container-editor-sql').classList.remove('hidden');
+      }
+
+      // Собирает изменённые поля выбранной записи: SQL-фрагменты и значения формы.
+      function collectEditorChanges() {
         const meta = editorMeta();
         const row = editorRows[editorSelectedIndex];
-        if (!row) {
-          editorSetStatus('Сначала выберите запись.', true);
-          return;
-        }
+        if (!row) return { error: 'Сначала выберите запись.' };
 
         const sets = [];
         const changed = [];
+        const values = {};
         for (const col of meta.columns) {
           const el = document.querySelector(`[data-editor-field="${col}"]`);
           if (!el) continue;
@@ -1635,32 +1682,199 @@
           try {
             value = readEditorValue(el, type);
           } catch (err) {
-            editorSetStatus(`Поле «${EDIT_LABELS[col] || col}»: ${err.message}`, true);
-            return;
+            return { error: `Поле «${EDIT_LABELS[col] || col}»: ${err.message}` };
           }
           if (editorCanonical(value, type) !== editorCanonical(row[col], type)) {
-            sets.push(`  ${sqlIdent(col)} = ${sqlLiteral(value, type)}`);
+            sets.push({ col, sql: sqlLiteral(value, type) });
             changed.push(col);
+            values[col] = type === 'bool' ? !!el.checked : el.value;
           }
         }
+        return { meta, row, sets, changed, values };
+      }
 
-        const output = document.getElementById('container-editor-sql');
-        const area = document.getElementById('sql-output-editor');
-        if (!sets.length) {
-          editorSql = '';
-          area.value = '';
-          output.classList.add('hidden');
+      function normalizeEditorBatchEntry(entry) {
+        const sets = entry.sets.filter((set) => set && set.col && typeof set.sql === 'string');
+        const pkValue = entry.pkValue != null ? String(entry.pkValue) : '';
+        return {
+          ...entry,
+          sets,
+          changed: sets.map((set) => set.col),
+          values: entry.values && typeof entry.values === 'object' ? entry.values : {},
+          pkValue,
+          tableLabel: entry.tableLabel || (EDIT_TABLES[entry.table] ? EDIT_TABLES[entry.table].label : entry.table),
+          label: entry.label || pkValue || entry.pk,
+          pkLiteral: entry.pkLiteral || sqlLiteral(pkValue, 'text')
+        };
+      }
+
+      function buildEditorBatchEntry(result) {
+        const pkValue = result.row[result.meta.pk];
+        return {
+          uid: `${editorTable}:${String(pkValue)}`,
+          table: editorTable,
+          tableLabel: result.meta.label,
+          pk: result.meta.pk,
+          pkValue: String(pkValue ?? ''),
+          pkLiteral: typeof pkValue === 'number' ? String(pkValue) : sqlLiteral(pkValue, 'text'),
+          label: editorRowIdentity(result.row, result.meta),
+          sets: result.sets,
+          values: result.values,
+          changed: result.changed
+        };
+      }
+
+      function editorBatchStatement(entry) {
+        const sets = entry.sets.map((set) => `  ${sqlIdent(set.col)} = ${set.sql}`).join(',\n');
+        return `update ${entry.table} set\n${sets}\nwhere ${sqlIdent(entry.pk)} = ${entry.pkLiteral};`;
+      }
+
+      function currentEditorUid() {
+        const row = editorRows[editorSelectedIndex];
+        if (!row) return '';
+        return `${editorTable}:${String(row[editorMeta().pk])}`;
+      }
+
+      function renderEditorBatch() {
+        const has = editorBatch.length > 0;
+        const btnGen = document.getElementById('btn-editor-generate-batch');
+        const btnClr = document.getElementById('btn-editor-clear-batch');
+        const badge = document.getElementById('badge-editor-batch');
+        const container = document.getElementById('container-editor-batch');
+        const list = document.getElementById('list-editor-batch');
+        if (!btnGen || !btnClr || !badge || !container || !list) return;
+
+        badge.textContent = `📦 В пакете: ${editorRecordsLabel(editorBatch.length)}`;
+        btnGen.disabled = !has;
+        btnClr.disabled = !has;
+        container.classList.toggle('hidden', !has);
+
+        if (!has) {
+          list.innerHTML = '';
+          return;
+        }
+
+        const activeUid = currentEditorUid();
+        list.innerHTML = editorBatch.map((entry, index) => {
+          const fields = entry.changed.map((col) => EDIT_LABELS[col] || col).join(', ');
+          const editing = entry.uid === activeUid;
+          return `<div class="batch-item-card${editing ? ' editing' : ''}" data-editor-batch-open="${index}" role="button" tabindex="0">
+              <div class="card-info">
+                <div class="card-title">
+                  <span>${escapeHtml(entry.label)}</span>
+                  ${editing ? '<span class="tag-editing">Открыта</span>' : ''}
+                </div>
+                <div class="card-sub"><span>${escapeHtml(entry.tableLabel)}</span> • <span>${escapeHtml(entry.pk)} = ${escapeHtml(entry.pkValue)}</span></div>
+                <div class="card-mono-tag">${escapeHtml(fields)}</div>
+              </div>
+              <button type="button" class="btn-remove-item" data-editor-batch-remove="${index}" title="Удалить из пакета">
+                <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>`;
+        }).join('');
+      }
+
+      function generateEditorUpdate() {
+        const result = collectEditorChanges();
+        if (result.error) {
+          editorSetStatus(result.error, true);
+          return;
+        }
+        if (!result.sets.length) {
+          hideEditorSql();
           editorSetStatus('Нет изменений: все поля совпадают с загруженной записью.');
           return;
         }
 
-        const pkValue = row[meta.pk];
-        const pkLiteral = typeof pkValue === 'number' ? String(pkValue) : sqlLiteral(pkValue, 'text');
-        editorSql = `-- ${meta.label}: ${editorRowIdentity(row, meta)}\n-- Изменённых полей: ${changed.length}\nupdate ${editorTable} set\n${sets.join(',\n')}\nwhere ${sqlIdent(meta.pk)} = ${pkLiteral};\n`;
-        area.value = editorSql;
-        output.classList.remove('hidden');
-        editorSetStatus(`Готово: изменённых полей — ${changed.length}. UPDATE ниже.`);
-        output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const entry = buildEditorBatchEntry(result);
+        const sql = `-- ${entry.tableLabel}: ${entry.label}\n-- Изменённых полей: ${result.changed.length}\n${editorBatchStatement(entry)}\n`;
+        showEditorSql(sql, 'Сгенерированный UPDATE');
+        editorSetStatus(`Готово: изменённых полей — ${result.changed.length}. UPDATE ниже.`);
+        document.getElementById('container-editor-sql').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      function addEditorToBatch() {
+        const result = collectEditorChanges();
+        if (result.error) {
+          editorSetStatus(result.error, true);
+          return;
+        }
+        if (!result.sets.length) {
+          editorSetStatus('Нет изменений: нечего добавлять в пакет.');
+          return;
+        }
+
+        const entry = buildEditorBatchEntry(result);
+        const existing = editorBatch.findIndex((item) => item.uid === entry.uid);
+        const replaced = existing >= 0;
+        if (replaced) editorBatch[existing] = entry;
+        else editorBatch.push(entry);
+
+        saveCache();
+        hideEditorSql();
+        renderEditorBatch();
+        editorSetStatus(`${replaced ? 'Обновлено в пакете' : 'Добавлено в пакет'}: «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}.`);
+      }
+
+      function removeEditorBatchItem(index) {
+        if (!Number.isInteger(index) || !editorBatch[index]) return;
+        const [removed] = editorBatch.splice(index, 1);
+        saveCache();
+        hideEditorSql();
+        renderEditorBatch();
+        editorSetStatus(`Удалено из пакета: «${removed.label}». Осталось: ${editorRecordsLabel(editorBatch.length)}.`);
+      }
+
+      function clearEditorBatch() {
+        editorBatch = [];
+        saveCache();
+        hideEditorSql();
+        renderEditorBatch();
+        editorSetStatus('Пакет обновлений очищен.');
+      }
+
+      function generateEditorBatchSql() {
+        if (!editorBatch.length) {
+          hideEditorSql();
+          editorSetStatus('Пакет пуст: сначала добавьте записи.', true);
+          return;
+        }
+        const statements = editorBatch.map((entry, index) => `-- ${index + 1}. ${entry.tableLabel}: ${entry.label}\n${editorBatchStatement(entry)}`);
+        const sql = `begin;\n\n${statements.join('\n\n')}\n\ncommit;\n`;
+        showEditorSql(sql, `Пакетный SQL · ${editorRecordsLabel(editorBatch.length)}`);
+        editorSetStatus(`Пакетный SQL: ${editorRecordsLabel(editorBatch.length)} в одной транзакции.`);
+        document.getElementById('container-editor-sql').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      async function openEditorBatchItem(index) {
+        const entry = editorBatch[index];
+        if (!entry) return;
+
+        editorSearch = '';
+        const search = document.getElementById('editor-search');
+        if (search) search.value = '';
+
+        if (editorTable !== entry.table || !editorRows.length) {
+          editorTable = entry.table;
+          document.getElementById('editor-table').value = entry.table;
+          await loadEditorTable();
+        }
+
+        const meta = editorMeta();
+        const rowIndex = editorRows.findIndex((row) => `${editorTable}:${String(row[meta.pk])}` === entry.uid);
+        if (rowIndex < 0) {
+          editorSetStatus('Запись из пакета не найдена в загруженной таблице.', true);
+          return;
+        }
+
+        selectEditorRow(rowIndex);
+        for (const [col, value] of Object.entries(entry.values || {})) {
+          const el = document.querySelector(`[data-editor-field="${col}"]`);
+          if (!el) continue;
+          if (el.type === 'checkbox') el.checked = !!value;
+          else el.value = value;
+        }
+        editorSetStatus(`Открыта запись из пакета: «${entry.label}». Изменённых полей — ${entry.changed.length}.`);
       }
 
       async function fetchEditorSupabase(meta, tableKey) {
@@ -2215,10 +2429,32 @@
           generateEditorUpdate();
         });
 
+        document.getElementById('btn-editor-add-batch').addEventListener('click', addEditorToBatch);
+        document.getElementById('btn-editor-generate-batch').addEventListener('click', generateEditorBatchSql);
+        document.getElementById('btn-editor-clear-batch').addEventListener('click', clearEditorBatch);
+
+        document.getElementById('list-editor-batch').addEventListener('click', (e) => {
+          const remove = e.target.closest('[data-editor-batch-remove]');
+          if (remove) {
+            e.stopPropagation();
+            removeEditorBatchItem(Number(remove.dataset.editorBatchRemove));
+            return;
+          }
+          const open = e.target.closest('[data-editor-batch-open]');
+          if (open) openEditorBatchItem(Number(open.dataset.editorBatchOpen));
+        });
+
+        document.getElementById('list-editor-batch').addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          const open = e.target.closest('[data-editor-batch-open]');
+          if (!open) return;
+          e.preventDefault();
+          openEditorBatchItem(Number(open.dataset.editorBatchOpen));
+        });
+
         document.getElementById('btn-editor-reset').addEventListener('click', () => {
           renderEditorForm();
-          editorSql = '';
-          document.getElementById('container-editor-sql').classList.add('hidden');
+          hideEditorSql();
           editorSetStatus('Изменения сброшены.');
         });
 
@@ -2303,6 +2539,7 @@
         // Initial rendering
         renderItemsBatch();
         renderCardsBatch();
+        renderEditorBatch();
       });
     })();
   </script>
