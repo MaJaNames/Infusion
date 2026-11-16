@@ -749,6 +749,28 @@ check('статы: источники, условия и активные гал
   && statsHtmlRender.includes(`data-stats-effect="${condEffectKey}"`)
   && statsHtmlRender.includes(`data-stats-effect="${activeEffectKey}"`)
   && statsHtmlRender.includes(`data-stats-source="${activeSourceKey}"`));
+check('статы: общая галочка условий и галочки по источникам', statsHtmlRender.includes('data-stats-cond-all')
+  && statsHtmlRender.includes('Условия: 0 / ')
+  && statsHtmlRender.includes('data-stats-cond-group="'));
+
+const condAllChar = { ...statChar, statsToggles: { sources: {}, effects: {} } };
+const condAllRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(condAllRoot, { ...ctx, char: condAllChar, save() {}, rerender() {} });
+const condAllKeys = collectCharacterStats(statChar, d).conditional.map((x) => x.effectKey);
+condAllRoot.onchange({ target: { dataset: { statsCondAll: '' }, checked: true, type: 'checkbox' } });
+check('статы: одна галочка включает все условия', condAllKeys.length > 1
+  && condAllKeys.every((k) => condAllChar.statsToggles.effects[k] === true));
+condAllRoot.onchange({ target: { dataset: { statsCondAll: '' }, checked: false, type: 'checkbox' } });
+check('статы: одна галочка снимает все условия', condAllKeys.every((k) => condAllChar.statsToggles.effects[k] === false));
+
+const groupChar = { ...blankChar(), rank: 5, abilities: ['0x055', '0x007'] };
+const groupStats = collectCharacterStats(groupChar, d);
+const groupKey = groupStats.conditional.find((x) => x.sourceKey === 'ab:0x055:0')?.sourceKey;
+const groupRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(groupRoot, { ...ctx, char: groupChar, save() {}, rerender() {} });
+groupRoot.onchange({ target: { dataset: { statsCondGroup: groupKey }, checked: true, type: 'checkbox' } });
+check('статы: галочка источника включает только его условия', groupStats.conditional
+  .every((x) => !!groupChar.statsToggles.effects[x.effectKey] === (x.sourceKey === groupKey)));
 character.setRoute('pockets');
 check('статы: возврат на карточку', character.currentRoute() === 'pockets');
 let pageRoute = '';
