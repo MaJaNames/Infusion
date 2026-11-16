@@ -745,7 +745,9 @@ const statsHtmlRender = character.render({ ...ctx, char: statChar });
 check('статы: карточки всех параметров и выбор оружия', !/undefined|NaN|\[object/.test(statsHtmlRender)
   && CHAR_STAT_ORDER.every((k) => statsHtmlRender.includes(`data-stat-source="${k}"`))
   && statsHtmlRender.includes('data-stats-weapon'));
-check('статы: источники, условия и активные галочки в интерфейсе', statsHtmlRender.includes('Условные бонусы')
+check('статы: условия включаются у источника, отдельного списка нет', !statsHtmlRender.includes('<h2>Условные бонусы</h2>')
+  && statsHtmlRender.includes(`data-stats-cond-group="${activeSourceKey}"`)
+  && statsHtmlRender.includes('Условие источника')
   && statsHtmlRender.includes(`data-stats-effect="${condEffectKey}"`)
   && statsHtmlRender.includes(`data-stats-effect="${activeEffectKey}"`)
   && statsHtmlRender.includes(`data-stats-source="${activeSourceKey}"`));
