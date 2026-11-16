@@ -25,9 +25,12 @@ export const CHAR_STAT_ORDER = Object.freeze([
 // Параметры, которые у текущего оружия образуют «профиль оружия».
 export const WEAPON_STATS = Object.freeze(['atk', 'ksh', 'tchn', 'avx', 'kc']);
 
-// Ручные правки разбора. Ключ — id способности/мутации или способности зверя.
-// Если для id есть запись, автоматический разбор описания заменяется списком
-// effects. Значение можно задать числом или формулой ('2n', 'n/2', '1 + n').
+// Ручные правки разбора. STAT_OVERRIDES — способности и мутации, у них
+// ключ — id из базы. BEAST_STAT_OVERRIDES — способности зверя: у них своя
+// нумерация, поэтому ключи не должны пересекаться со способностями персонажа.
+// Если для id есть запись, автоматический разбор описания не используется:
+// бонусы берутся только из effects. Значение можно задать числом или формулой
+// ('2n', 'n/2', '1 + n').
 // Поля записи:
 //   n        — 'rank' (ранг персонажа), 'beast' (число способностей зверя) или число;
 //   effects  — список бонусов, каждое поле:
@@ -42,16 +45,212 @@ export const WEAPON_STATS = Object.freeze(['atk', 'ksh', 'tchn', 'avx', 'kc']);
 //     { stat: 'ksh', value: 1, active: true, conditional: true, text: 'В ближнем бою: +1 КШ' },
 //   ] },
 export const STAT_OVERRIDES = {
-  '0x028': { n: 'rank', effects: [ // Использование Окружения
-     { stat: 'atk', value: '8n', active: true, conditional: false, text: '8n АТК свободным действием' },
-   ] },
-   '0x007': { n: 'rank', effects: [ // Преимущество Высоты
-     { stat: 'atk', value: '5n', active: false, conditional: true, text: '5n, когда вы находитесь над целью' },
-   ] },
-   '0x01f': { n: 'rank', effects: [ // Особый Манёвр
-     { stat: 'od', value: '1', active: true },
-     { stat: 'speed', value: '1', active: true},
-   ] },
+  // Способности и мутации разобраны вручную: запись есть для каждой,
+  // поэтому автопарсер для них больше не используется.
+  '0x001': { n: 'rank', effects: [] }, // Ловкие пальчики
+  '0x002': { n: 'rank', effects: [] }, // Я Особенный
+  '0x003': { n: 'rank', effects: [] }, // Наш пострел везде поспел
+  '0x004': { n: 'rank', effects: [] }, // Мастер
+  '0x005': { n: 'rank', effects: [] }, // Перемена блюд
+  '0x006': { n: 'rank', effects: [] }, // Атака вдогонку
+  '0x007': { n: 'rank', effects: [ // Преимущество высоты
+    { stat: 'atk', value: '5n', conditional: true, text: 'Когда вы находитесь выше цели' },
+  ] },
+  '0x008': { n: 'rank', effects: [] }, // Связи в тенях
+  '0x009': { n: 'rank', effects: [ // Мастерство прицеливания
+    { stat: 'tchn', value: 20, active: true, conditional: true, text: 'Следующая атака после активации' },
+  ] },
+  '0x00a': { n: 'rank', effects: [] }, // Магма в венах
+  '0x00b': { n: 'rank', effects: [] }, // Неутомимость
+  '0x00c': { n: 'rank', effects: [] }, // Игра с позициями
+  '0x00d': { n: 'rank', effects: [] }, // Пламенный сердцем
+  '0x00e': { n: 'rank', effects: [] }, // Путь познания
+  '0x00f': { n: 'rank', effects: [] }, // Путь жертвы
+  '0x010': { n: 'rank', effects: [] }, // Путь риска
+  '0x011': { n: 'rank', effects: [] }, // Путь безумия
+  '0x012': { n: 'rank', effects: [] }, // Последнее безумие?
+  '0x013': { n: 'rank', effects: [ // Первая стадия Безумия
+    { stat: 'atk', value: '4n', conditional: true, text: 'Ближним оружием' },
+    { stat: 'atk', value: '-4n', conditional: true, text: 'Дальним оружием' },
+  ] },
+  '0x014': { n: 'rank', effects: [ // Вторая стадия Безумия
+    { stat: 'atk', value: '6n', conditional: true, text: 'Ближним оружием' },
+    { stat: 'atk', value: '-6n', conditional: true, text: 'Дальним оружием' },
+    { stat: 'defA', value: 15, text: 'Пассивно' },
+  ] },
+  '0x015': { n: 'rank', effects: [ // Третья стадия Безумия
+    { stat: 'atk', value: '10n', conditional: true, text: 'Ближним оружием' },
+    { stat: 'atk', value: '-10n', conditional: true, text: 'Дальним оружием' },
+    { stat: 'defP', value: -60, text: 'Пассивно' },
+    { stat: 'defA', value: 60, text: 'Пассивно' },
+  ] },
+  '0x016': { n: 'rank', effects: [] }, // Скоротечность весны
+  '0x017': { n: 'rank', effects: [ // Где твоя мотивация
+    { stat: 'atk', value: '3n', active: true, conditional: true, text: 'Бросок защитной атаки' },
+  ] },
+  '0x018': { n: 'rank', effects: [] }, // Еще не пал
+  '0x019': { n: 'rank', effects: [] }, // Долг еще не оплачен
+  '0x01a': { n: 'rank', effects: [] }, // Зажигаем!
+  '0x01b': { n: 'rank', effects: [] }, // Ударное соло!
+  '0x01c': { n: 'rank', effects: [] }, // Мэшап
+  '0x01d': { n: 'rank', effects: [] }, // На бис!
+  '0x01e': { n: 'rank', effects: [] }, // Адреналиновый бит
+  '0x01f': { n: 'rank', effects: [ // Особый маневр
+    { stat: 'od', value: 1, active: true, text: 'Раз в бой' },
+    { stat: 'speed', value: 1, active: true, text: 'Раз в бой' },
+  ] },
+  '0x020': { n: 'rank', effects: [] }, // Сквозной калибр
+  '0x021': { n: 'rank', effects: [ // Удар из тени
+    { stat: 'ksh', value: 25, conditional: true, text: 'Первая атака из стелса' },
+  ] },
+  '0x022': { n: 'rank', effects: [] }, // Геометрия смерти
+  '0x023': { n: 'rank', effects: [ // Импульс стрелка
+    { stat: 'speed', value: 2, conditional: true, text: 'На следующий раунд после убийства из пистолета или ПП' },
+  ] },
+  '0x024': { n: 'rank', effects: [] }, // Встречный свинец
+  '0x025': { n: 'rank', effects: [] }, // Шквальный сектор
+  '0x026': { n: 'rank', effects: [ // Метка наемника
+    { stat: 'atk', value: 10, active: true, conditional: true, text: 'После метки, накопительно' },
+  ] },
+  '0x027': { n: 'rank', effects: [] }, // Не тот человек в том месте
+  '0x028': { n: 'rank', effects: [ // Использование окружения
+    { stat: 'atk', value: '8n', active: true, text: 'Свободная атака' },
+  ] },
+  '0x029': { n: 'rank', effects: [] }, // Рободруг
+  '0x02a': { n: 'rank', effects: [] }, // Заслон
+  '0x02b': { n: 'rank', effects: [] }, // Реальная сталь
+  '0x02c': { n: 'rank', effects: [] }, // Стальная месть
+  '0x02d': { n: 'rank', effects: [] }, // Мастер управления
+  '0x02e': { n: 'rank', effects: [ // Повелитель стихии
+    { stat: 'atk', value: '5n', conditional: true, text: 'При использовании общих базисов и базисов Трансгрессора' },
+  ] },
+  '0x02f': { n: 'rank', effects: [] }, // Элементальный пробой
+  '0x030': { n: 'rank', effects: [ // Мастер одной стихии
+    { stat: 'atk', value: 8, conditional: true, text: 'За карту той же элементальной сущности, накопительно' },
+  ] },
+  '0x031': { n: 'rank', effects: [] }, // Эфирный резонанс
+  '0x032': { n: 'rank', effects: [] }, // Адаптация метакризны
+  '0x033': { n: 'rank', effects: [] }, // Мне не важно какого размера комната
+  '0x034': { n: 'rank', effects: [] }, // Вам лучше пригнуться
+  '0x035': { n: 'rank', effects: [] }, // Магический мученик
+  '0x036': { n: 'rank', effects: [] }, // Умри, но не сейчас
+  '0x037': { n: 'rank', effects: [] }, // Тик-Так Тактик
+  '0x038': { n: 'rank', effects: [] }, // Мастер Столбов
+  '0x039': { n: 'rank', effects: [] }, // Ой, а кто это сделал?
+  '0x03a': { n: 'rank', effects: [] }, // Я этого не говорил
+  '0x03b': { n: 'rank', effects: [] }, // Как мухи на варенье...
+  '0x03c': { n: 'rank', effects: [] }, // Ментальное противостояние
+  '0x03d': { n: 'rank', effects: [] }, // Кошмар наяву
+  '0x03e': { n: 'rank', effects: [] }, // Ментальная пиявка
+  '0x03f': { n: 'rank', effects: [] }, // Вторжение в разум
+  '0x040': { n: 'rank', effects: [] }, // Коллективное бессознательное
+  '0x041': { n: 'rank', effects: [] }, // Бэкдор
+  '0x042': { n: 'rank', effects: [] }, // Тихий взлом
+  '0x043': { n: 'rank', effects: [] }, // Перегрузка ядра
+  '0x044': { n: 'rank', effects: [] }, // Многопоточность
+  '0x045': { n: 'rank', effects: [] }, // Дух машины
+  '0x046': { n: 'rank', effects: [] }, // Школа экстримального вождения
+  '0x047': { n: 'rank', effects: [] }, // Борт-механик
+  '0x048': { n: 'rank', effects: [] }, // Полевой врач
+  '0x049': { n: 'rank', effects: [] }, // Никто не умрет в мою смену
+  '0x04a': { n: 'rank', effects: [] }, // Комплексная терапия
+  '0x04b': { n: 'rank', effects: [] }, // Лечебная атмосфера
+  '0x04c': { n: 'rank', effects: [] }, // Генно-модифицированные жабры
+  '0x04d': { n: 'rank', effects: [] }, // Фасеточные глаза
+  '0x04e': { n: 'rank', effects: [] }, // Симбиотическая кровеносная система
+  '0x04f': { n: 'rank', effects: [ // Когти
+    { stat: 'atk', value: 40, conditional: true, text: 'В бою без оружия' },
+  ] },
+  '0x050': { n: 'rank', effects: [] }, // Биолюминесцентные татуировки
+  '0x051': { n: 'rank', effects: [] }, // Тепловизионное зрение
+  '0x052': { n: 'rank', effects: [] }, // Псио-барьер ума
+  '0x053': { n: 'rank', effects: [] }, // Гравитационные узлы
+  '0x054': { n: 'rank', effects: [] }, // Кроно-регенератор клеток
+  '0x055': { n: 'rank', effects: [ // Ядовитые клыки
+    { stat: 'atk', value: '4n', conditional: true, text: 'Ближняя атака клыками' },
+    { stat: 'tchn', value: '3n', conditional: true, text: 'Ближняя атака клыками' },
+    { stat: 'ksh', value: '2n', conditional: true, text: 'Ближняя атака клыками' },
+  ] },
+  '0x056': { n: 'rank', effects: [ // Крылья
+    { stat: 'flight', value: 3, text: 'Пассивно' },
+  ] },
+  '0x057': { n: 'rank', effects: [ // Прочная чешуя
+    { stat: 'defP', value: 15, conditional: true, text: 'Против термического урона' },
+  ] },
+  '0x058': { n: 'rank', effects: [] }, // Цепкий хвост
+  '0x059': { n: 'rank', effects: [] }, // Кроно-резонаторные кристаллиты
+  '0x05a': { n: 'rank', effects: [] }, // Рога
+  '0x05b': { n: 'rank', effects: [ // Термическая стойкость
+    { stat: 'defP', value: 15, conditional: true, text: 'Против крио-урона' },
+  ] },
+  '0x05c': { n: 'rank', effects: [] }, // Неутомимость
+  '0x05d': { n: 'rank', effects: [] }, // Саморегулирующаяся кровеносная система
+  '0x05e': { n: 'rank', effects: [] }, // Истинная всеядность
+  '0x05f': { n: 'rank', effects: [] }, // Ментальные блокаторы
+  '0x060': { n: 'rank', effects: [] }, // Несломленный
+  '0x061': { n: 'rank', effects: [] }, // Выживший
+  '0x062': { n: 'rank', effects: [] }, // Термостабильная кожа
+};
+
+// Способности зверя: n — количество взятых способностей зверя (не ранг).
+// Как и у способностей персонажа, автопарсер здесь не используется.
+export const BEAST_STAT_OVERRIDES = {
+  '0x001': { n: 'beast', effects: [ // Путь городского хищника
+    { stat: 'kc', value: '1 + n/4', text: 'КЦ 1 + n/4' },
+  ] },
+  '0x002': { n: 'beast', effects: [] }, // Обворожительное присутствие
+  '0x003': { n: 'beast', effects: [] }, // Затягивание ошейника
+  '0x004': { n: 'beast', effects: [] }, // Просьба
+  '0x005': { n: 'beast', effects: [] }, // Приказ
+  '0x006': { n: 'beast', effects: [ // Сила в стае
+    { stat: 'atk', value: 'n', conditional: true, text: 'За каждого союзника в бою' },
+    { stat: 'defP', value: '2n', conditional: true, text: 'За каждого союзника в бою' },
+  ] },
+  '0x007': { n: 'beast', effects: [] }, // Приготовление
+  '0x008': { n: 'beast', effects: [] }, // Убеждение защиты
+  '0x009': { n: 'beast', effects: [] }, // Путь сокрытия
+  '0x00a': { n: 'beast', effects: [] }, // Теневое отражение
+  '0x00b': { n: 'beast', effects: [] }, // Расширение домена
+  '0x00c': { n: 'beast', effects: [] }, // Истинное скрытое ношение
+  '0x00d': { n: 'beast', effects: [ // Раскрытие потенциала оружия
+    { stat: 'atk', value: '8n', conditional: true, text: 'Атака из сокрытого оружия' },
+    { stat: 'tchn', value: '3n', conditional: true, text: 'Атака из сокрытого оружия' },
+    { stat: 'ksh', value: 2, conditional: true, text: 'Атака из сокрытого оружия' },
+  ] },
+  '0x00e': { n: 'beast', effects: [] }, // Единение с тенью
+  '0x00f': { n: 'beast', effects: [] }, // Контроль территории
+  '0x010': { n: 'beast', effects: [] }, // Аватар тени
+  '0x011': { n: 'beast', effects: [] }, // Званный ужин
+  '0x012': { n: 'beast', effects: [] }, // Путь изменений
+  '0x013': { n: 'beast', effects: [] }, // Практичное искусство
+  '0x014': { n: 'beast', effects: [] }, // Репетиция облика
+  '0x015': { n: 'beast', effects: [] }, // Приманка
+  '0x016': { n: 'beast', effects: [] }, // Развитие тела
+  '0x017': { n: 'beast', effects: [ // Кровавый цветок
+    { stat: 'atk', value: '15n', active: true, text: 'Атака шипами по целям в радиусе 1 ОП' },
+    { stat: 'ksh', value: '5n', active: true, text: 'Атака шипами по целям в радиусе 1 ОП' },
+  ] },
+  '0x018': { n: 'beast', effects: [] }, // Схлопывание ловушки
+  '0x019': { n: 'beast', effects: [ // Апекс развития
+    { stat: 'atk', value: 20, active: true, text: 'Изменённая форма' },
+    { stat: 'defP', value: 60, active: true, text: 'Изменённая форма' },
+    { stat: 'defA', value: 30, active: true, text: 'Изменённая форма' },
+    { stat: 'evasion', value: 70, active: true, text: 'Изменённая форма' },
+    { stat: 'od', value: 1, active: true, text: 'Изменённая форма' },
+  ] },
+  '0x01a': { n: 'beast', effects: [ // Кровавая ярость
+    { stat: 'avx', value: 1, conditional: true, text: 'Пока ОЗ ниже половины' },
+    { stat: 'speed', value: 2, conditional: true, text: 'Пока ОЗ ниже половины' },
+  ] },
+  '0x01b': { n: 'beast', effects: [] }, // Отчаяние
+  '0x01c': { n: 'beast', effects: [] }, // Здоровое питание
+  '0x01d': { n: 'beast', effects: [] }, // Голод превыше всего
+  '0x01e': { n: 'beast', effects: [] }, // Голод подождет
+  '0x01f': { n: 'beast', effects: [] }, // Очистка тела
+  '0x020': { n: 'beast', effects: [ // Стремительность
+    { stat: 'od', value: 1, active: true, text: 'КД 2' },
+    { stat: 'speed', value: 'n/2 + 1', active: true, text: 'КД 2, ОП с округлением вниз' },
+  ] },
 };
 
 const NUM = String.raw`\d+(?:[.,]\d+)?`;
@@ -384,12 +583,6 @@ function normalizeToggles(t) {
   };
 }
 
-function abilityN(text, rank, beastCount) {
-  return /количеств\w*[^.]{0,60}способност\w*\s+зверя|способност\w*\s+зверя[^.]{0,40}количеств/i.test(text)
-    ? beastCount
-    : rank;
-}
-
 // Подстановка n для ручной правки и готовые эффекты из STAT_OVERRIDES.
 function overrideN(ov, rank, beastCount, fallback) {
   if (!ov || ov.n === undefined) return fallback;
@@ -529,15 +722,16 @@ export function collectCharacterStats(c, d) {
     if (effects.length) addEffects(result, sourceOfItem(it, 'implant', `imp:${it.id}:${i}`), effects, toggles);
   }
 
-  // Способности и мутации. «n» — ранг, если в тексте не сказано, что это
-  // количество способностей зверя.
+  // Способности и мутации разбираются только вручную: автопарсер для них не
+  // используется, чтобы спорные описания не давали случайных бонусов.
   for (const [i, id] of (c.abilities || []).entries()) {
     if (!id) continue;
     const a = d.abilityMap.get(id);
     if (!a) continue;
     const ov = STAT_OVERRIDES[a.id];
-    const n = overrideN(ov, rank, beastCount, abilityN(a.description || '', rank, beastCount));
-    const effects = ov ? overrideEffects(ov, n) : parseStatEffects(a.description || '', { n });
+    if (!ov) continue;
+    const n = overrideN(ov, rank, beastCount, rank);
+    const effects = overrideEffects(ov, n);
     if (!effects.length) continue;
     const type = a.kind === 'mutation' ? 'mutation' : 'ability';
     addEffects(result, {
@@ -550,13 +744,15 @@ export function collectCharacterStats(c, d) {
     }, effects, toggles);
   }
 
-  // Способности зверя: n — количество взятых способностей зверя.
+  // Способности зверя: n — количество взятых способностей зверя, бонусы
+  // задаются только вручную (своя нумерация, см. BEAST_STAT_OVERRIDES).
   for (const [i, id] of (c.beasts || []).entries()) {
     const b = (d.beastMap && d.beastMap.get(id)) || d.beasts.find((x) => x.id === id);
     if (!b) continue;
-    const ov = STAT_OVERRIDES[b.id];
+    const ov = BEAST_STAT_OVERRIDES[b.id];
+    if (!ov) continue;
     const n = overrideN(ov, rank, beastCount, beastCount);
-    const effects = ov ? overrideEffects(ov, n) : parseStatEffects(b.description || '', { n });
+    const effects = overrideEffects(ov, n);
     if (!effects.length) continue;
     addEffects(result, {
       key: `beast:${b.id}`,

@@ -5,7 +5,7 @@ import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
 import { blankChar, normChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
-import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER, STAT_OVERRIDES } from '../js/character/stats.js';
+import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER, STAT_OVERRIDES, BEAST_STAT_OVERRIDES } from '../js/character/stats.js';
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
 import * as databases from '../js/views/databases.js';
@@ -653,6 +653,34 @@ const statFormula = parseStatEffects('**+4n АТК ближним оружием
 check('статы: формула с n и условные ближний/дальний бой', statFormula.length === 2
   && statFormula.every((e) => e.stat === 'atk' && e.conditional)
   && statFormula.some((e) => e.value === 20) && statFormula.some((e) => e.value === -20));
+check('статы: все способности и мутации размечены вручную', d.abilities.every((a) => Object.hasOwn(STAT_OVERRIDES, a.id)));
+check('статы: ручные бонусы способностей и мутаций', (() => {
+  const s = collectCharacterStats({ ...blankChar(), rank: 5, abilities: ['0x014', '0x04f', '0x055', '0x056'] }, d);
+  return s.totals.defA === 15 && s.totals.flight === 3
+    && s.conditional.some((x) => x.stat === 'atk' && x.value === 30)
+    && s.conditional.some((x) => x.stat === 'atk' && x.value === 40)
+    && s.conditional.some((x) => x.stat === 'atk' && x.value === 20)
+    && s.conditional.some((x) => x.stat === 'tchn' && x.value === 15)
+    && s.conditional.some((x) => x.stat === 'ksh' && x.value === 10);
+})());
+check('статы: пустая ручная запись отключает автопарсер', collectCharacterStats({
+  ...blankChar(), rank: 5, abilities: ['0x03d', '0x03e'],
+}, d).sources.length === 0);
+check('статы: все способности зверя размечены вручную', d.beasts.every((b) => Object.hasOwn(BEAST_STAT_OVERRIDES, b.id)));
+check('статы: ручные бонусы способностей зверя', (() => {
+  const s = collectCharacterStats({
+    ...blankChar(), rank: 5, beasts: ['0x00d', '0x019', '0x020', '0x01a'],
+  }, d);
+  return s.conditional.some((x) => x.stat === 'atk' && x.value === 32)
+    && s.conditional.some((x) => x.stat === 'tchn' && x.value === 12)
+    && s.sources.some((x) => x.label === d.beasts.find((b) => b.id === '0x019').name
+      && x.effects.some((e) => e.stat === 'defP' && e.value === 60 && e.active))
+    && s.sources.some((x) => x.label === d.beasts.find((b) => b.id === '0x020').name
+      && x.effects.some((e) => e.stat === 'speed' && e.value === 3 && e.active));
+})());
+check('статы: пустая запись зверя отключает автопарсер', collectCharacterStats({
+  ...blankChar(), rank: 5, beasts: ['0x009', '0x01d'],
+}, d).sources.length === 0);
 check('статы: ручная правка способности заменяет автобонусы и задаёт n', (() => {
   const ovId = d.abilities[0].id;
   STAT_OVERRIDES[ovId] = {
