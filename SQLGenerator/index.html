@@ -284,6 +284,16 @@
       background-color: rgba(159, 18, 57, 0.7);
     }
 
+    .btn-delete {
+      background-color: rgba(190, 24, 93, 0.25);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+      color: #fda4af;
+    }
+    .btn-delete:hover:not(:disabled) {
+      background-color: rgba(190, 24, 93, 0.45);
+      color: #ffe4e6;
+    }
+
     .btn-copy {
       background-color: var(--cyber-accent);
       color: #fff;
@@ -438,6 +448,14 @@
       padding: 0 0.25rem;
       border-radius: 0.25rem;
     }
+    .tag-delete {
+      font-size: 0.625rem;
+      background-color: rgba(190, 24, 93, 0.22);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.45);
+      padding: 0 0.25rem;
+      border-radius: 0.25rem;
+    }
 
     .btn-remove-item {
       background: none;
@@ -563,6 +581,50 @@
     .editor-row-name {
       font-weight: 600;
       font-size: 0.85rem;
+    }
+    .editor-row-no {
+      display: inline-block;
+      margin-right: 0.4rem;
+      padding: 0 0.3rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.25rem;
+      background-color: var(--cyber-bg);
+      font-variant-numeric: tabular-nums;
+    }
+    .editor-pager {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.6rem;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+    .editor-pager-btn {
+      background-color: var(--cyber-card);
+      border: 1px solid var(--cyber-border);
+      border-radius: 0.375rem;
+      color: #cbd5e1;
+      font-size: 0.72rem;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+    }
+    .editor-pager-btn:hover:not(:disabled) {
+      border-color: var(--cyber-neon);
+      color: var(--cyber-neon);
+    }
+    .editor-pager-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .editor-pager-info {
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      flex: 1 1 auto;
     }
     .editor-row-id {
       font-size: 0.7rem;
@@ -713,7 +775,8 @@
               вводятся по одному на строку, JSON — как обычный JSON. Поля-справочники
               (категория, редкость, организация и т. п.) выбираются из списка, но допускают
               своё значение. Без изменений UPDATE не генерируется, а новая запись собирается
-              в INSERT.</p>
+              в INSERT. Удаление записи добавляется в пакет как DELETE и заменяет прошлую
+              запись этой же строки в пакете.</p>
           </div>
         </section>
 
@@ -725,6 +788,7 @@
             </div>
             <input type="text" id="editor-search" placeholder="Поиск по ID, названию, тегу..." />
             <div id="editor-list" class="editor-list"></div>
+            <div id="editor-pager" class="editor-pager hidden"></div>
           </section>
 
           <section class="panel editor-form-panel">
@@ -747,6 +811,10 @@
                 </button>
                 <button type="button" id="btn-editor-reset" class="btn btn-cancel">
                   <span id="btn-editor-reset-text">Сбросить изменения</span>
+                </button>
+                <button type="button" id="btn-editor-delete" class="btn btn-delete">
+                  <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  Удалить запись
                 </button>
               </div>
             </form>
@@ -987,17 +1055,20 @@
 
       // STATE
       // Database editor state
+      const EDITOR_PAGE_SIZE = 100;
       let editorSource = 'supabase';
       let editorTable = 'items';
       let editorRows = [];
       let editorSelectedIndex = -1;
       let editorMode = 'update';  // 'update' | 'insert'
       let editorSearch = '';
+      let editorPage = 1;
+      let editorEditingInsertUid = '';  // uid INSERT из пакета, если он открыт на правку
       let editorSql = '';
       let editorCache = {};       // `${source}:${table}` -> { rows, at }
       let editorSnapshotPromise = null;
       let editorLoadToken = 0;
-      let editorBatch = [];       // [{ uid, table, tableLabel, pk, pkValue, pkLiteral, label, sets, values, changed }]
+      let editorBatch = [];       // [{ uid, kind, table, tableLabel, pk, pkValue, pkLiteral, label, sets, values, changed }]
 
       // UTILS
       function escapeHtml(str) {
@@ -1029,9 +1100,11 @@
             if (Date.now() - (parsed.timestamp || 0) < CACHE_TTL_MS) {
               if (Array.isArray(parsed.editorBatch)) {
                 editorBatch = parsed.editorBatch
-                  .filter((entry) => entry && entry.table && entry.pk && (Array.isArray(entry.sets) || entry.kind === 'insert'))
+                  .filter((entry) => entry && entry.table && entry.pk && (Array.isArray(entry.sets) || entry.kind === 'insert' || entry.kind === 'delete'))
                   .map(normalizeEditorBatchEntry)
-                  .filter((entry) => (entry.kind === 'insert' ? entry.insertColumns.length > 0 : entry.sets.length > 0));
+                  .filter((entry) => (entry.kind === 'insert'
+                    ? entry.insertColumns.length > 0
+                    : entry.kind === 'delete' ? true : entry.sets.length > 0));
               }
             } else {
               localStorage.removeItem(CACHE_KEY);
@@ -1287,6 +1360,21 @@
           .includes(q));
       }
 
+      // Пагинация списка: страницы по EDITOR_PAGE_SIZE записей.
+      function renderEditorPager(total, pages, start, shownCount) {
+        const pager = document.getElementById('editor-pager');
+        if (!pager) return;
+        if (pages <= 1) {
+          pager.classList.add('hidden');
+          pager.innerHTML = '';
+          return;
+        }
+        pager.classList.remove('hidden');
+        pager.innerHTML = `<button type="button" class="editor-pager-btn" data-editor-page="prev"${editorPage <= 1 ? ' disabled' : ''}>‹ Назад</button>
+          <span class="editor-pager-info">Стр. ${editorPage} из ${pages} · записи ${start + 1}–${start + shownCount} из ${total}</span>
+          <button type="button" class="editor-pager-btn" data-editor-page="next"${editorPage >= pages ? ' disabled' : ''}>Вперёд ›</button>`;
+      }
+
       function renderEditorList() {
         const meta = editorMeta();
         const list = document.getElementById('editor-list');
@@ -1296,23 +1384,28 @@
         const rows = editorFilteredRows();
         count.textContent = editorSearch.trim() ? `${rows.length} / ${editorRows.length}` : String(editorRows.length);
 
+        const pages = Math.max(1, Math.ceil(rows.length / EDITOR_PAGE_SIZE));
+        if (editorPage > pages) editorPage = pages;
+        if (editorPage < 1) editorPage = 1;
+
         if (!editorRows.length) {
           list.innerHTML = '<div class="editor-row-empty">Записи не загружены.</div>';
+          renderEditorPager(0, 1, 0, 0);
           return;
         }
         if (!rows.length) {
           list.innerHTML = '<div class="editor-row-empty">Ничего не найдено.</div>';
+          renderEditorPager(0, 1, 0, 0);
           return;
         }
 
-        const shown = rows.slice(0, 500);
+        const start = (editorPage - 1) * EDITOR_PAGE_SIZE;
+        const shown = rows.slice(start, start + EDITOR_PAGE_SIZE);
         list.innerHTML = shown.map(({ row, index }) => `<button type="button" class="editor-row${index === editorSelectedIndex ? ' active' : ''}" data-editor-index="${index}">
-            <span class="editor-row-name">${escapeHtml(editorRowIdentity(row, meta))}</span>
+            <span class="editor-row-name"><span class="editor-row-no" title="Порядковый номер в таблице">#${index + 1}</span>${escapeHtml(editorRowIdentity(row, meta))}</span>
             <span class="editor-row-id">${escapeHtml(String(row[meta.pk] ?? ''))}</span>
-          </button>`).join('')
-          + (rows.length > shown.length
-            ? `<div class="editor-row-empty">Показаны первые ${shown.length} из ${rows.length}. Уточните поиск.</div>`
-            : '');
+          </button>`).join('');
+        renderEditorPager(rows.length, pages, start, shown.length);
       }
 
       function renderEditorForm() {
@@ -1325,11 +1418,13 @@
         const pk = document.getElementById('editor-pk');
         const submitText = document.getElementById('btn-editor-submit-text');
         const resetText = document.getElementById('btn-editor-reset-text');
+        const deleteBtn = document.getElementById('btn-editor-delete');
         const isInsert = editorMode === 'insert';
         const row = isInsert ? editorNewRow(meta) : editorRows[editorSelectedIndex];
 
         submitText.textContent = isInsert ? 'Сгенерировать INSERT' : 'Сгенерировать UPDATE';
         resetText.textContent = isInsert ? 'Отмена' : 'Сбросить изменения';
+        if (deleteBtn) deleteBtn.classList.toggle('hidden', isInsert);
 
         if (!row) {
           form.classList.add('hidden');
@@ -1360,7 +1455,11 @@
 
       function selectEditorRow(index) {
         editorMode = 'update';
+        editorEditingInsertUid = '';
         editorSelectedIndex = Number.isInteger(index) ? index : -1;
+        if (editorSelectedIndex >= 0) {
+          editorPage = Math.floor(editorSelectedIndex / EDITOR_PAGE_SIZE) + 1;
+        }
         hideEditorSql();
         editorSetStatus('');
         renderEditorList();
@@ -1369,6 +1468,7 @@
 
       function startEditorInsert() {
         editorMode = 'insert';
+        editorEditingInsertUid = '';
         editorSelectedIndex = -1;
         hideEditorSql();
         editorSetStatus(`Новая запись в таблице «${editorMeta().label}». Заполните поля и сгенерируйте INSERT.`);
@@ -1527,12 +1627,13 @@
         }
 
         const sets = Array.isArray(entry.sets) ? entry.sets.filter((set) => set && set.col && typeof set.sql === 'string') : [];
+        const kind = entry.kind === 'delete' ? 'delete' : 'update';
         const pkValue = entry.pkValue != null ? String(entry.pkValue) : '';
         return {
           ...entry,
-          kind: 'update',
-          sets,
-          changed: sets.map((set) => set.col),
+          kind,
+          sets: kind === 'delete' ? [] : sets,
+          changed: kind === 'delete' ? [] : sets.map((set) => set.col),
           values: entry.values && typeof entry.values === 'object' ? entry.values : {},
           pkValue,
           tableLabel: entry.tableLabel || (tableMeta ? tableMeta.label : entry.table),
@@ -1576,6 +1677,23 @@
         };
       }
 
+      function buildEditorDeleteEntry(row, meta) {
+        const pkValue = row[meta.pk];
+        return {
+          uid: `${editorTable}:${String(pkValue)}`,
+          kind: 'delete',
+          table: editorTable,
+          tableLabel: meta.label,
+          pk: meta.pk,
+          pkValue: String(pkValue ?? ''),
+          pkLiteral: typeof pkValue === 'number' ? String(pkValue) : sqlLiteral(pkValue, 'text'),
+          label: editorRowIdentity(row, meta),
+          sets: [],
+          values: {},
+          changed: []
+        };
+      }
+
       function editorBatchStatement(entry) {
         if (entry.kind === 'insert') {
           const tableTypes = (EDIT_TABLES[entry.table] && EDIT_TABLES[entry.table].types) || {};
@@ -1584,6 +1702,9 @@
             .map((col) => sqlLiteral(entry.insertValues[col], tableTypes[col] || 'text'))
             .join(', ');
           return `insert into ${entry.table} (${cols})\nvalues (${vals});`;
+        }
+        if (entry.kind === 'delete') {
+          return `delete from ${entry.table}\nwhere ${sqlIdent(entry.pk)} = ${entry.pkLiteral};`;
         }
         const sets = entry.sets.map((set) => `  ${sqlIdent(set.col)} = ${set.sql}`).join(',\n');
         return `update ${entry.table} set\n${sets}\nwhere ${sqlIdent(entry.pk)} = ${entry.pkLiteral};`;
@@ -1617,14 +1738,20 @@
         const activeUid = currentEditorUid();
         list.innerHTML = editorBatch.map((entry, index) => {
           const isInsert = entry.kind === 'insert';
-          const fields = entry.changed.map((col) => EDIT_LABELS[col] || col).join(', ');
+          const isDelete = entry.kind === 'delete';
+          const fields = isDelete ? 'удаление записи' : entry.changed.map((col) => EDIT_LABELS[col] || col).join(', ');
           const editing = entry.uid === activeUid;
           const where = isInsert ? 'новая запись' : `${entry.pk} = ${entry.pkValue}`;
+          const tag = isInsert
+            ? '<span class="tag-insert">INSERT</span>'
+            : isDelete
+              ? '<span class="tag-delete">DELETE</span>'
+              : '<span class="tag-update">UPDATE</span>';
           return `<div class="batch-item-card${editing ? ' editing' : ''}" data-editor-batch-open="${index}" role="button" tabindex="0">
               <div class="card-info">
                 <div class="card-title">
                   <span>${escapeHtml(entry.label)}</span>
-                  ${isInsert ? '<span class="tag-insert">INSERT</span>' : '<span class="tag-update">UPDATE</span>'}
+                  ${tag}
                   ${editing ? '<span class="tag-editing">Открыта</span>' : ''}
                 </div>
                 <div class="card-sub"><span>${escapeHtml(entry.tableLabel)}</span> • <span>${escapeHtml(where)}</span></div>
@@ -1683,11 +1810,22 @@
             return;
           }
           const entry = buildEditorInsertEntry(result);
-          editorBatch.push(entry);
+          const existing = editorEditingInsertUid
+            ? editorBatch.findIndex((item) => item.uid === editorEditingInsertUid)
+            : -1;
+          const replaced = existing >= 0;
+          if (replaced) {
+            entry.uid = editorEditingInsertUid;
+            editorBatch[existing] = entry;
+          } else {
+            editorBatch.push(entry);
+          }
           saveCache();
           hideEditorSql();
-          renderEditorForm();
-          editorSetStatus(`Добавлено в пакет: INSERT «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}.`);
+          renderEditorBatch();
+          editorSetStatus(replaced
+            ? `Обновлено в пакете: INSERT «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}.`
+            : `Добавлено в пакет: INSERT «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}. Значения сохранены — измените название и добавьте следующую запись.`);
           return;
         }
 
@@ -1711,6 +1849,28 @@
         hideEditorSql();
         renderEditorBatch();
         editorSetStatus(`${replaced ? 'Обновлено в пакете' : 'Добавлено в пакет'}: «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}.`);
+      }
+
+      // Добавляет DELETE выбранной записи. Повторное действие по той же записи
+      // заменяет прошлую запись пакета (UPDATE или DELETE).
+      function addEditorToBatchDelete() {
+        const meta = editorMeta();
+        const row = editorRows[editorSelectedIndex];
+        if (!row) {
+          editorSetStatus('Сначала выберите запись.', true);
+          return;
+        }
+
+        const entry = buildEditorDeleteEntry(row, meta);
+        const existing = editorBatch.findIndex((item) => item.uid === entry.uid);
+        const replaced = existing >= 0;
+        if (replaced) editorBatch[existing] = entry;
+        else editorBatch.push(entry);
+
+        saveCache();
+        hideEditorSql();
+        renderEditorBatch();
+        editorSetStatus(`${replaced ? 'Обновлено в пакете' : 'Добавлено в пакет'}: DELETE «${entry.label}». Всего: ${editorRecordsLabel(editorBatch.length)}.`);
       }
 
       function removeEditorBatchItem(index) {
@@ -1759,10 +1919,11 @@
 
         if (entry.kind === 'insert') {
           startEditorInsert();
+          editorEditingInsertUid = entry.uid;
           for (const [col, value] of Object.entries(entry.values || {})) {
             setEditorFieldValue(col, value);
           }
-          editorSetStatus(`Открыта запись из пакета: INSERT «${entry.label}». Полей — ${entry.changed.length}.`);
+          editorSetStatus(`Открыта запись из пакета: INSERT «${entry.label}». Повторное добавление обновит её.`);
           return;
         }
 
@@ -1770,6 +1931,12 @@
         const rowIndex = editorRows.findIndex((row) => `${editorTable}:${String(row[meta.pk])}` === entry.uid);
         if (rowIndex < 0) {
           editorSetStatus('Запись из пакета не найдена в загруженной таблице.', true);
+          return;
+        }
+
+        if (entry.kind === 'delete') {
+          selectEditorRow(rowIndex);
+          editorSetStatus(`Запись из пакета: DELETE «${entry.label}». «Добавить в пакет» заменит удаление на UPDATE.`);
           return;
         }
 
@@ -1826,6 +1993,7 @@
         const cached = editorCache[cacheKey];
         const loadBtn = document.getElementById('btn-editor-load');
         const token = ++editorLoadToken;
+        editorPage = 1;
 
         if (!force && cached) {
           editorRows = cached.rows;
@@ -1919,6 +2087,8 @@
         editorTableSelect.addEventListener('change', () => {
           editorTable = editorTableSelect.value;
           editorSelectedIndex = -1;
+          editorEditingInsertUid = '';
+          editorPage = 1;
           editorSearch = '';
           document.getElementById('editor-search').value = '';
           hideEditorSql();
@@ -1928,6 +2098,8 @@
         document.getElementById('editor-source').addEventListener('change', (e) => {
           editorSource = e.target.value;
           editorSelectedIndex = -1;
+          editorEditingInsertUid = '';
+          editorPage = 1;
           hideEditorSql();
           loadEditorTable();
         });
@@ -1937,6 +2109,7 @@
 
         document.getElementById('editor-search').addEventListener('input', (e) => {
           editorSearch = e.target.value;
+          editorPage = 1;
           renderEditorList();
         });
 
@@ -1944,6 +2117,14 @@
           const btn = e.target.closest('[data-editor-index]');
           if (!btn) return;
           selectEditorRow(Number(btn.dataset.editorIndex));
+        });
+
+        document.getElementById('editor-pager').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-editor-page]');
+          if (!btn || btn.disabled) return;
+          editorPage += btn.dataset.editorPage === 'next' ? 1 : -1;
+          renderEditorList();
+          document.getElementById('editor-list').scrollTop = 0;
         });
 
         document.getElementById('editor-form').addEventListener('submit', (e) => {
@@ -1983,6 +2164,7 @@
           hideEditorSql();
           if (editorMode === 'insert') {
             editorMode = 'update';
+            editorEditingInsertUid = '';
             editorSelectedIndex = -1;
             renderEditorList();
             renderEditorForm();
@@ -1992,6 +2174,8 @@
           renderEditorForm();
           editorSetStatus('Изменения сброшены.');
         });
+
+        document.getElementById('btn-editor-delete').addEventListener('click', addEditorToBatchDelete);
 
         document.getElementById('btn-editor-copy').addEventListener('click', () => {
           handleCopy(editorSql, 'txt-editor-copy');
