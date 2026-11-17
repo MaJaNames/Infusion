@@ -285,6 +285,18 @@ pre {
 
 .custom-immunity input { min-width: 0; }
 
+.custom-weakness {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    min-width: 240px;
+}
+
+.custom-weakness input { min-width: 0; }
+
+.effect-chip.weakness-chip .mini-cost { color: var(--ok-color); }
+.weakness-chip.active { border-color: var(--ok-color); background: rgba(16, 185, 129, 0.1); }
+
 .immunity-group { margin-bottom: 10px; }
 .immunity-group:last-child { margin-bottom: 0; }
 
@@ -763,6 +775,7 @@ pre {
 .passive-chip { color: #93c5fd; border-color: rgba(59, 130, 246, 0.35); }
 .immunity-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 .immunity-chip-out { color: #86efac; border-color: rgba(16, 185, 129, 0.35); }
+.weakness-chip-out { color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
 
 .notes-block {
     margin-top: 14px;
@@ -922,6 +935,7 @@ pre {
     .sheet-budget { flex-wrap: wrap; }
     .sheet-budget-label { width: 100%; }
     .custom-immunity { flex-wrap: wrap; }
+    .custom-weakness { flex-wrap: wrap; }
     .output-card pre { font-size: 0.8rem; }
 }
 

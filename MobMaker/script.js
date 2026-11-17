@@ -3,112 +3,71 @@ const ATTRIBUTES = [
     "Восприятие", "Техника", "Удача", "Телосложение"
 ];
 
-const DAMAGE_TYPES_INFO = {
-    "Кинетический": { desc: "Стандартный физический урон.", mult: 1.0 },
-    "Термический": { desc: "Урон от высокой температуры. [Элементальный]", mult: 1.1 },
-    "Химический": { desc: "Урон от ирритантов и высокоактивных веществ.", mult: 1.1 },
-    "Кронотический": { desc: "Урон от чистой кронотической энергии.", mult: 1.2 },
-    "Криотический": { desc: "Урон от низких температур. [Элементальный]", mult: 1.1 },
-    "Гидравлический": { desc: "Урон от потока воды. [Элементальный]", mult: 1.1 },
-    "Электрический": { desc: "Урон от направленного потока электронов. [Элементальный]", mult: 1.1 },
-    "Псионический": { desc: "Урон от пси-излучения.", mult: 1.2 },
-    "Хронотопический": { desc: "Урон от искажений во времени.", mult: 1.3 },
-    "Радиоактивный": { desc: "Урон от радиоактивного излучения.", mult: 1.2 },
-    "Психический": { desc: "Защита только Волей/Интеллектом. Уклонение недоступно. Наносится через Испытание.", mult: 1.5 },
-    "Чистый урон": { desc: "Игнорирует Деф(П), Деф(А) и Уклонение.", mult: 2.0 }
-};
+// Все коэффициенты и справочники баланса лежат в balance.js (объект BALANCE).
+// Здесь только короткие псевдонимы, чтобы формулы в этом файле читались компактно.
+// Меняете числа — только в balance.js.
+if (!window.BALANCE) {
+    throw new Error("balance.js не загружен: подключите его перед script.js.");
+}
+const BAL = window.BALANCE;
 
-const ATTACK_TYPES = {
-    "Ближняя": { icon: "⚔", desc: "Контактный бой. Огромная цена за дальность (х300 за ОП).", mult: 0.8 },
-    "Дальняя": { icon: "➤", desc: "Стрелковая атака. Цена скейлится от диапазона ОП и дальности > 7 ОП.", mult: 1.0 },
-    "Особая": { icon: "⚡", desc: "Нестандартные действия (конусы, площадки, спавн поверхностей, х100 за ОП).", mult: 1.1 }
-};
+const DAMAGE_TYPES_INFO = BAL.damageTypes;
+const ATTACK_TYPES = BAL.attackTypes;
+const EFFECT_GROUPS = BAL.effectGroups;
+const PASSIVE_EFFECTS = BAL.passives.items;
 
-const EFFECT_GROUPS = [
-    {
-        level: 1,
-        title: "Эффекты атак (Пробитие и Урон)",
-        css: "p5-bg",
-        items: [
-            { name: "Проницаемость", desc: "Атака игнорирует Деф. Базовая ВЕР 20.", defN: 1, defVer: 20, defAkt: 1, baseCost: 600, step: 1, hideN: true, hideAkt: true, isPermanent: true, linearVer: true },
-            { name: "Распад", desc: "Снимает n ОЗ НАВСЕГДА.", defN: 5, defVer: 50, defAkt: 1, baseCost: 15, step: 1, hideAkt: true, isPermanent: true },
-            { name: "Излучение", desc: "УКЛ от атак с этим эффектом бросается с помехой.", defN: 1, defVer: 50, defAkt: 1, baseCost: 200, step: 1, hideN: true, hideAkt: true, isPermanent: true },
-        ]
-    },
-    {
-        level: 2,
-        title: "Числовые эффекты (DoT и Истощение)",
-        css: "p2-bg",
-        items: [
-            { name: "Кровотечение", desc: "В конце хода персонаж теряет n ОЗ. 25 на снятие.", defN: 25, defVer: 50, defAkt: 3, baseCost: 2, step: 25 },
-            { name: "Увядание", desc: "Пока действует, каждый ход снимает n ОЗ. 10 на снятие.", defN: 15, defVer: 50, defAkt: 3, baseCost: 15, step: 15 },
-            { name: "Отравление", desc: "Снижает броски на 10n каждый ход.", defN: 1, defVer: 50, defAkt: 3, baseCost: 120, step: 1 },
-            { name: "Ожог", desc: "Штраф -10 к броскам. В голову х2. Суммируется.", defN: 1, defVer: 50, defAkt: 2, baseCost: 40, step: 1 },
-            { name: "Шок", desc: "Отключает случайный имплант. Снимается по 1.", defN: 1, defVer: 50, defAkt: 2, baseCost: 100, step: 1 }
-        ]
-    },
-    {
-        level: 3,
-        title: "Контроль (Запрет и Ограничение)",
-        css: "p1-bg",
-        items: [
-            { name: "Кома", desc: "Лишает противника всех ОЗ при срабатывании.", defN: 1, defVer: 50, defAkt: 1, baseCost: 3500, step: 1, hideN: true, hideAkt: true, isPermanent: true },
-            { name: "Оцепенение", desc: "Персонаж не способен совершать никаких действий.", defN: 1, defVer: 50, defAkt: 1, baseCost: 180, step: 1 },
-            { name: "Сон", desc: "Выключает цель до пробуждения.", defN: 1, defVer: 50, defAkt: 2, baseCost: 100, step: 1 },
-            { name: "Дезориентация", desc: "Персонаж не способен атаковать n ходов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 120, step: 1 },
-            { name: "Замедление", desc: "Основное действие тратит n действий.", defN: 1, defVer: 50, defAkt: 1, baseCost: 150, step: 1 },
-            { name: "Обездвижен", desc: "Не может перемещаться и уклоняться.", defN: 1, defVer: 50, defAkt: 1, baseCost: 60, step: 1 },
-            { name: "Упал", desc: "Помеха себе, преимущество врагам. Подъем - действие.", defN: 1, defVer: 50, defAkt: 1, baseCost: 120, step: 1 },
-            { name: "Сложная местность", desc: "Тратится на n ОП больше на передвижение.", defN: 1, defVer: 50, defAkt: 1, baseCost: 30, step: 1 }
-        ]
-    },
-    {
-        level: 4,
-        title: "Ослабление (Штрафы и уязвимости)",
-        css: "p3-bg",
-        items: [
-            { name: "Перелом", desc: "Не может блокировать и использовать Тяжелое.", defN: 1, defVer: 50, defAkt: 3, baseCost: 70, step: 1 },
-            { name: "Подавлен", desc: "Персонаж не может пользоваться навыками и способностями.", defN: 1, defVer: 50, defAkt: 2, baseCost: 50, step: 1 },
-            { name: "Обезоружен", desc: "Не может использовать оружие n ходов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 80, step: 1 },
-            { name: "Слепота", desc: "Боевые действия только через Удачу без модификаторов.", defN: 1, defVer: 50, defAkt: 1, baseCost: 100, step: 1 },
-            { name: "Страх", desc: "В конце хода проверка Воля/2 >= 50, иначе атаки не засчитываются.", defN: 1, defVer: 50, defAkt: 2, baseCost: 90, step: 1 },
-            { name: "Мокрый", desc: "Дает Сложную Местность. Продлевает крио-обездвижен.", defN: 1, defVer: 50, defAkt: 2, baseCost: 20, step: 1 }
-        ]
-    },
-    {
-        level: 5,
-        title: "Свойства оружия / Предметов",
-        css: "p4-bg",
-        items: [
-            { name: "Электромагнитное", desc: "Наносит дополнительно n АТК технике.", defN: 10, defVer: 50, defAkt: 1, baseCost: 15, step: 5, isItemProperty: true, hideVer: true, hideAkt: true },
-            { name: "Автоматическое", desc: "Оружие, способное вести огонь на подавление.", defN: 1, defVer: 50, defAkt: 1, baseCost: 150, step: 1, isItemProperty: true, hideN: true, hideVer: true, hideAkt: true },
-            { name: "Нелетальное", desc: "Опускание ОЗ до нуля не убивает персонажа.", defN: 1, defVer: 50, defAkt: 1, baseCost: 5, step: 1, isItemProperty: true, hideN: true, hideVer: true, hideAkt: true },
-            { name: "Рикошет", desc: "При атаке есть ВЕР, что пуля отскочит в другого противника (макс 2 ОП). Урон такой же.", defN: 1, defVer: 30, defAkt: 1, baseCost: 80, step: 1, isItemProperty: true, hideN: true, hideAkt: true },
-            { name: "Взрывчатое", desc: "Наносит урон по области n ОП вокруг цели.", defN: 1, defVer: 50, defAkt: 1, baseCost: 250, step: 1, isItemProperty: true, hideVer: true, hideAkt: true },
-            { name: "Граната", desc: "Атака совершается от Техники. n - количество гранат. Не имеет ТЧН и КШ.", defN: 1, defVer: 50, defAkt: 1, baseCost: 30, step: 1, isItemProperty: true, hideVer: true, hideAkt: true },
-            { name: "Без урона", desc: "Не наносит урон при применении. Обнуляет АТК, КШ, ТЧН.", defN: 1, defVer: 50, defAkt: 1, baseCost: 0, step: 1, isItemProperty: true, hideN: true, hideVer: true, hideAkt: true }
-        ]
-    }
-];
+const DAMAGE_WEAKNESS_POINTS = BAL.weaknesses.damagePoints;
+const BODY_PART_WEAKNESSES = BAL.weaknesses.bodyParts;
+const CUSTOM_WEAKNESS_POINTS = BAL.weaknesses.customPoints;
 
-const PASSIVE_EFFECTS = [
-    { name: "Конструкт", desc: "Иммунитет к кровотечению, страху, сну и т.д. Уязвим к ЭМИ.", baseCost: 100 },
-    { name: "Невидимость", desc: "Персонаж не может быть замечен без указанного броска ВОСПР.", baseCost: 150 }
-];
+// Бюджеты, тиры и типы мобов.
+const BUDGETS = BAL.budgets;
+
+// Цена базовых характеристик и защит.
+const STAT_COSTS = BAL.stats;
+
+// Цена атак и эффектов.
+const ATTACK_COSTS = BAL.attacks;
+const ATTACK_ATK_COST = ATTACK_COSTS.localAtkCost;
+const ATTACK_KS_COST = ATTACK_COSTS.localKsCost;
+const ATTACK_TCHN_COST = ATTACK_COSTS.localTchnCost;
+const GLOBAL_AVH_BASE = ATTACK_COSTS.globalAvhBase;
+const GLOBAL_KC_BASE = ATTACK_COSTS.globalKcBase;
+const AVH_STEP_COST = ATTACK_COSTS.repetition.avhStep;
+const KC_STEP_COST = ATTACK_COSTS.repetition.kcStep;
+const OD_LINEAR_COST = ATTACK_COSTS.repetition.odLinear;
+const OD_QUAD_COST = ATTACK_COSTS.repetition.odQuad;
+const IGNORE_DEF_COST = ATTACK_COSTS.ignoreDefCost;
+const IGNORE_UKL_COST = ATTACK_COSTS.ignoreUklCost;
+const PERMANENT_MULT = ATTACK_COSTS.permanentMultiplier;
+const INFINITE_MULT = ATTACK_COSTS.infiniteMultiplier;
+const ATTACK_THRESHOLDS = ATTACK_COSTS.thresholds;
+const CURVE_DIVISOR = ATTACK_COSTS.curveDivisor;
+const STAT_COST_FACTOR = ATTACK_COSTS.statCostFactor;
+const GLOBAL_COST_FACTOR = ATTACK_COSTS.globalCostFactor;
+const DISTANCE_COSTS = ATTACK_COSTS.distance;
+const EFFECT_FORMULA = ATTACK_COSTS.effect;
+
+// Резисты.
+const IMMUNITY_BALANCE = BAL.immunities;
+const CUSTOM_IMMUNITY_COST_100 = IMMUNITY_BALANCE.customCost100;
+
+// Калькулятор урона.
+const CALC_BALANCE = BAL.calculator;
 
 function getBaseResistCost100(item) {
     const stepMult = item.step ? ((item.defN || 1) / item.step) : 1;
-    const verFactor50 = Math.pow(50 / 30, 1.6); 
+    const verFactor50 = Math.pow(IMMUNITY_BALANCE.defaultVer / EFFECT_FORMULA.verBase, EFFECT_FORMULA.verExponent);
     const aktMult = Math.max(1, item.defAkt || 1);
-    const baselineInflictCost = (item.baseCost || 50) * stepMult * verFactor50 * aktMult * 2.0;
-    return Math.max(250, Math.round(baselineInflictCost * 2.5));
+    const baselineInflictCost = (item.baseCost || IMMUNITY_BALANCE.defaultEffectBaseCost) * stepMult * verFactor50 * aktMult * IMMUNITY_BALANCE.inflictMultiplier;
+    return Math.max(IMMUNITY_BALANCE.baseResistMinCost100, Math.round(baselineInflictCost * IMMUNITY_BALANCE.resistMultiplier));
 }
 
 const IMMUNITY_GROUPS = [
     {
         title: "Игноры эффектов Атак",
         css: "p4-bg",
-        items: EFFECT_GROUPS.flatMap(group => 
+        items: EFFECT_GROUPS.flatMap(group =>
             group.items
                 // Сначала отсеиваем "Кому" и свойства оружия
                 .filter(item => item.name !== "Кома" && !item.isItemProperty)
@@ -138,24 +97,9 @@ const TIER_RENAME = {
     "Смерть": "Смерть"
 };
 
-const GLOBAL_ATK_COST = 4.0;
-const GLOBAL_KS_COST = 5.0;
-const GLOBAL_TCHN_COST = 3.0;
-const GLOBAL_AVH_BASE = 200;
-const GLOBAL_KC_BASE = 250;
-
-const ATTACK_ATK_COST = 1.5;
-const ATTACK_KS_COST = 2.0;
-const ATTACK_TCHN_COST = 1.0;
-
-const IGNORE_DEF_COST = 4.0;
-const IGNORE_UKL_COST = 3.0;
-const PERMANENT_MULT = 3.0;
-const INFINITE_MULT = 5.0;
-const CUSTOM_IMMUNITY_COST_100 = 2750;
-
 let attacks = [];
 let passiveEffects = {};
+let weaknesses = {};
 let immunities = {};
 let nextAttackId = 1;
 let lastOutputText = "";
@@ -191,6 +135,7 @@ function init() {
     // 1. Готовим пустые контейнеры
     renderAttributes();
     renderPassiveEffects();
+    renderWeaknesses();
     renderImmunities();
 
     // 2. Загружаем сохранения из LocalStorage
@@ -220,11 +165,7 @@ function init() {
 
 function createAttack(partial = {}) {
     const id = nextAttackId++;
-    const base = {
-        id, name: "Атака", type: "Ближняя", distMin: 0, distMax: 0,
-        damageType: "Кинетический", atk: 70, ks: 10, tchn: 25, avh: 2, kc: 1,
-        ignDef: 0, ignUkl: 0, effects: {}
-    };
+    const base = { id, name: "Атака", ...ATTACK_COSTS.defaults, effects: {} };
     const attack = Object.assign(base, partial, { id });
     attack.effects = {};
     Object.keys(partial.effects || {}).forEach(name => {
@@ -389,7 +330,7 @@ function renderImmunitySettings() {
         <label style="color: var(--accent); margin-bottom: 6px;">Настройка выбранных резистов</label>
         ${names.map(name => {
             const item = immunities[name];
-            const ver = item.ver ?? 50;
+            const ver = item.ver ?? IMMUNITY_BALANCE.defaultVer;
             const cost = immunityEffectiveCost(item);
             return `
                 <div class="immunity-settings-row">
@@ -422,7 +363,7 @@ function toggleImmunity(name, isChecked) {
         const item = findImmunity(name);
         immunities[name] = {
             name, cost100: item ? item.cost100 : CUSTOM_IMMUNITY_COST_100,
-            desc: item ? item.desc : "Пользовательский резист.", ver: 50
+            desc: item ? item.desc : "Пользовательский резист.", ver: IMMUNITY_BALANCE.defaultVer
         };
     } else { delete immunities[name]; }
     renderImmunities();
@@ -446,14 +387,14 @@ function removeImmunity(name) { delete immunities[name]; renderImmunities(); rec
 
 function immunityEffectiveCost(item) {
     const base100 = item.cost100 || CUSTOM_IMMUNITY_COST_100;
-    const ver = Math.min(100, Math.max(1, item.ver ?? 50));
-    return Math.max(50, Math.round(base100 * Math.pow(ver / 100, 0.8)));
+    const ver = Math.min(100, Math.max(1, item.ver ?? IMMUNITY_BALANCE.defaultVer));
+    return Math.max(IMMUNITY_BALANCE.effectiveMinCost, Math.round(base100 * Math.pow(ver / 100, IMMUNITY_BALANCE.effectiveExponent)));
 }
 
 function immunityLabel(name) {
     const item = immunities[name];
     if (!item) return name;
-    const ver = item.ver ?? 50;
+    const ver = item.ver ?? IMMUNITY_BALANCE.defaultVer;
     return ver >= 100 ? `${name} (Иммунитет 100%)` : `${name} (ВЕР ${ver}% · ${diceThresholdText(ver)})`;
 }
 
@@ -462,7 +403,7 @@ function addCustomImmunity() {
     const name = input.value.trim();
     if (!name) return;
     if (!immunities[name]) {
-        immunities[name] = { name, cost100: CUSTOM_IMMUNITY_COST_100, desc: "Пользовательский резист.", ver: 50 };
+        immunities[name] = { name, cost100: CUSTOM_IMMUNITY_COST_100, desc: "Пользовательский резист.", ver: IMMUNITY_BALANCE.defaultVer };
     }
     input.value = "";
     renderImmunities();
@@ -508,7 +449,127 @@ function togglePassiveEffect(name, isChecked) {
     recalcStats();
 }
 
-function passiveCost(item) { return Math.round((item.baseCost || 0) * 2.5); }
+function passiveCost(item) { return Math.round((item.baseCost || 0) * BAL.passives.costMultiplier); }
+
+// Слабости моба: дают бюджет, но делают его уязвимым.
+function damageWeaknessItems() {
+    return Object.keys(DAMAGE_TYPES_INFO).map(name => ({
+        name,
+        desc: DAMAGE_TYPES_INFO[name].desc,
+        points: DAMAGE_WEAKNESS_POINTS[name] ?? CUSTOM_WEAKNESS_POINTS
+    }));
+}
+
+function findWeakness(name) {
+    const damage = damageWeaknessItems().find(item => item.name === name);
+    if (damage) return { ...damage, kind: "damage" };
+    const body = BODY_PART_WEAKNESSES.find(item => item.name === name);
+    if (body) return { ...body, kind: "body" };
+    return null;
+}
+
+function weaknessLabel(item) {
+    return `${item.name}`;
+}
+
+function weaknessPoints(item) {
+    const known = findWeakness(item.name);
+    return known ? known.points : Math.max(0, Number(item.points) || CUSTOM_WEAKNESS_POINTS);
+}
+
+function calculateWeaknessBonus() {
+    return Object.values(weaknesses).reduce((sum, item) => sum + weaknessPoints(item), 0);
+}
+
+function updateWeaknessCostNote() {
+    const note = document.getElementById("weaknessCostNote");
+    if (!note) return;
+    const bonus = calculateWeaknessBonus();
+    note.textContent = bonus > 0
+        ? `Слабости дают +${bonus} оч. бюджета`
+        : "Выберите слабости, чтобы получить дополнительные очки бюджета";
+}
+
+function renderWeaknessChip(item) {
+    const active = !!weaknesses[item.name];
+    return `
+        <div class="effect-chip weakness-chip ${active ? "active" : ""}" onclick="toggleWeaknessChip(event, ${jsAttr(item.name)})">
+            <div class="effect-top">
+                <span>${esc(item.name)}</span>
+                <input type="checkbox" ${active ? "checked" : ""} onchange="toggleWeakness(${jsAttr(item.name)}, this.checked)">
+            </div>
+            <div class="effect-desc">${esc(item.desc)}</div>
+            <!-- <div class="mini-cost">+${weaknessPoints(item)} оч.</div> -->
+        </div>
+    `;
+}
+
+function renderWeaknesses() {
+    const catalog = document.getElementById("weaknessCatalog");
+    if (!catalog) return;
+
+    const custom = Object.values(weaknesses).filter(item => item.kind === "custom");
+    catalog.innerHTML = `
+        <div class="priority-block">
+            <div class="priority-header p3-bg">Слабости к типам урона</div>
+            <div class="effects-grid">${damageWeaknessItems().map(renderWeaknessChip).join("")}</div>
+        </div>
+        <div class="priority-block">
+            <div class="priority-header p2-bg">Слабости к частям тела</div>
+            <div class="effects-grid">${BODY_PART_WEAKNESSES.map(renderWeaknessChip).join("")}</div>
+        </div>
+        <div class="priority-block">
+            <div class="priority-header p4-bg">Свои слабости</div>
+            <div class="block-head">
+                <label>Своя слабость <span class="hint">+${CUSTOM_WEAKNESS_POINTS} оч.</span></label>
+                <div class="custom-weakness">
+                    <input type="text" id="customWeaknessInput" placeholder="Например, уязвимость к огню" onkeydown="if(event.key==='Enter') addCustomWeakness()">
+                    <button type="button" class="btn btn-small btn-outline" onclick="addCustomWeakness()">+</button>
+                </div>
+            </div>
+            ${custom.length
+                ? `<div class="effects-grid">${custom.map(renderWeaknessChip).join("")}</div>`
+                : '<div class="empty-effects">Своих слабостей нет.</div>'}
+        </div>
+        <div class="cost-note" id="weaknessCostNote"></div>
+    `;
+    updateWeaknessCostNote();
+}
+
+function toggleWeaknessChip(event, name) {
+    if (event.target.tagName === "INPUT") return;
+    const chip = event.currentTarget;
+    const cb = chip.querySelector('input[type="checkbox"]');
+    cb.checked = !cb.checked;
+    toggleWeakness(name, cb.checked);
+}
+
+function toggleWeakness(name, isChecked) {
+    if (isChecked) {
+        const item = findWeakness(name);
+        weaknesses[name] = item
+            ? { name, points: item.points, kind: item.kind, desc: item.desc }
+            : { name, points: CUSTOM_WEAKNESS_POINTS, kind: "custom", desc: "Пользовательская слабость." };
+    } else { delete weaknesses[name]; }
+    renderWeaknesses();
+    recalcStats();
+}
+
+function addCustomWeakness() {
+    const input = document.getElementById("customWeaknessInput");
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) return;
+    if (!weaknesses[name]) {
+        const item = findWeakness(name);
+        weaknesses[name] = item
+            ? { name, points: item.points, kind: item.kind, desc: item.desc }
+            : { name, points: CUSTOM_WEAKNESS_POINTS, kind: "custom", desc: "Пользовательская слабость." };
+    }
+    input.value = "";
+    renderWeaknesses();
+    recalcStats();
+}
 
 function toggleAllAttacks() {
     const detailsList = document.querySelectorAll('.attack-effects');
@@ -614,7 +675,7 @@ function renderAttackEditor(attack, index, wasOpen = null) {
 
             <div class="grid-4">
                 <div>
-                    <label>АВХ (атак)</label>
+                    <label title="Каждый дополнительный удар: +80% к стоимости атаки">АВХ (атак)</label>
                     <input type="number" data-field="avh" value="${attack.avh}" min="1" step="1"
                         oninput="updateAttackField(${attack.id}, 'avh', this.value)">
                 </div>
@@ -624,7 +685,7 @@ function renderAttackEditor(attack, index, wasOpen = null) {
                         oninput="updateAttackField(${attack.id}, 'ks', this.value)">
                 </div>
                 <div style="${hasNoDamage || hasGrenade ? 'display: none;' : ''}">
-                    <label>КЦ (целей)</label>
+                    <label title="Каждая дополнительная цель: +30% к стоимости атаки (доп. цели ситуативны)">КЦ (целей)</label>
                     <input type="number" data-field="kc" value="${attack.kc}" min="1" step="1"
                         oninput="updateAttackField(${attack.id}, 'kc', this.value)">
                 </div>
@@ -828,15 +889,7 @@ function updateAttackField(attackId, field, value) {
 function addAttack() {
     attacks.push(createAttack({
         name: `Атака ${attacks.length + 1}`,
-        type: "Ближняя",
-        distMin: 0,
-        distMax: 0,
-        damageType: "Кинетический",
-        atk: 0,
-        ks: 0,
-        tchn: 0,
-        avh: 1,
-        kc: 1
+        ...ATTACK_COSTS.newAttack
     }));
     renderAttacks();
     recalcStats();
@@ -871,25 +924,46 @@ function moveAttack(attackId, delta) {
     recalcStats();
 }
 
-function attackCostMultiplier(attack) {
+function avhCostFactor(avh) {
+    return 1 + Math.max(0, (Number(avh) || 1) - 1) * AVH_STEP_COST;
+}
+
+function kcCostFactor(kc) {
+    return 1 + Math.max(0, (Number(kc) || 1) - 1) * KC_STEP_COST;
+}
+
+function odCostFactor(od) {
+    const extra = Math.max(0, (Number(od) || 1) - 1);
+    return 1 + extra * OD_LINEAR_COST + extra * extra * OD_QUAD_COST;
+}
+
+function attackCostBreakdown(attack) {
     const global = getGlobalStats();
     const hasNoDamage = !!attack.effects["Без урона"];
     const hasGrenade = !!attack.effects["Граната"];
-    
-    // Базовые значения атаки (с защитой от пустых строк)
-    const baseAvh = Number(attack.avh) || 1;
-    const baseKc = Number(attack.kc) || 1;
-    
-    // Считаем ИТОГОВЫЕ значения с учетом глобальных бонусов
-    const totalAvh = baseAvh + global.avh;
-    
+
+    // Итоговые значения с учётом глобальных бонусов.
+    const totalAvh = (Number(attack.avh) || 1) + global.avh;
+
     // У Гранаты и Без урона КЦ всегда 1. В остальных случаях — локальный + глобальный.
-    const totalKc = (hasNoDamage || hasGrenade) ? 1 : (baseKc + global.kc);
-    
-    const od = readNum("statOd", 1) || 1;
-    
-    // Умножаем на итоговые АВХ и КЦ
-    return Math.max(1, totalAvh * totalKc * od * getDamageMult(attack.damageType)) * attackTypeMult(attack.type);
+    const totalKc = (hasNoDamage || hasGrenade) ? 1 : ((Number(attack.kc) || 1) + global.kc);
+
+    const od = Math.max(1, readNum("statOd", 1) || 1);
+
+    const avh = avhCostFactor(totalAvh);
+    const kc = kcCostFactor(totalKc);
+    const odFactor = odCostFactor(od);
+    const damage = getDamageMult(attack.damageType);
+    const type = attackTypeMult(attack.type);
+
+    return {
+        avh, kc, od: odFactor, damage, type,
+        total: Math.max(1, avh * kc * odFactor * damage) * type
+    };
+}
+
+function attackCostMultiplier(attack) {
+    return attackCostBreakdown(attack).total;
 }
 
 function attackDistanceCost(attack) {
@@ -897,14 +971,14 @@ function attackDistanceCost(attack) {
     const maxD = Math.max(minD, Number(attack.distMax) || 0);
     const span = maxD - minD;
 
-    if (attack.type === "Ближняя") { return Math.round(maxD * 300); }
+    if (attack.type === "Ближняя") { return Math.round(maxD * DISTANCE_COSTS.meleePerOp); }
     else if (attack.type === "Дальняя") {
-        let cost = span * 100;
-        if (maxD > 7) cost += (maxD - 7) * 50;
-        if (maxD > 17) cost += (maxD - 17) * 250;
-        if (minD === 0 && maxD >= 5) cost += 150;
+        let cost = span * DISTANCE_COSTS.rangedSpanPerOp;
+        if (maxD > DISTANCE_COSTS.rangedFarThreshold) cost += (maxD - DISTANCE_COSTS.rangedFarThreshold) * DISTANCE_COSTS.rangedOver7PerOp;
+        if (maxD > DISTANCE_COSTS.rangedVeryFarThreshold) cost += (maxD - DISTANCE_COSTS.rangedVeryFarThreshold) * DISTANCE_COSTS.rangedOver17PerOp;
+        if (minD === 0 && maxD >= DISTANCE_COSTS.rangedShortMax) cost += DISTANCE_COSTS.rangedShortBonus;
         return Math.round(cost);
-    } else { return Math.round(span * 100); }
+    } else { return Math.round(span * DISTANCE_COSTS.specialSpanPerOp); }
 }
 
 // Функция прогрессивной стоимости (кривой)
@@ -915,7 +989,7 @@ function calcCurvedCost(value, baseCost, threshold = 0) {
     const penaltyValue = Math.max(0, value - threshold);
     
     // Квадратичный штраф применяется ТОЛЬКО к превышению
-    return Math.round((value + (penaltyValue * penaltyValue) / 40) * baseCost);
+    return Math.round((value + (penaltyValue * penaltyValue) / CURVE_DIVISOR) * baseCost);
 }
 
 function calculateAttackStatCost(attack) {
@@ -927,16 +1001,16 @@ function calculateAttackStatCost(attack) {
     const ks = (hasNoDamage || hasGrenade) ? 0 : attack.ks;
     const tchn = hasGrenade ? 0 : attack.tchn;
 
-    // Пороги 50, 10, 25.
+    // Пороги из balance.js.
     const statCost = Math.max(0, 
-        calcCurvedCost(atk, ATTACK_ATK_COST, 50) + 
-        calcCurvedCost(ks, ATTACK_KS_COST, 10) + 
-        calcCurvedCost(tchn, ATTACK_TCHN_COST, 25)
+        calcCurvedCost(atk, ATTACK_ATK_COST, ATTACK_THRESHOLDS.localAtk) + 
+        calcCurvedCost(ks, ATTACK_KS_COST, ATTACK_THRESHOLDS.localKs) + 
+        calcCurvedCost(tchn, ATTACK_TCHN_COST, ATTACK_THRESHOLDS.localTchn)
     );
     
     const ignDefCost = (Number(attack.ignDef) || 0) * IGNORE_DEF_COST;
     const ignUklCost = (Number(attack.ignUkl) || 0) * IGNORE_UKL_COST;
-    return Math.round((statCost + ignDefCost + ignUklCost) * (2 * mult) + attackDistanceCost(attack));
+    return Math.round((statCost + ignDefCost + ignUklCost) * (STAT_COST_FACTOR * mult) + attackDistanceCost(attack));
 }
 
 function calculateGlobalAttackStatCost() {
@@ -953,12 +1027,12 @@ function calculateGlobalAttackStatCost() {
         const gTchn = hasGrenade ? 0 : global.tchn;
         // Порог 30 для АТК.
         const statCost = Math.max(0, 
-            calcCurvedCost(gAtk, ATTACK_ATK_COST, 30) + 
+            calcCurvedCost(gAtk, ATTACK_ATK_COST, ATTACK_THRESHOLDS.globalAtk) + 
             calcCurvedCost(gKs, ATTACK_KS_COST, 0) + 
             calcCurvedCost(gTchn, ATTACK_TCHN_COST, 0)
         );
         
-        totalEquivalentCost += statCost * (2 * mult);
+        totalEquivalentCost += statCost * (STAT_COST_FACTOR * mult);
         
         totalEquivalentCost += Math.max(0, global.avh) * GLOBAL_AVH_BASE;
         if (!hasNoDamage && !hasGrenade) {
@@ -966,7 +1040,7 @@ function calculateGlobalAttackStatCost() {
         }
     });
     
-    const finalCost = totalEquivalentCost * 0.85;
+    const finalCost = totalEquivalentCost * GLOBAL_COST_FACTOR;
     return Math.round(finalCost);
 }
 
@@ -979,10 +1053,10 @@ function calculateAttackEffectCost(attack, name) {
     // Если у эффекта включен флаг linearVer, используем чистую линейку
     if (eff.linearVer) {
         // Начинается с 0.5 (50%) и растет до 1.0 (100%)
-        verFactor = 0.5 + (eff.ver / 200); 
-    } else if (eff.ver > 30) {
+        verFactor = EFFECT_FORMULA.linearVerStart + (eff.ver / EFFECT_FORMULA.linearVerDivisor); 
+    } else if (eff.ver > EFFECT_FORMULA.verBase) {
         // Старая экспонента для остальных эффектов
-        verFactor = Math.pow(eff.ver / 30, 1.6);
+        verFactor = Math.pow(eff.ver / EFFECT_FORMULA.verBase, EFFECT_FORMULA.verExponent);
     }
 
     const stepMult = eff.n / eff.step;
@@ -1026,8 +1100,9 @@ function updateAttackCostDisplay(attack) {
     const effectEl = card.querySelector('[data-role="attack-effect-cost"]');
     const totalEl = card.querySelector('[data-role="attack-total-cost"]');
     if (statEl) {
+        const b = attackCostBreakdown(attack);
         statEl.textContent = statCost;
-        statEl.title = `База + Дистанция. Множитель атаки: ${attackCostMultiplier(attack).toFixed(2)}`;
+        statEl.title = `База + Дистанция. Множитель атаки: ${b.total.toFixed(2)} (АВХ ×${b.avh.toFixed(2)} · КЦ ×${b.kc.toFixed(2)} · ОД ×${b.od.toFixed(2)} · урон ×${b.damage.toFixed(2)} · тип ×${b.type.toFixed(2)})`;
     }
     if (effectEl) {
         effectEl.textContent = effectCost;
@@ -1060,23 +1135,40 @@ function applyTierPreset() {
     const tier = document.getElementById("mobTier").value;
     const mobType = document.getElementById("mobType").value;
 
-    let hp, defP, defA, ukl, atk, crit, acc, od, op, avh, kc;
+    // Базовые статы тира берём из balance.js.
+    const tierInfo = BUDGETS.tiers[tier] || BUDGETS.tiers["Новичок"];
+    const preset = tierInfo.preset;
 
-    if (tier === "Новичок") { hp=150; defP=0; defA=0; ukl=5; atk=10; crit=5; acc=-20; od=1; op=1; avh=1; kc=1; }
-    else if (tier === "Обычный") { hp=300; defP=5; defA=10; ukl=15; atk=25; crit=5; acc=0; od=1; op=1; avh=1; kc=1; }
-    else if (tier === "Опасный") { hp=500; defP=15; defA=25; ukl=35; atk=40; crit=10; acc=10; od=1; op=2; avh=2; kc=1; }
-    else if (tier === "Элитный") { hp=800; defP=30; defA=45; ukl=60; atk=65; crit=15; acc=15; od=1; op=2; avh=2; kc=1; }
-    else if (tier === "Смерть") { hp=1000; defP=55; defA=75; ukl=110; atk=90; crit=20; acc=25; od=1; op=3; avh=2; kc=1; }
+    let hp = preset.hp, defP = preset.defP, defA = preset.defA, ukl = preset.ukl;
+    let atk = preset.atk, crit = preset.ks, acc = preset.tchn;
+    let od = preset.od, op = preset.op, avh = preset.avh, kc = preset.kc;
+
+    // Дальше — модификаторы типа моба.
+    const typeInfo = BUDGETS.mobTypes[mobType] || {};
+    const typePreset = typeInfo.preset;
+
+    if (typePreset) {
+        hp = Math.round(hp * typePreset.hpMult);
+        defP = Math.round(defP * typePreset.defPMult);
+        defA = Math.round(defA * typePreset.defAMult);
+        ukl = Math.round(ukl * typePreset.uklMult);
+        atk = Math.round(atk * typePreset.atkMult);
+        crit += typePreset.ksBonus;
+        acc += typePreset.tchnBonus;
+    }
 
     if (mobType === "Элитный") {
-        hp=Math.round(hp*2.0); defP=Math.round(defP*1.5); defA=Math.round(defA*1.5); ukl=Math.round(ukl*1.3); atk=Math.round(atk*1.2);
-        crit+=5; acc+=10; op=Math.min(4, op+1); avh=Math.max(2, avh); kc=1;
+        op = Math.min(typePreset.opMax, op + typePreset.opBonus);
+        avh = Math.max(typePreset.avhMin, avh);
+        kc = typePreset.kc;
     } else if (mobType === "Босс") {
-        hp=Math.round(hp*3.0); defP=Math.round(defP*2.0); defA=Math.round(defA*2.0); ukl=Math.round(ukl*1.5); atk=Math.round(atk*1.4);
-        crit+=10; acc+=15;
-        if (tier==="Новичок"||tier==="Обычный") { op+=1; od=1; avh=2; kc=1; }
-        else if (tier==="Опасный"||tier==="Элитный") { op+=2; od=2; avh=3; kc=2; }
-        else if (tier==="Смерть") { op=6; od=2; avh=4; kc=3; }
+        const bossTier = (typeInfo.perTier || {})[tier];
+        if (bossTier) {
+            op = bossTier.op ?? (op + bossTier.opBonus);
+            od = bossTier.od;
+            avh = bossTier.avh;
+            kc = bossTier.kc;
+        }
     }
 
     setInputValue("statHp", hp);
@@ -1099,25 +1191,30 @@ function applyTierPreset() {
 function recalcStats() {
     const tierSelect = document.getElementById("mobTier");
     const tier = tierSelect.value;
-    const baseBudgetNum = Number(tierSelect.options[tierSelect.selectedIndex].dataset.budget);
+    const tierInfo = BUDGETS.tiers[tier];
+    const baseBudgetNum = tierInfo ? tierInfo.budget : 0;
     const mobType = document.getElementById("mobType").value;
     const isBoss = mobType === "Босс";
     const isElite = mobType === "Элитный";
+    const typeInfo = BUDGETS.mobTypes[mobType] || {};
 
     let budgetBonus = 0;
-    let baseAttrs = 58;
+    let baseAttrs = BUDGETS.baseAttrs;
     let attrBonus = 0;
 
-    if (isElite) { budgetBonus = Math.round(baseBudgetNum * 1.5); attrBonus = 4; }
-    else if (isBoss) {
-        if (tier === "Новичок") { budgetBonus = 500; attrBonus = 2; baseAttrs = 52; }
-        else if (tier === "Обычный") { budgetBonus = 1500; attrBonus = 4; baseAttrs = 54; }
-        else if (tier === "Опасный") { budgetBonus = 8000; attrBonus = 6; baseAttrs = 56; }
-        else if (tier === "Элитный") { budgetBonus = 12000; attrBonus = 8; baseAttrs = 58; }
-        else if (tier === "Смерть") { budgetBonus = 30000; attrBonus = 10; baseAttrs = 60; }
+    if (isElite) {
+        budgetBonus = Math.round(baseBudgetNum * (typeInfo.budgetBonusMult || 0));
+        attrBonus = typeInfo.attrBonus || 0;
+    } else if (isBoss) {
+        const bossTier = (typeInfo.perTier || {})[tier];
+        if (bossTier) {
+            budgetBonus = bossTier.budgetBonus;
+            attrBonus = bossTier.attrBonus;
+            baseAttrs = bossTier.baseAttrs;
+        }
     }
 
-    const maxBudget = baseBudgetNum + budgetBonus;
+    const maxBudget = baseBudgetNum + budgetBonus + calculateWeaknessBonus();
     const maxAttrs = baseAttrs + attrBonus;
 
     const hp = readNum("statHp", 0);
@@ -1133,7 +1230,7 @@ function recalcStats() {
     let attrSum = 0;
     document.querySelectorAll(".attr-input").forEach(inp => { attrSum += Number(inp.value) || 0; });
 
-    const baseStatsCost = Math.round((hp * 0.2) + (extraHp * 0.15) + (defP * 5.0) + (defA * 4.0) + (ukl * 4.0) + (op * 150));
+    const baseStatsCost = Math.round((hp * STAT_COSTS.hp) + (extraHp * STAT_COSTS.extraHp) + (defP * STAT_COSTS.defP) + (defA * STAT_COSTS.defA) + (ukl * STAT_COSTS.ukl) + (op * STAT_COSTS.op));
     const attacksCost = attacks.reduce((sum, attack) => sum + calculateAttackCost(attack), 0);
     const globalAttackCost = calculateGlobalAttackStatCost();
 
@@ -1142,7 +1239,7 @@ function recalcStats() {
 
     let resistanceCost = 0;
     if (resActive > 0 && resType !== "Нет") {
-        resistanceCost = resType === "Все типы урона" ? Math.round(hp * 1.0) : Math.round(hp * 0.3);
+        resistanceCost = resType === "Все типы урона" ? Math.round(hp * STAT_COSTS.resistanceAllTypesMult) : Math.round(hp * STAT_COSTS.resistanceSingleTypeMult);
     }
 
     const immunityCost = calculateImmunityCost();
@@ -1180,6 +1277,7 @@ function recalcStats() {
     attrBudgetDisplay.className = attrSum > maxAttrs ? "budget-val over" : "budget-val ok";
 
     updateAllAttackCostDisplays();
+    updateWeaknessCostNote();
     renderOutput();
     
     // Обновляем калькулятор
@@ -1219,10 +1317,11 @@ function renderOutput() {
 
     const immunityNames = Object.keys(immunities);
     const passiveNames = Object.keys(passiveEffects);
+    const weaknessNames = Object.values(weaknesses).map(weaknessLabel);
 
     updateOutputBudgetHint();
 
-    const outData = { name, tier, type, role, hp, extraHp, defP, defA, ukl, od, op, resType, resActive, notes, attrs, immunityNames, passiveNames };
+    const outData = { name, tier, type, role, hp, extraHp, defP, defA, ukl, od, op, resType, resActive, notes, attrs, immunityNames, passiveNames, weaknessNames };
     lastOutputText = buildPlainText(outData);
     document.getElementById("outputBox").textContent = lastOutputText;
     document.getElementById("outputCard").innerHTML = buildOutputHtml(outData);
@@ -1296,6 +1395,7 @@ function buildPlainText(data) {
 
     if (data.immunityNames.length) lines.push(`- Резисты: ${data.immunityNames.map(immunityLabel).join(", ")}`);
     if (data.passiveNames.length) lines.push(`- Пассивные эффекты: ${data.passiveNames.join(", ")}`);
+    if (data.weaknessNames.length) lines.push(`- Слабости: ${data.weaknessNames.join(", ")}`);
     if (data.notes) lines.push(`- Примечания: ${data.notes.replace(/\n/g, " ")}`);
 
     return lines.join("\n");
@@ -1340,6 +1440,7 @@ function buildOutputHtml(data) {
     const immunityHtml = data.immunityNames.length ? `<div class="sheet-section"><div class="sheet-section-title">Резисты (Игнор эффектов)</div><div class="immunity-list">${data.immunityNames.map(name => `<span class="attr-chip immunity-chip-out">${esc(immunityLabel(name))}</span>`).join("")}</div></div>` : "";
     const attrsHtml = data.attrs.length ? `<div class="attr-chips">${data.attrs.map(attr => `<span class="attr-chip"><b>${esc(attr.name)}</b> ${attr.value}</span>`).join("")}</div>` : `<div class="empty-effects">Характеристики не заданы.</div>`;
     const passivesHtml = data.passiveNames.length ? `<div class="attr-chips">${data.passiveNames.map(name => `<span class="attr-chip passive-chip">${esc(name)}</span>`).join("")}</div>` : `<div class="empty-effects">Пассивные эффекты не выбраны.</div>`;
+    const weaknessesHtml = data.weaknessNames.length ? `<div class="attr-chips">${data.weaknessNames.map(name => `<span class="attr-chip weakness-chip-out">${esc(name)}</span>`).join("")}</div>` : `<div class="empty-effects">Слабости не выбраны.</div>`;
 
     return `
         <div class="mob-sheet">
@@ -1370,6 +1471,10 @@ function buildOutputHtml(data) {
             <div class="sheet-section">
                 <div class="sheet-section-title">Пассивные эффекты</div>
                 ${passivesHtml}
+            </div>
+            <div class="sheet-section">
+                <div class="sheet-section-title">Слабости</div>
+                ${weaknessesHtml}
             </div>
             ${data.notes ? `<div class="notes-block"><div class="sheet-section-title">Особые примечания</div><div>${formatMarkdown(data.notes)}</div></div>` : ""}
         </div>
@@ -1504,7 +1609,7 @@ function getCurrentState() {
     });
 
     return {
-        v: 4,
+        v: 5,
         name: document.getElementById("mobName").value,
         tier: document.getElementById("mobTier").value,
         type: document.getElementById("mobType").value,
@@ -1527,6 +1632,7 @@ function getCurrentState() {
         attrs,
         immunities: Object.values(immunities),
         passiveEffects,
+        weaknesses: Object.values(weaknesses),
         attacks
     };
 }
@@ -1575,6 +1681,22 @@ function applyState(state) {
     passiveEffects = {};
     if (state.passiveEffects && typeof state.passiveEffects === "object") passiveEffects = state.passiveEffects;
 
+    weaknesses = {};
+    if (Array.isArray(state.weaknesses)) {
+        state.weaknesses.forEach(item => {
+            const name = typeof item === "string" ? item : item && item.name;
+            if (!name) return;
+            const known = findWeakness(name);
+            const points = Number(item && item.points);
+            weaknesses[name] = {
+                name,
+                points: Number.isFinite(points) ? Math.max(0, points) : (known ? known.points : CUSTOM_WEAKNESS_POINTS),
+                kind: (item && item.kind) || (known ? known.kind : "custom"),
+                desc: (item && item.desc) || (known ? known.desc : "Пользовательская слабость.")
+            };
+        });
+    }
+
     immunities = {};
     if (Array.isArray(state.immunities)) {
         state.immunities.forEach(item => {
@@ -1585,7 +1707,7 @@ function applyState(state) {
                 name,
                 cost100: (item && (item.cost100 || item.cost)) || (known ? known.cost100 : CUSTOM_IMMUNITY_COST_100),
                 desc: (item && item.desc) || (known ? known.desc : "Пользовательский резист."),
-                ver: (item && item.ver) || 50
+                ver: (item && item.ver) || IMMUNITY_BALANCE.defaultVer
             };
         });
     }
@@ -1604,6 +1726,7 @@ function applyState(state) {
     renderAttacks();
     renderImmunities();
     renderPassiveEffects();
+    renderWeaknesses();
     recalcStats();
     isApplyingState = false;
 }
@@ -1721,15 +1844,17 @@ function addNewTab() {
     });
 
     passiveEffects = {};
+    weaknesses = {};
     immunities = {};
     // Создаем чистую атаку без статов
-    attacks = [createAttack({ name: "Основная атака", atk: 0, ks: 0, tchn: 0, avh: 1, kc: 1 })];
+    attacks = [createAttack({ name: "Основная атака", ...ATTACK_COSTS.newAttack })];
 
     isApplyingState = false;
     
     renderAttacks();
     renderImmunities();
     renderPassiveEffects();
+    renderWeaknesses();
     recalcStats(); 
 
     savedMobs[activeMobId] = getCurrentState();
@@ -1779,14 +1904,16 @@ function clearCurrentMob() {
 
     // Удаляем все эффекты и создаем пустую атаку
     passiveEffects = {};
+    weaknesses = {};
     immunities = {};
-    attacks = [createAttack({ name: "Основная атака", atk: 0, ks: 0, tchn: 0, avh: 1, kc: 1 })];
+    attacks = [createAttack({ name: "Основная атака", ...ATTACK_COSTS.newAttack })];
 
     isApplyingState = false;
 
     renderAttacks();
     renderImmunities();
     renderPassiveEffects();
+    renderWeaknesses();
     recalcStats(); 
     
     if (!activeMobId) {
@@ -1874,12 +2001,12 @@ function updateDamageCalc() {
     if (!el) return;
     const select = document.getElementById("calcAttack");
 
-    const stat = Number(document.getElementById("calcStat").value) || 5;
+    const stat = Number(document.getElementById("calcStat").value) || CALC_BALANCE.statBase;
     const bonus = Number(document.getElementById("calcBonus").value) || 0;
     const defP = Number(document.getElementById("calcDefP").value) || 0;
 
     // Множитель СТАТА (1 = 0.6, 5 = 1.0, 10 = 1.5)
-    const mult = 1 + (stat - 5) * 0.1;
+    const mult = 1 + (stat - CALC_BALANCE.statBase) * CALC_BALANCE.statStep;
 
     if (!attacks.length) {
         if (select) {

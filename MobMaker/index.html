@@ -43,11 +43,11 @@
             <div>
                 <label>Уровень сложности квеста</label>
                 <select id="mobTier" onchange="recalcStats()">
-                    <option value="Новичок" data-budget="350">Новичок - Безопасно</option>
-                    <option value="Обычный" data-budget="750">Обычный - Малая опасность</option>
-                    <option value="Опасный" data-budget="1300">Опасный - Смерть возможна</option>
-                    <option value="Элитный" data-budget="2800" selected>Элитный - Смерть вероятна</option>
-                    <option value="Смерть" data-budget="4000">Смерть - Ожидайте смерть</option>
+                    <option value="Новичок">Новичок - Безопасно</option>
+                    <option value="Обычный">Обычный - Малая опасность</option>
+                    <option value="Опасный">Опасный - Смерть возможна</option>
+                    <option value="Элитный" selected>Элитный - Смерть вероятна</option>
+                    <option value="Смерть">Смерть - Ожидайте смерть</option>
                 </select>
             </div>
         </div>
@@ -98,7 +98,7 @@
 
         <div class="grid-4">
             <div>
-                <label>ОД (действия)</label>
+                <label title="Каждое дополнительное действие дорожает сильнее предыдущего: ×1.45 за второе, ×2.2 за третье">ОД (действия)</label>
                 <input type="number" id="statOd" value="1" min="1" max="3" oninput="handleInput('statOd', this.value)">
             </div>
             <div>
@@ -148,7 +148,7 @@
                 <input type="number" id="globalKs" value="0" oninput="handleInput('globalKs', this.value)">
             </div>
             <div>
-                <label>Общий КЦ (250 оч.)</label>
+                <label>Общий КЦ (90 оч.)</label>
                 <input type="number" id="globalKc" value="0" min="0" step="1" oninput="handleInput('globalKc', this.value)">
             </div>
             <div>
@@ -156,7 +156,7 @@
                 <input type="number" id="globalTchn" value="0" oninput="handleInput('globalTchn', this.value)">
             </div>
             <div>
-                <label>Общий АВХ (200 оч.)</label>
+                <label>Общий АВХ (150 оч.)</label>
                 <input type="number" id="globalAvh" value="0" min="0" step="1" oninput="handleInput('globalAvh', this.value)">
             </div>
         </div>
@@ -206,6 +206,8 @@
         <p class="section-desc">
             У каждой атаки свои <b>АТК</b>, <b>АВХ</b>, <b>КШ</b>, <b>КЦ</b>, <b>ТЧН</b> (дешевле общих),
             <b>диапазон дистанции (Min–Max ОП)</b>, <b>гарантированные игноры Деф.П и УКЛ</b>, <b>эффекты наложения (с ВЕР)</b> и <b>тип</b>.
+            Повторяемость считается отдельно: каждый доп. удар — <b>+80%</b>, каждая доп. цель — <b>+30%</b>,
+            а каждое доп. ОД дорожает по нарастающей (<b>×1.45</b> за второе, <b>×2.2</b> за третье).
         </p>
         <div id="attacksContainer"></div>
     </div>
@@ -228,9 +230,23 @@
         <div id="passiveEffectsCatalog"></div>
     </div>
 
-    <!-- Блок 8: Примечания -->
+    <!-- Блок 8: Слабости -->
     <div class="card">
-        <h2>8. Особые механики / Лут / Заметки</h2>
+        <h2>
+            <span>8. Слабости</span>
+            <span class="hint">Дают дополнительные очки бюджета</span>
+        </h2>
+        <p class="section-desc">
+            Слабость — уязвимость моба, за которую он получает очки. Чем чаще противники смогут её использовать,
+            тем выше награда: уязвимости к ходовым типам урона дают больше всего, к частям тела — меньше,
+            а свои слабости — фиксированные <b>+300 оч.</b> (чуть меньше термического урона).
+        </p>
+        <div id="weaknessCatalog"></div>
+    </div>
+
+    <!-- Блок 9: Примечания -->
+    <div class="card">
+        <h2>9. Особые механики / Лут / Заметки</h2>
         <textarea id="mobNotes" rows="2" placeholder="Например: При активации использует щит..." oninput="handleInput('mobNotes', this.value)"></textarea>
     </div>
 
@@ -294,6 +310,7 @@
 </div>
 
 
+<script src="balance.js" defer></script>
 <script src="script.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
