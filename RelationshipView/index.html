@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Карта связей — Инфузия</title>
+<meta name="description" content="Граф знакомств персонажа: связи, заметки и сохранение в JSON. Как graph view в Obsidian.">
+<meta property="og:title" content="Карта связей — Инфузия">
+<meta property="og:description" content="Граф знакомств персонажа: связи, заметки и сохранение в JSON.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Инфузия">
+<meta property="og:locale" content="ru_RU">
+<meta name="theme-color" content="#0f1419">
+<link rel="icon" type="image/webp" href="../assets/icons/paw.webp">
+<link rel="apple-touch-icon" href="../assets/icons/paw.webp">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="../" title="На главную">
+    <img src="../assets/icons/paw.webp" alt="">
+    <span>Инфузия</span>
+  </a>
+  <span class="brand-sep"></span>
+  <h1 class="page-title">Карта связей</h1>
+  <div class="top-actions">
+    <span id="save-state" class="save-state saved" role="status" aria-live="polite" title="Данные сохранены в этом браузере">Сохранено</span>
+    <button id="theme-btn" class="icon-btn" type="button" title="Переключить тему" aria-label="Переключить тему"></button>
+  </div>
+</header>
+
+<div class="workspace">
+  <section class="graph-pane" aria-label="Граф связей">
+    <div class="toolbar">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+        <input id="search" type="search" placeholder="Поиск по имени, тегам, заметкам…" autocomplete="off" aria-label="Поиск по карте связей">
+        <kbd title="Фокус на поиске">/</kbd>
+      </div>
+      <div class="toolbar-actions">
+        <button id="btn-add" class="btn primary" type="button" title="Добавить персонажа (N)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span>Персонаж</span>
+        </button>
+        <button id="btn-link" class="btn" type="button" aria-pressed="false" title="Связать двух персонажей">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 14.5 14.5 9.5"/><path d="M7 17a3.5 3.5 0 0 1 0-5l2-2"/><path d="M17 7a3.5 3.5 0 0 1 0 5l-2 2"/></svg>
+          <span>Связать</span>
+        </button>
+        <button id="btn-layout" class="btn icon-only" type="button" title="Разложить заново">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="9" cy="18" r="2.5"/><path d="m8.3 7 7.2.7M7.5 8.3l.8 7.2M16.4 10.1l-5.6 6"/></svg>
+          <span>Раскладка</span>
+        </button>
+        <button id="btn-fit" class="btn icon-only" type="button" title="Вписать граф в экран (F)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>
+        </button>
+        <details class="menu" id="file-menu">
+          <summary class="btn" title="JSON-файл: скачать, загрузить, сохранить">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+            <span>JSON</span>
+          </summary>
+          <div class="menu-pop" role="menu">
+            <div class="menu-head">
+              <b>Файл данных</b>
+              <small id="file-status">Файл не привязан</small>
+            </div>
+            <button type="button" data-file="save" id="file-save" role="menuitem">Привязать файл…</button>
+            <button type="button" data-file="save-as" role="menuitem">Сохранить как…</button>
+            <button type="button" data-file="unlink" id="file-unlink" role="menuitem" hidden>Отвязать файл</button>
+            <hr>
+            <button type="button" data-file="download" role="menuitem">Скачать JSON-копию</button>
+            <button type="button" data-file="import" role="menuitem">Загрузить JSON…</button>
+            <hr>
+            <small class="menu-note">Ctrl+S — сохранить в привязанный файл. Без привязки скачивается копия.</small>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div id="graph" class="graph">
+      <div id="mode-banner" class="mode-banner" hidden></div>
+      <div class="zoom-controls" aria-label="Масштаб">
+        <button id="btn-zoom-in" type="button" title="Приблизить" aria-label="Приблизить">+</button>
+        <button id="btn-zoom-out" type="button" title="Отдалить" aria-label="Отдалить">−</button>
+      </div>
+      <div class="graph-hint">Перетащите фон — сдвиг · колесо — масштаб · двойной клик — центрировать</div>
+      <div id="empty-state" class="empty-state" hidden>
+        <div class="empty-card">
+          <div class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8 8 3 7M16 8l-3 7M8.3 6.6l7.2-.4"/></svg>
+          </div>
+          <h2>Карта пуста</h2>
+          <p>Добавьте первого персонажа и свяжите его со знакомыми. Или откройте демонстрационный пример.</p>
+          <div class="btns">
+            <button class="btn primary" type="button" data-empty="add">+ Персонаж</button>
+            <button class="btn" type="button" data-empty="sample">Показать пример</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside id="sidebar" class="sidebar" aria-label="Детали карты">
+    <div id="sidebar-body"></div>
+  </aside>
+</div>
+
+<button id="panel-toggle" class="panel-toggle" type="button">Детали</button>
+<div id="panel-backdrop" class="panel-backdrop"></div>
+
+<input type="file" id="import-file" accept=".json,application/json" hidden>
+
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+<dialog id="dialog" class="dialog">
+  <div class="dialog-body">
+    <h2 id="dialog-title"></h2>
+    <p id="dialog-text"></p>
+    <div class="dialog-actions">
+      <button type="button" id="dialog-cancel" class="btn">Отмена</button>
+      <button type="button" id="dialog-ok" class="btn danger">Удалить</button>
+    </div>
+  </div>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
