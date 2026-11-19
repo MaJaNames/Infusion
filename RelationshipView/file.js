@@ -57,9 +57,19 @@ const JSON_TYPES = [{ description: 'JSON', accept: { 'application/json': ['.json
 
 async function ensurePermission(handle, mode) {
   if (!handle) return false;
+  if (typeof handle.queryPermission !== 'function' || typeof handle.requestPermission !== 'function') return true;
   const options = { mode };
   if ((await handle.queryPermission(options)) === 'granted') return true;
   return (await handle.requestPermission(options)) === 'granted';
+}
+
+export async function queryPermission(handle, mode = 'readwrite') {
+  if (!handle?.queryPermission) return 'denied';
+  try {
+    return await handle.queryPermission({ mode });
+  } catch {
+    return 'denied';
+  }
 }
 
 export async function pickSaveFile(suggestedName = 'relationships.json') {

@@ -311,6 +311,7 @@ code {
 .menu-head small { font-size: .73rem; color: var(--mute); }
 .menu-head small.warn { color: var(--l); }
 .menu-note { padding: .35rem .6rem .3rem; font-size: .71rem; line-height: 1.35; color: var(--mute); }
+.menu-note.warn { color: var(--l); }
 
 /* ---------- граф ---------- */
 
@@ -364,6 +365,10 @@ code {
 .node:hover .node-dot { filter: brightness(1.12) drop-shadow(0 0 6px color-mix(in srgb, var(--nc, var(--c)) 60%, transparent)); }
 .node.sel .node-halo { stroke: var(--ink); stroke-opacity: .7; }
 .node.hit .node-halo { stroke: var(--acc); stroke-opacity: .95; stroke-dasharray: 3 3; }
+.node.pinned .node-halo { stroke: var(--acc); stroke-opacity: .55; stroke-dasharray: 2 3; }
+.node-pin { pointer-events: none; }
+.node-pin circle { fill: var(--acc); stroke: var(--graph-bg); stroke-width: 1.4; }
+.node:not(.pinned) .node-pin { display: none; }
 .node.dim { opacity: .16; }
 .node.hidden { display: none; }
 .node-label {
@@ -681,6 +686,7 @@ code {
 .switch-row { padding: .3rem .15rem; }
 .switch-row code { margin-left: .15rem; }
 .hint { margin: 0; color: var(--mute); font-size: .74rem; line-height: 1.4; }
+.hint-tight { margin: -.4rem 0 0; }
 
 .note-preview {
   margin-top: -.25rem;

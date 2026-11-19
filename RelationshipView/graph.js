@@ -227,6 +227,10 @@ export class GraphView {
     group.appendChild(el('circle', { class: 'node-halo', r: sim.r + 7 }));
     group.appendChild(el('circle', { class: 'node-dot', r: sim.r }));
 
+    const pin = el('g', { class: 'node-pin', 'aria-hidden': 'true' });
+    pin.appendChild(el('circle', { cx: round(sim.r * 0.8), cy: round(-sim.r * 0.8), r: 4.2 }));
+    group.appendChild(pin);
+
     if (node.dead) {
       group.appendChild(el('line', {
         class: 'node-strike',
@@ -248,7 +252,7 @@ export class GraphView {
     group.appendChild(text);
 
     const title = el('title');
-    title.textContent = `${node.label}${node.dead ? ' (мёртв)' : ''}${node.notes ? `\n${node.notes.slice(0, 260)}` : ''}`;
+    title.textContent = `${node.label}${node.dead ? ' (недоступен)' : ''}${node.fixed ? ' · закреплён' : ''}${node.notes ? `\n${node.notes.slice(0, 260)}` : ''}`;
     group.appendChild(title);
 
     group.addEventListener('pointerdown', (event) => {
@@ -619,13 +623,20 @@ export class GraphView {
       const { id, startX, startY, originX, originY } = this.drag;
       const sim = this.sim.get(id);
       if (!sim) return;
-      if (Math.hypot(event.clientX - startX, event.clientY - startY) > 3) this.drag.moved = true;
-      sim.x = originX + (event.clientX - startX) / this.view.k;
-      sim.y = originY + (event.clientY - startY) / this.view.k;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (!this.drag.moved) {
+        // Пока курсор почти не сдвинулся, это ещё клик: раскладку не трогаем,
+        // иначе граф «дрожит» от каждого нажатия на узел.
+        if (Math.hypot(dx, dy) <= 5) return;
+        this.drag.moved = true;
+        this.alphaTarget = 0.25;
+        this.ensureRaf();
+      }
+      sim.x = originX + dx / this.view.k;
+      sim.y = originY + dy / this.view.k;
       sim.vx = 0;
       sim.vy = 0;
-      this.alphaTarget = 0.3;
-      this.ensureRaf();
       this.renderPositions();
       return;
     }
@@ -665,11 +676,10 @@ export class GraphView {
       this.alphaTarget = 0;
       if (sim && node) {
         if (drag.moved) {
-          node.fixed = true;
+          // Перетаскивание только перемещает узел: раскладка остаётся «живой»,
+          // а закрепление — отдельное явное действие в карточке персонажа.
           node.x = round(sim.x);
           node.y = round(sim.y);
-          sim.fixed = true;
-          this.nodeEls.get(node.id)?.classList.add('pinned');
           this.emitPositions();
           this.reheat(0.35);
         } else {
@@ -701,8 +711,25 @@ export class GraphView {
       originY: sim.y,
       moved: false,
     };
-    this.alphaTarget = 0.3;
-    this.ensureRaf();
+  }
+
+  setPinned(id, pinned) {
+    const node = this.data.nodes.find((item) => item.id === id);
+    const sim = this.sim.get(id);
+    if (!node || !sim) return false;
+    const next = Boolean(pinned);
+    if (node.fixed === next) return next;
+    node.fixed = next;
+    sim.fixed = next;
+    sim.vx = 0;
+    sim.vy = 0;
+    node.x = round(sim.x);
+    node.y = round(sim.y);
+    this.nodeEls.get(id)?.classList.toggle('pinned', next);
+    if (!next) this.reheat(0.35);
+    this.emitPositions();
+    this.cbs.onPinChange?.(id, next);
+    return next;
   }
 
   /* ---------- вид ---------- */

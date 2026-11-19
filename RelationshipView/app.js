@@ -8,7 +8,7 @@ import {
 import { GraphView } from './graph.js';
 import {
   supportsFileSystem, getStoredHandle, storeHandle, pickSaveFile,
-  writeFile, downloadJson, todayName,
+  writeFile, queryPermission, downloadJson, todayName,
 } from './file.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -70,6 +70,11 @@ let selected = { kind: null, id: null };
 let linkMode = null;
 let fileHandle = null;
 let fileDirty = false;
+let filePermission = null;
+let fileWriteTimer = null;
+let fileWriting = false;
+let fileWriteBlocked = false;
+let fileBindingBroken = !supportsFileSystem();
 let pendingFit = false;
 let saveTimer = null;
 let refreshTimer = null;
@@ -86,12 +91,14 @@ const graph = new GraphView(graphHost, {
   onNodeClick: handleNodeClick,
   onLinkClick: (id) => { if (!linkMode) selectLink(id); },
   onBackgroundClick: () => { if (!linkMode) clearSelection(); },
+  onPinChange: handlePinChange,
   onLayout: scheduleLayoutSave,
   onSettled: () => {
     if (pendingFit) {
       pendingFit = false;
       graph.fit();
     }
+    if (fileHandle) queueFileWrite();
   },
 });
 
@@ -120,18 +127,14 @@ function persistNow() {
   graphData.updatedAt = Date.now();
   const ok = saveGraph(graphData);
   setSaveState(ok ? 'saved' : 'error');
-  fileDirty = Boolean(fileHandle);
-  updateFileUi();
+  if (fileHandle) queueFileWrite();
 }
 
 function markDirty() {
   setSaveState('saving');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persistNow, 350);
-  if (fileHandle) {
-    fileDirty = true;
-    updateFileUi();
-  }
+  if (fileHandle) queueFileWrite();
 }
 
 function scheduleLayoutSave() {
@@ -153,32 +156,117 @@ function updateFileUi() {
   const label = $('#file-status');
   const unlink = $('#file-unlink');
   const save = $('#file-save');
-  if (label) {
-    label.textContent = fileHandle
-      ? `${fileHandle.name}${fileDirty ? ' · есть несохранённые изменения' : ''}`
-      : 'Файл не привязан';
-    label.classList.toggle('warn', Boolean(fileHandle) && fileDirty);
+  const note = $('#file-support-note');
+  const supported = !fileBindingBroken;
+  const ready = filePermission === 'granted';
+
+  if (save) {
+    save.hidden = !supported;
+    save.textContent = fileHandle ? 'Сохранить в файл' : 'Привязать файл…';
   }
-  if (unlink) unlink.hidden = !fileHandle;
-  if (save) save.textContent = fileHandle ? 'Сохранить в файл' : 'Привязать файл…';
+  if (unlink) unlink.hidden = !supported || !fileHandle;
+  if (note) {
+    note.hidden = supported;
+    note.textContent = supported
+      ? ''
+      : 'Привязка файла недоступна: браузер не даёт выбрать файл на диске. Скачивайте JSON-копию и загружайте её через «Загрузить JSON…».';
+  }
+
+  if (label) {
+    let text = 'Файл не привязан';
+    if (!supported) text = 'Привязка файла недоступна';
+    else if (fileHandle) {
+      if (!ready) text = `${fileHandle.name} · нужно разрешение (Ctrl+S)`;
+      else if (fileWriteBlocked) text = `${fileHandle.name} · ошибка записи (Ctrl+S)`;
+      else text = `${fileHandle.name}${fileDirty ? ' · есть несохранённые изменения' : ' · сохранено'}`;
+    }
+    label.textContent = text;
+    label.classList.toggle('warn', supported && Boolean(fileHandle) && (fileDirty || !ready || fileWriteBlocked));
+  }
+
   const inline = $('#file-status-inline');
   if (inline) {
-    inline.textContent = fileHandle
-      ? `${fileHandle.name}${fileDirty ? ' · изменения не записаны' : ''}`
-      : 'не привязан';
+    inline.textContent = !supported
+      ? 'привязка недоступна'
+      : fileHandle
+        ? `${fileHandle.name}${!ready ? ' · нужно разрешение' : fileWriteBlocked ? ' · ошибка записи' : fileDirty ? ' · изменения не записаны' : ' · сохранено'}`
+        : 'не привязан';
   }
-  fileMenu?.classList.toggle('dirty', Boolean(fileHandle) && fileDirty);
+  fileMenu?.classList.toggle('dirty', supported && Boolean(fileHandle) && (fileDirty || fileWriteBlocked));
+}
+
+function queueFileWrite() {
+  if (!fileHandle || fileBindingBroken) return;
+  fileDirty = true;
+  updateFileUi();
+  clearTimeout(fileWriteTimer);
+  fileWriteTimer = setTimeout(flushFile, 900);
+}
+
+async function flushFile() {
+  if (!fileHandle || !fileDirty || fileWriting || fileBindingBroken || fileWriteBlocked) return;
+  if (filePermission !== 'granted') {
+    filePermission = await queryPermission(fileHandle, 'readwrite');
+    if (filePermission !== 'granted') {
+      updateFileUi();
+      return;
+    }
+  }
+  fileWriting = true;
+  let ok = false;
+  try {
+    await writeFile(fileHandle, serializeGraph(graphData));
+    fileDirty = false;
+    ok = true;
+  } catch (error) {
+    fileWriteBlocked = true;
+    if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') filePermission = 'denied';
+    toast(`Не удалось записать файл: ${error?.message || 'ошибка доступа'}`, 'bad');
+  } finally {
+    fileWriting = false;
+    updateFileUi();
+    if (ok && fileDirty) queueFileWrite();
+  }
 }
 
 async function saveToFile(forcePicker = false) {
+  if (fileBindingBroken) {
+    downloadJson(serializeGraph(graphData), todayName());
+    toast('Браузер не умеет писать в файл — скачали копию JSON');
+    return;
+  }
   try {
-    if (!supportsFileSystem()) {
-      downloadJson(serializeGraph(graphData), todayName());
-      toast('Браузер не умеет писать в файл — скачали копию JSON');
-      return;
+    if (!fileHandle || forcePicker) {
+      const hadHandle = Boolean(fileHandle);
+      const started = performance.now();
+      try {
+        fileHandle = await pickSaveFile(todayName());
+        filePermission = 'granted';
+        fileWriteBlocked = false;
+      } catch (error) {
+        const blocked = error?.name === 'SecurityError' || error?.name === 'NotAllowedError';
+        if (error?.name === 'AbortError' || blocked) {
+          // Настоящий отказ пользователя занимает заметно больше времени.
+          // Мгновенный AbortError значит, что браузер вообще не показал окно.
+          const failedFast = performance.now() - started < 400;
+          if (error?.name === 'AbortError' && !failedFast) return;
+          if (hadHandle) {
+            toast('Окно выбора файла не открылось. Текущая привязка сохранена.', 'bad');
+          } else {
+            fileBindingBroken = true;
+            updateFileUi();
+            downloadJson(serializeGraph(graphData), todayName());
+            toast('Окно выбора файла не открылось. Скачали JSON-копию — привязка в этом браузере недоступна.', 'bad');
+          }
+          return;
+        }
+        throw error;
+      }
     }
-    if (!fileHandle || forcePicker) fileHandle = await pickSaveFile(todayName());
+    clearTimeout(fileWriteTimer);
     await writeFile(fileHandle, serializeGraph(graphData));
+    filePermission = 'granted';
+    fileWriteBlocked = false;
     fileDirty = false;
     updateFileUi();
     toast(`Сохранено в «${fileHandle.name}»`);
@@ -189,8 +277,11 @@ async function saveToFile(forcePicker = false) {
 }
 
 async function unlinkFile() {
+  clearTimeout(fileWriteTimer);
   fileHandle = null;
   fileDirty = false;
+  filePermission = null;
+  fileWriteBlocked = false;
   await storeHandle(null);
   updateFileUi();
   toast('Файл отвязан');
@@ -382,7 +473,7 @@ function renderOverview() {
           <button class="result-row" type="button" data-node="${esc(node.id)}">
             <span class="group-dot g-${node.group}"></span>
             <span class="result-name">${esc(node.label)}</span>
-            ${node.dead ? '<span class="badge-dead">мёртв</span>' : ''}
+            ${node.dead ? '<span class="badge-dead">недоступен</span>' : ''}
           </button>`).join('')}
       </div>`
     : '';
@@ -397,7 +488,7 @@ function renderOverview() {
     <div class="stats-row">
       <div class="stat"><b>${stats.nodes}</b><span>персонажей</span></div>
       <div class="stat"><b>${stats.links}</b><span>связей</span></div>
-      <div class="stat"><b>${stats.dead}</b><span>мёртвых</span></div>
+      <div class="stat"><b>${stats.dead}</b><span>недоступных</span></div>
     </div>
     ${resultList}
     <h3 class="side-sub">Категории <span class="muted small">клик — показать/скрыть</span></h3>
@@ -415,7 +506,7 @@ function renderOverview() {
       <summary>Как пользоваться</summary>
       <ul>
         <li>Колесо — масштаб, перетаскивание фона — сдвиг. Двойной клик по персонажу центрирует его.</li>
-        <li>Перетащите персонажа, чтобы закрепить его на месте. «Раскладка» снимает все закрепления.</li>
+        <li>Перетаскивание персонажа двигает его, не закрепляя: раскладка остаётся живой. Закрепить или открепить можно в карточке персонажа.</li>
         <li>Клик по связи открывает её подпись, тип и заметку.</li>
         <li><code>[[Имя]]</code> в заметке рисует пунктирную связь с этим персонажем.</li>
         <li>Всё автоматически сохраняется в браузере. JSON-файл — резервная копия или общий файл для нескольких устройств.</li>
@@ -492,7 +583,7 @@ function renderNode(node) {
       <span class="group-dot lg g-${group.id}"></span>
       <div class="side-head-text">
         <h2>${esc(node.label || 'Без имени')}</h2>
-        <span class="muted">${group.name}${node.dead ? ' · мёртв' : ''}</span>
+        <span class="muted">${group.name}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}</span>
       </div>
       <button class="icon-btn" type="button" data-act="close" title="Закрыть">×</button>
     </div>
@@ -505,8 +596,9 @@ function renderNode(node) {
       </label>
       <label class="check-row">
         <input type="checkbox" id="n-dead" ${node.dead ? 'checked' : ''}>
-        <span>Мёртв / недоступен</span>
+        <span>Недоступен</span>
       </label>
+      <p class="hint hint-tight">Точное состояние — мёртв, пропал, арестован, в коме — укажите в заметке.</p>
       <label class="field">Теги
         <input id="n-tags" value="${esc((node.tags || []).join(', '))}" placeholder="через запятую: напарник, должник">
       </label>
@@ -520,6 +612,7 @@ function renderNode(node) {
     ${links.length ? `<ul class="edge-list">${edgeItems}</ul>` : '<p class="empty-note">Связей пока нет.</p>'}
     <button class="btn wide" type="button" data-act="link">+ Связать с…</button>
     <div class="side-actions">
+      <button class="btn ghost" type="button" data-act="pin" aria-pressed="${node.fixed ? 'true' : 'false'}">${node.fixed ? 'Открепить' : 'Закрепить на карте'}</button>
       <button class="btn ghost" type="button" data-act="focus">Показать на карте</button>
       <button class="btn ghost danger" type="button" data-act="delete">Удалить персонажа</button>
     </div>`;
@@ -542,7 +635,7 @@ function renderNode(node) {
   $('#n-dead')?.addEventListener('change', (event) => {
     node.dead = event.target.checked;
     const sub = sidebarBody.querySelector('.side-head .muted');
-    if (sub) sub.textContent = `${(GROUP_MAP.get(node.group) || GROUP_MAP.get('other')).name}${node.dead ? ' · мёртв' : ''}`;
+    if (sub) sub.textContent = `${(GROUP_MAP.get(node.group) || GROUP_MAP.get('other')).name}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}`;
     graph.refresh();
     markDirty();
   });
@@ -560,6 +653,10 @@ function renderNode(node) {
 
   sidebarBody.querySelector('[data-act="close"]')?.addEventListener('click', () => clearSelection());
   sidebarBody.querySelector('[data-act="link"]')?.addEventListener('click', () => startLinkMode(node.id));
+  sidebarBody.querySelector('[data-act="pin"]')?.addEventListener('click', () => {
+    graph.setPinned(node.id, !node.fixed);
+    markDirty();
+  });
   sidebarBody.querySelector('[data-act="focus"]')?.addEventListener('click', () => graph.focusNode(node.id));
   sidebarBody.querySelector('[data-act="delete"]')?.addEventListener('click', () => deleteNode(node.id));
 
@@ -724,6 +821,20 @@ function handleNodeClick(id) {
     return;
   }
   createLink(linkMode.source, id);
+}
+
+function handlePinChange(id, pinned) {
+  if (selected.kind !== 'node' || selected.id !== id) return;
+  const node = byId(id);
+  const button = sidebarBody.querySelector('[data-act="pin"]');
+  if (button) {
+    button.textContent = pinned ? 'Открепить' : 'Закрепить на карте';
+    button.setAttribute('aria-pressed', String(pinned));
+  }
+  const sub = sidebarBody.querySelector('.side-head .muted');
+  if (sub && node) {
+    sub.textContent = `${(GROUP_MAP.get(node.group) || GROUP_MAP.get('other')).name}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}`;
+  }
 }
 
 /* ---------- операции с данными ---------- */
@@ -1041,12 +1152,16 @@ function init() {
   });
 
   // Привязанный файл из прошлого раза
-  getStoredHandle().then((handle) => {
+  getStoredHandle().then(async (handle) => {
     if (!handle) return;
     fileHandle = handle;
+    filePermission = await queryPermission(handle, 'readwrite');
     updateFileUi();
-    const inline = $('#file-status-inline');
-    if (inline) inline.textContent = handle.name;
+  });
+
+  // Дописываем файл, если вкладку скрывают
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) flushFile();
   });
 
   // Стартовая подсказка
