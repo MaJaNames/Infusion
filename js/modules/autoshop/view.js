@@ -3,6 +3,7 @@ import { partsOf, KIND_LABEL, statChips, droneChips } from './parts.js';
 import { summarize } from './aggregate.js';
 import { G, MAX_NAME, blankBuild as blank, newId, currentVehicle as current, partCount, saveGarage, exportGarage, importGarage } from './store.js';
 import { comboList, closeCombos, openCombo, comboKeydown, installComboClose } from '../../core/combo.js';
+import { showToast } from '../../core/toast.js';
 
 let OPEN_SOURCE = null; // раскрытый параметр в «Итогах»
 const OPEN_PART = new Set(); // раскрытые карточки деталей (ключ: транспорт + предмет)
@@ -229,7 +230,7 @@ const nextName = () => {
   while (used.has(`Транспорт ${n}`)) n++;
   return `Транспорт ${n}`;
 };
-const commit = (ctx) => { saveGarage(G); ctx.rerender(); };
+const commit = (ctx) => { saveGarage(G); ctx.markSaved?.(); ctx.rerender(); };
 
 async function loadGarageFile(file, ctx) {
   if (!file) return;
@@ -238,6 +239,7 @@ async function loadGarageFile(file, ctx) {
     // Импортированные машины тоже подчиняются правилу «Торус → Элиада».
     for (const v of G.vehicles) fixWheels(v.build, ctx.data);
     saveGarage(G);
+    ctx.markSaved?.();
     ctx.rerender();
     if (typeof alert === 'function') alert(`Загружено транспортных средств: ${n}`);
   } catch (err) {
@@ -374,9 +376,9 @@ export function bind(root, ctx) {
     if (e.target.closest('[data-del-vehicle]')) {
       const v = current();
       if (!v) return;
-      const ok = typeof confirm === 'function' ? confirm(`Удалить «${v.name}»?`) : true;
-      if (!ok) return;
       const i = G.vehicles.indexOf(v);
+      if (i < 0) return;
+      const prevActive = G.active;
       G.vehicles.splice(i, 1);
       
       G.active = G.vehicles.length > 0 
@@ -384,6 +386,14 @@ export function bind(root, ctx) {
         : null;
         
       commit(ctx);
+      showToast(`Удалён транспорт: ${v.name}`, {
+        label: 'Отменить',
+        onAction: () => {
+          G.vehicles.splice(Math.min(i, G.vehicles.length), 0, v);
+          G.active = prevActive;
+          commit(ctx);
+        },
+      });
       return;
     }
   };

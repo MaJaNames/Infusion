@@ -1,9 +1,11 @@
-import { esc, num, RC, RARITIES, label, uniq, money } from '../core/util.js';
+import { esc, num, RC, RARITIES, label, uniq, money, copyText } from '../core/util.js';
 import { fuzzyFilter } from '../core/fuzzy.js';
 import { RULES } from '../character/rules.js';
 import { partsOf, KIND_LABEL, STAT_LABEL, statChips, droneChips } from '../modules/autoshop/parts.js';
+import { showToast } from '../core/toast.js';
 
 const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали Кочевника'], ['rules', 'Справочник']];
+const DEFAULT_SORT = { items: ['id', 1], cards: ['id', 1], parts: ['id', 1], rules: ['group', 1] };
 const S = {
   tab: 'items', q: '',
   shown: { items: 40, cards: 40, parts: 40, rules: 30 },
@@ -16,6 +18,9 @@ const S = {
   sort: { items: ['id', 1], cards: ['id', 1], parts: ['id', 1], rules: ['group', 1] },
   // ID из БД скрыты по умолчанию; включаются галочкой в фильтрах.
   showIds: false,
+  // Запись, открытая по прямой ссылке (#db/items/0x0c9).
+  openId: null,
+  scrollToOpen: false,
 };
 // Бесконечная лента: сколько записей подгружается за раз и сколько уже показано.
 const BATCH = { items: 40, cards: 40, parts: 40, rules: 30 };
@@ -26,7 +31,7 @@ const RULE_GROUP_RANK = new Map(RULE_GROUPS.map((g, i) => [g, i]));
 const RULE_SUB_RANK = new Map([['Ранги', 0], ['Сущности', 1], ['Способности', 2], ['Мутации', 3], ['Черты', 4]]);
 
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div>${o.badge || ''}<span class="price">${price}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' data-deep-open="1" open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div><span class="row-side">${o.badge || ''}<span class="price">${price}</span>${o.share ? `<button type="button" class="row-share" data-share="${esc(o.share)}" title="Скопировать ссылку" aria-label="Скопировать ссылку">🔗</button>` : ''}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 const credits = (n) => money(n, 'credits');
 const tali = (n) => money(n, 'tali');
@@ -52,8 +57,8 @@ export const cardRow = (c, controls = '', o = {}) => row(RC[c.rarity] || 'c', `<
   `${controls}<div class="chips">${(c.classes || []).map((x) => `<span class="chip">${esc(x)}</span>`).join('')}${c.consumable ? '<span class="chip warn">расходуется</span>' : ''}</div>
    <p class="desc">${esc(c.mechanics)}</p>${dl([['Параметры', c.params], ['Тип урона', c.damage_type], ['Дальность', c.distance], ['Срабатывание', c.activation], ['Эффекты', c.effects], ['Испытание', c.test], ['Усиление', c.amplify], ['Сотворение', c.creation === 'Базис' ? '' : c.creation]])}`, o);
 
-const partRow = (p, id = null) => row(RC[p.item.rarity] || 'c', `<span class="tag">${KIND_LABEL[p.stats.kind] || '?'}</span><b>${esc(p.item.name)}</b>`, esc(p.item.rarity), credits(p.item.cost),
-  `<div class="chips">${p.drone ? `${droneChips(p.drone)}<span class="chip drone">Дрон</span>` : statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`, { id });
+const partRow = (p, o = {}) => row(RC[p.item.rarity] || 'c', `<span class="tag">${KIND_LABEL[p.stats.kind] || '?'}</span><b>${esc(p.item.name)}</b>`, esc(p.item.rarity), credits(p.item.cost),
+  `<div class="chips">${p.drone ? `${droneChips(p.drone)}<span class="chip drone">Дрон</span>` : statChips(p.stats)}</div><p class="desc">${esc(p.stats.unique)}</p>`, o);
 
 const ITEM_SORT = {
   name: sdef('Название', (it) => label(it)),
@@ -194,9 +199,9 @@ function rulesRows(d) {
 }
 
 const RULE_COLOR = { 'Ранг': 'c', 'Сущность': 'e', 'Способность': 'u', 'Мутация': 'u', 'Зверь': 'r', 'Черта': 'l', 'Навык': 'c' };
-const ruleRow = (r, id = null) => row(r.rc || RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
+const ruleRow = (r, o = {}) => row(r.rc || RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
   `${esc(r.group)}${r.detail ? ' · ' + esc(r.detail) : ''}${r.rarity ? ' · ' + esc(r.rarity) : ''}`, '',
-  `<p class="desc">${esc(r.description)}</p>`, { id });
+  `<p class="desc">${esc(r.description)}</p>`, o);
 
 function subOptions(d, group) {
   const seen = new Map();
@@ -253,31 +258,55 @@ const matches = (row, f) => Object.entries(f).every(([k, v]) => {
   return Array.isArray(x) ? x.map(String).includes(v) : String(x ?? '') === v;
 });
 
+// Состояние раздела в адресе: #db/items/0x0c9?q=…&sort=cost&dir=-1
+function routeString(openId = S.openId) {
+  const params = new URLSearchParams();
+  if (S.q.trim()) params.set('q', S.q.trim());
+  const f = S.filters[S.tab] || {};
+  for (const [k, v] of Object.entries(f)) if (v) params.set(k, String(v));
+  const [sortKey, dir] = S.sort[S.tab] || DEFAULT_SORT[S.tab];
+  if (sortKey && sortKey !== DEFAULT_SORT[S.tab][0]) params.set('sort', sortKey);
+  if (dir === -1) params.set('dir', '-1');
+  if (S.showIds) params.set('ids', '1');
+  const path = openId ? `${S.tab}/${encodeURIComponent(openId)}` : S.tab;
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
+function shareUrl(route) {
+  const hash = `#db/${route}`;
+  if (typeof location === 'undefined') return hash;
+  return `${location.href.split('#')[0]}${hash}`;
+}
+
+const deepIdOf = (kind, r) => (kind === 'parts' ? r.item?.id : r.id);
+
 // Собирает отфильтрованный и отсортированный список для текущей вкладки.
 function collect(d) {
   const q = S.q.trim(), f = S.filters[S.tab] || {};
+  const isOpen = (key) => !!S.openId && String(S.openId) === String(key);
   let rows, draw, sortKind = null, scores = null, ord = null;
   if (S.tab === 'items') {
     ({ rows, scores } = fuzzyFilter(d.items.filter((i) => matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f)),
       q, (i) => `${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`));
-    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null });
+    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null, openKey: `items:${it.id}`, open: isOpen(it.id), share: routeString(it.id) });
     sortKind = 'items';
     ord = new Map(d.items.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'cards') {
     ({ rows, scores } = fuzzyFilter(d.cards.filter((c) => matches({ rar: c.rarity, classes: c.classes, school: c.school, essence: c.essence, creation: c.creation, consumable: c.consumable ? '1' : '0', iconic: c.iconic ? '1' : '0' }, f)),
       q, (c) => `${c.name} ${c.mechanics} ${c.school} ${arr(c.classes)} ${c.essence || ''}`));
-    draw = (cd, controls, o = {}) => cardRow(cd, controls, { ...o, id: S.showIds ? cd.id : null });
+    draw = (cd, controls, o = {}) => cardRow(cd, controls, { ...o, id: S.showIds ? cd.id : null, openKey: `cards:${cd.id}`, open: isOpen(cd.id), share: routeString(cd.id) });
     sortKind = 'cards';
     ord = new Map(d.cards.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'parts') {
     ({ rows, scores } = fuzzyFilter(partsOf(d).filter((p) => matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f)),
       q, (p) => `${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`));
-    draw = (p) => partRow(p, S.showIds ? p.item.id : null);
+    draw = (p, controls, o = {}) => partRow(p, { ...o, id: S.showIds ? p.item.id : null, openKey: `parts:${p.item.id}`, open: isOpen(p.item.id), share: routeString(p.item.id) });
     sortKind = 'parts';
   } else {
     ({ rows, scores } = fuzzyFilter(rulesRows(d).filter((r) => matches({ group: r.group, sub: r.sub, rar: r.rarity }, f)),
       q, (r) => `${r.name} ${r.description} ${r.detail} ${r.group} ${r.sub}`));
-    draw = (r) => ruleRow(r, S.showIds ? r.dbId : null);
+    draw = (r, controls, o = {}) => ruleRow(r, { ...o, id: S.showIds ? r.dbId : null, openKey: `rules:${r.id}`, open: isOpen(r.id), share: routeString(r.id) });
     sortKind = 'rules';
   }
   // При поиске первична точность совпадения, выбранная сортировка — вторична.
@@ -299,7 +328,12 @@ const moreBlock = (kind, shown, total) => (total ? `<div class="more-wrap" data-
 function results(d) {
   const { rows, draw, ord } = collect(d);
   const kind = S.tab, total = rows.length;
-  const limit = Math.min(shownCount(kind), total);
+  let limit = Math.min(shownCount(kind), total);
+  // Прямая ссылка должна показать запись, даже если она дальше первой порции.
+  if (S.openId) {
+    const i = rows.findIndex((r) => String(deepIdOf(kind, r)) === String(S.openId));
+    if (i >= 0) limit = Math.max(limit, Math.min(total, i + 1));
+  }
   S.shown[kind] = limit;
   const list = total
     ? `<div class="list">${renderRows(rows.slice(0, limit), draw, ord)}</div>`
@@ -370,23 +404,24 @@ export function bind(root, ctx) {
   };
   const setTab = (id) => {
     setOpen(false);
-    S.tab = id; S.q = '';
+    S.tab = id; S.q = ''; S.openId = null;
     resetShown(id);
     const f = S.filters[id];
     if (f) for (const k of Object.keys(f)) f[k] = '';
-    ctx.route?.(id);
+    ctx.route?.(routeString());
     ctx.rerender();
     if (typeof window !== 'undefined') window.scrollTo(0, 0);
   };
+  const syncRoute = () => ctx.route?.(routeString());
   if (typeof document !== 'undefined') document.body.classList.remove('drawer-open');
   root.oninput = (e) => {
     if (e.target.dataset.k !== 'q') return;
-    S.q = e.target.value; resetShown(S.tab); res();
+    S.q = e.target.value; resetShown(S.tab); res(); syncRoute();
   };
   root.onchange = (e) => {
     if (e.target.dataset.showIds !== undefined) {
       S.showIds = !!e.target.checked;
-      res();
+      res(); syncRoute();
       return;
     }
     const k = e.target.dataset.k;
@@ -403,16 +438,25 @@ export function bind(root, ctx) {
         }
       }
       resetShown(S.tab);
-      res(); return;
+      res(); syncRoute(); return;
     }
     if (e.target.dataset.sort) {
       const kind = e.target.dataset.sort, prev = S.sort[kind] || ['name', 1];
       S.sort[kind] = [e.target.value, prev[1] === -1 ? -1 : 1];
-      resetShown(kind); res(); return;
+      resetShown(kind); res(); syncRoute(); return;
     }
     if (e.target.dataset.tabSelect !== undefined) setTab(e.target.value);
   };
   root.onclick = (e) => {
+    const share = e.target.closest('[data-share]');
+    if (share) {
+      e.preventDefault();
+      e.stopPropagation();
+      copyText(shareUrl(share.dataset.share)).then((ok) => {
+        showToast(ok ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
+      });
+      return;
+    }
     if (e.target.closest('[data-filters-open]')) { setOpen(true); return; }
     if (e.target.closest('[data-filters-close]')) { setOpen(false); return; }
     const t = e.target.closest('[data-tab]');
@@ -427,20 +471,66 @@ export function bind(root, ctx) {
       const title = `Направление: ${next > 0 ? 'по возрастанию' : 'по убыванию'}`;
       dir.title = title;
       dir.setAttribute('aria-label', `Направление сортировки: ${next > 0 ? 'по возрастанию' : 'по убыванию'}`);
-      res(); return;
+      res(); syncRoute(); return;
     }
     if (e.target.closest('[data-more]')) loadMore();
   };
   observeMore();
   root._dbObserver = io;
+  if (S.scrollToOpen) {
+    S.scrollToOpen = false;
+    const el = root.querySelector('[data-deep-open]');
+    // Прокрутка после отрисовки: main.draw() сбрасывает позицию в начало страницы,
+    // а браузер при перезагрузке с якорем восстанавливает прокрутку на событии load.
+    if (el && typeof el.scrollIntoView === 'function') {
+      const scroll = () => el.scrollIntoView({ block: 'center' });
+      // setTimeout, а не requestAnimationFrame: в фоновой вкладке кадры не приходят.
+      const later = () => {
+        if (typeof setTimeout === 'function') setTimeout(scroll, 0);
+        else scroll();
+      };
+      if (typeof document !== 'undefined' && document.readyState !== 'complete' && typeof addEventListener === 'function') {
+        addEventListener('load', later, { once: true });
+      } else later();
+    }
+  }
 }
 
-// Подссылки вида #db/cards: раздел базы открывается напрямую.
+// Подссылки вида #db/cards или #db/items/0x0c9?q=…: раздел и состояние открываются напрямую.
 const TAB_IDS = new Set(TABS.map(([id]) => id));
-export function setRoute(sub) {
+function applyRoute(sub) {
   // Пустой подраздел не сбрасывает выбор: при возврате на вкладку остаётся последняя подвкладка.
-  if (TAB_IDS.has(sub)) S.tab = sub;
+  if (!sub) return;
+  const raw = String(sub);
+  const cut = raw.indexOf('?');
+  const path = cut >= 0 ? raw.slice(0, cut) : raw;
+  const query = cut >= 0 ? raw.slice(cut + 1) : '';
+  const [tab, idPart] = path.split('/');
+  if (!TAB_IDS.has(tab)) return;
+  const openId = idPart ? decodeURIComponent(idPart) : null;
+  S.scrollToOpen = !!openId && openId !== S.openId;
+  S.tab = tab;
+  S.openId = openId;
+  S.q = '';
+  const f = S.filters[tab];
+  if (f) for (const k of Object.keys(f)) f[k] = '';
+  S.sort[tab] = [...DEFAULT_SORT[tab]];
+  S.showIds = false;
+  const params = new URLSearchParams(query);
+  S.q = params.get('q') || '';
+  if (f) for (const k of Object.keys(f)) {
+    const v = params.get(k);
+    if (v) f[k] = v;
+  }
+  const sortKey = params.get('sort');
+  if (sortKey) S.sort[tab][0] = sortKey;
+  if (params.get('dir') === '-1') S.sort[tab][1] = -1;
+  S.showIds = params.get('ids') === '1';
+  resetShown(tab);
+}
+export function setRoute(sub) {
+  applyRoute(sub);
 }
 export function currentRoute() {
-  return S.tab;
+  return routeString();
 }

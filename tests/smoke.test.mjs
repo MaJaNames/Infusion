@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs';
 import { indexData, optLabel, num, esc } from '../js/core/util.js';
 import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
-import { blankChar, normChar } from '../js/core/storage.js';
+import { blankChar, normChar, charToCode, codeToChar } from '../js/core/storage.js';
 import { derive } from '../js/character/derive.js';
-import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER, STAT_OVERRIDES, BEAST_STAT_OVERRIDES } from '../js/character/stats.js';
+import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER } from '../js/character/stats.js';
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
 import * as databases from '../js/views/databases.js';
@@ -239,6 +239,43 @@ check('подссылки: #char/repository', character.currentRoute() === 'repo
 character.setRoute('');
 check('персонаж: пустой подраздел сохраняет последнюю вкладку', character.currentRoute() === 'repository');
 character.setRoute('pockets');
+
+// Прямые ссылки на записи и состояние фильтров в адресе.
+databases.setRoute('items');
+const deepItem = d.items[d.items.length - 1];
+databases.setRoute(`items/${deepItem.id}`);
+const deepDb = databases.render(ctx);
+check('база: глубокая ссылка раскрывает запись', deepDb.includes(`data-row="items:${deepItem.id}" data-deep-open="1"`));
+check('база: у записи есть кнопка «Поделиться»', deepDb.includes(`data-share="items/${deepItem.id}"`));
+check('база: маршрут содержит ID записи', databases.currentRoute() === `items/${deepItem.id}`);
+const deepCat = d.items[0].category;
+dbRoot.oninput({ target: { dataset: { k: 'q' }, value: 'тест' } });
+dbRoot.onchange({ target: { dataset: { k: 'category' }, value: deepCat } });
+dbRoot.onchange({ target: { dataset: { sort: 'items' }, value: 'cost' } });
+const filteredRoute = databases.currentRoute();
+check('база: фильтры и сортировка попадают в адрес', filteredRoute.includes('q=') && filteredRoute.includes('category=') && filteredRoute.includes('sort=cost'), filteredRoute);
+databases.setRoute('cards');
+databases.setRoute(filteredRoute);
+const restoredDb = databases.render(ctx);
+check('база: ссылка восстанавливает фильтры', restoredDb.includes('value="тест"')
+  && restoredDb.includes(`value="${esc(deepCat)}" selected`) && restoredDb.includes('<option value="cost" selected>'));
+databases.setRoute('items');
+
+// Код сборки: base64url от JSON карточки.
+const charCode = charToCode(c);
+check('код сборки: префикс INF1 и base64url', charCode.startsWith('INF1.') && !/[+/=]/.test(charCode.slice(5)));
+const decodedChar = codeToChar(charCode);
+check('код сборки: обратное преобразование', decodedChar.rank === c.rank
+  && JSON.stringify(decodedChar.stats) === JSON.stringify(c.stats)
+  && JSON.stringify(decodedChar.abilities) === JSON.stringify(c.abilities));
+check('код сборки: повреждённый код отклоняется', (() => {
+  try { codeToChar('INF1.###'); return false; } catch { return true; }
+})());
+
+// Печать: отдельный лист персонажа без инвентаря.
+const printHtml = character.render(ctx).match(/<section class="print-sheet"[\s\S]*?<\/section>/)?.[0] || '';
+check('печать: в листе характеристики, навыки и способности', ['Характеристики', 'Навыки', 'Способности и мутации'].every((x) => printHtml.includes(x)));
+check('печать: лист без инвентаря и кнопок удаления', printHtml.length > 0 && !printHtml.includes('Инвентарь') && !printHtml.includes('data-del') && !printHtml.includes('data-a='));
 
 check('утилиты: мобильные вкладки', utilities.render(ctx).includes('data-tab-select'));
 
@@ -653,59 +690,25 @@ const statFormula = parseStatEffects('**+4n АТК ближним оружием
 check('статы: формула с n и условные ближний/дальний бой', statFormula.length === 2
   && statFormula.every((e) => e.stat === 'atk' && e.conditional)
   && statFormula.some((e) => e.value === 20) && statFormula.some((e) => e.value === -20));
-check('статы: все способности и мутации размечены вручную', d.abilities.every((a) => Object.hasOwn(STAT_OVERRIDES, a.id)));
-check('статы: ручные бонусы способностей и мутаций', (() => {
-  const s = collectCharacterStats({ ...blankChar(), rank: 5, abilities: ['0x014', '0x04f', '0x055', '0x056'] }, d);
-  return s.totals.defA === 15 && s.totals.flight === 3
-    && s.conditional.some((x) => x.stat === 'atk' && x.value === 30)
-    && s.conditional.some((x) => x.stat === 'atk' && x.value === 40)
-    && s.conditional.some((x) => x.stat === 'atk' && x.value === 20)
-    && s.conditional.some((x) => x.stat === 'tchn' && x.value === 15)
-    && s.conditional.some((x) => x.stat === 'ksh' && x.value === 10);
-})());
-check('статы: пустая ручная запись отключает автопарсер', collectCharacterStats({
-  ...blankChar(), rank: 5, abilities: ['0x03d', '0x03e'],
-}, d).sources.length === 0);
-check('статы: все способности зверя размечены вручную', d.beasts.every((b) => Object.hasOwn(BEAST_STAT_OVERRIDES, b.id)));
-check('статы: ручные бонусы способностей зверя', (() => {
+check('статы: способности, мутации и способности зверя не учитываются', (() => {
   const s = collectCharacterStats({
-    ...blankChar(), rank: 5, beasts: ['0x00d', '0x019', '0x020', '0x01a'],
+    ...blankChar(), rank: 5,
+    abilities: ['0x014', '0x04f', '0x055', '0x056', '0x026'],
+    beasts: ['0x00d', '0x019', '0x020', '0x01a'],
   }, d);
-  return s.conditional.some((x) => x.stat === 'atk' && x.value === 32)
-    && s.conditional.some((x) => x.stat === 'tchn' && x.value === 12)
-    && s.sources.some((x) => x.label === d.beasts.find((b) => b.id === '0x019').name
-      && x.effects.some((e) => e.stat === 'defP' && e.value === 60 && e.active))
-    && s.sources.some((x) => x.label === d.beasts.find((b) => b.id === '0x020').name
-      && x.effects.some((e) => e.stat === 'speed' && e.value === 3 && e.active));
-})());
-check('статы: пустая запись зверя отключает автопарсер', collectCharacterStats({
-  ...blankChar(), rank: 5, beasts: ['0x009', '0x01d'],
-}, d).sources.length === 0);
-check('статы: ручная правка способности заменяет автобонусы и задаёт n', (() => {
-  const ovId = d.abilities[0].id;
-  STAT_OVERRIDES[ovId] = {
-    n: 'beast',
-    effects: [
-      { stat: 'atk', value: '2n', text: 'тест: пассивно' },
-      { stat: 'ksh', value: 1, active: true, conditional: true, text: 'тест: условие' },
-    ],
-  };
-  const s = collectCharacterStats({ ...blankChar(), rank: 5, abilities: [ovId], beasts: ['x', 'y'] }, d);
-  delete STAT_OVERRIDES[ovId];
-  return s.totals.atk === 4 && s.totals.ksh === 0
-    && s.conditional.some((x) => x.stat === 'ksh' && x.value === 1 && !x.enabled)
-    && !s.sources.some((x) => x.effects.some((e) => e.stat === 'od'));
+  return s.sources.length === 0 && s.conditional.length === 0
+    && CHAR_STAT_ORDER.every((k) => !s.totals[k]);
 })());
 
 const statWeaponA = d.itemMap.get('0x0c9');
 const statWeaponB = d.itemMap.get('0x0cb');
 const statCondItem = d.itemMap.get('0x0d7');
-const statActiveAbility = d.abilityMap.get('0x026');
-const statBeast = d.beasts.find((b) => b.id === '0x001');
+const statCondItem2 = d.itemMap.get('0x0e5');
+const statActiveImplant = d.itemMap.get('0x10c');
 const statChar = {
   ...blankChar(), rank: 5,
-  equipment: [statWeaponA.id, statWeaponB.id, statCondItem.id],
-  abilities: [statActiveAbility.id], beasts: [statBeast.id],
+  equipment: [statWeaponA.id, statWeaponB.id],
+  implants: [statCondItem.id, statCondItem2.id, statActiveImplant.id],
   statsWeapon: statWeaponA.id,
 };
 const charStats = collectCharacterStats(statChar, d);
@@ -714,22 +717,18 @@ check('статы: профиль строится по выбранному о�
   JSON.stringify(charStats.weaponStats));
 check('статы: второе оружие не суммируется', charStats.ignoredWeapons.length === 1
   && charStats.totals.atk === 53 && charStats.totals.tchn === 15);
-check('статы: способность зверя даёт КЦ 1 + n/4', charStats.totals.kc === 2, charStats.totals.kc);
 check('статы: условные бонусы по умолчанию выключены', charStats.totals.atk === 53
-  && charStats.conditional.some((x) => x.sourceName.includes('Суставный') && x.value === 15 && !x.enabled)
-  && charStats.conditional.some((x) => x.sourceName.includes('Метка') && x.value === 10 && !x.enabled));
+  && charStats.conditional.some((x) => x.sourceName.includes('Суставный') && x.value === 15 && !x.enabled));
 const condEffectKey = charStats.conditional.find((x) => x.sourceName.includes('Суставный'))?.effectKey;
-const activeSourceKey = charStats.sources.find((x) => String(x.label).includes('Метка'))?.key;
-const activeEffectKey = charStats.conditional.find((x) => x.sourceName.includes('Метка'))?.effectKey;
+const condSourceKey = charStats.conditional.find((x) => x.sourceName.includes('Суставный'))?.sourceKey;
+const activeSourceKey = charStats.sources.find((x) => String(x.label).includes('Адреналиновые ячейки'))?.key;
 check('статы: условный пассивный бонус включается одной галочкой', collectCharacterStats({
   ...statChar, statsToggles: { sources: {}, effects: { [condEffectKey]: true } },
 }, d).totals.atk === 68);
-check('статы: активный условный бонус требует источник и условие', (() => {
-  const srcOnly = collectCharacterStats({ ...statChar, statsToggles: { sources: { [activeSourceKey]: true }, effects: {} } }, d);
-  const both = collectCharacterStats({
-    ...statChar, statsToggles: { sources: { [activeSourceKey]: true }, effects: { [activeEffectKey]: true } },
-  }, d);
-  return srcOnly.totals.atk === 53 && both.totals.atk === 63;
+check('статы: активный бонус импланта включается источником', (() => {
+  const off = collectCharacterStats(statChar, d);
+  const on = collectCharacterStats({ ...statChar, statsToggles: { sources: { [activeSourceKey]: true }, effects: {} } }, d);
+  return off.totals.od === 0 && on.totals.od === 1;
 })());
 check('статы: активный источник по умолчанию выключен', charStats.sources.some((x) => x.key === activeSourceKey && x.hasActive && !x.sourceOn));
 check('статы: перераспределитель энерго-ядра — не оружие', !isWeaponItem(d.itemMap.get('0x271')));
@@ -746,10 +745,9 @@ check('статы: карточки всех параметров и выбор 
   && CHAR_STAT_ORDER.every((k) => statsHtmlRender.includes(`data-stat-source="${k}"`))
   && statsHtmlRender.includes('data-stats-weapon'));
 check('статы: условия включаются у источника, отдельного списка нет', !statsHtmlRender.includes('<h2>Условные бонусы</h2>')
-  && statsHtmlRender.includes(`data-stats-cond-group="${activeSourceKey}"`)
+  && statsHtmlRender.includes(`data-stats-cond-group="${condSourceKey}"`)
   && statsHtmlRender.includes('Условие источника')
   && statsHtmlRender.includes(`data-stats-effect="${condEffectKey}"`)
-  && statsHtmlRender.includes(`data-stats-effect="${activeEffectKey}"`)
   && statsHtmlRender.includes(`data-stats-source="${activeSourceKey}"`));
 check('статы: общая галочка условий и галочки по источникам', statsHtmlRender.includes('data-stats-cond-all')
   && statsHtmlRender.includes('Условия: 0 / ')
@@ -765,9 +763,9 @@ check('статы: одна галочка включает все услови�
 condAllRoot.onchange({ target: { dataset: { statsCondAll: '' }, checked: false, type: 'checkbox' } });
 check('статы: одна галочка снимает все условия', condAllKeys.every((k) => condAllChar.statsToggles.effects[k] === false));
 
-const groupChar = { ...blankChar(), rank: 5, abilities: ['0x055', '0x007'] };
+const groupChar = { ...blankChar(), rank: 5, implants: ['0x120'] };
 const groupStats = collectCharacterStats(groupChar, d);
-const groupKey = groupStats.conditional.find((x) => x.sourceKey === 'ab:0x055:0')?.sourceKey;
+const groupKey = groupStats.conditional.find((x) => x.sourceKey === 'imp:0x120:0')?.sourceKey;
 const groupRoot = { addEventListener() {}, querySelector: () => null };
 character.bind(groupRoot, { ...ctx, char: groupChar, save() {}, rerender() {} });
 groupRoot.onchange({ target: { dataset: { statsCondGroup: groupKey }, checked: true, type: 'checkbox' } });

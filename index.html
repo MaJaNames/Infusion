@@ -36,11 +36,13 @@
 <header>
   <b class="logo">Инфузия</b>
   <nav id="nav"></nav>
+  <span id="save-state" class="save-state saved" role="status" aria-live="polite" title="Данные сохраняются в браузере">Сохранено</span>
 </header>
 <main>
   <div id="help"></div>
   <div id="app">Загрузка…</div>
 </main>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
 <script type="module" src="js/main.js"></script>
 <script>
 // Обновление интерфейса без ручной чистки кэша. Данные персонажа в localStorage не затрагиваются.

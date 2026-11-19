@@ -1,11 +1,12 @@
-import { esc, num, label, opts, set, fieldValue, RARITIES, RC, optLabel, money } from '../core/util.js';
+import { esc, num, label, opts, set, fieldValue, RARITIES, RC, optLabel, money, copyText } from '../core/util.js';
 import { derive, sellPrice, skillLimit } from '../character/derive.js';
 import {
   RULES, allowedClasses, RO_FACTIONS, RO_MIN, RO_MAX, RO_STATUS, RO_STATUS_LABEL,
   blankRO, blankROStatus, roRank, roRankText, normalizeROStatus, bmetLimit,
   BEAST_SLOTS, BEAST_RARITIES, BEAST_EXTRA_L_ABILITY, ROBOT_IMPLANTS,
 } from '../character/rules.js';
-import { exportChar, importChar, blankChar } from '../core/storage.js';
+import { exportChar, importChar, blankChar, charToCode, codeToChar } from '../core/storage.js';
+import { showToast } from '../core/toast.js';
 import {
   collectCharacterStats, CHAR_STAT_LABELS, CHAR_STAT_ORDER, STAT_SOURCE_TYPE_LABEL,
 } from '../character/stats.js';
@@ -534,7 +535,7 @@ const statSigned = (v) => `${v > 0 ? '+' : ''}${num(v)}`;
 
 // Переключатель «Карточка / Статы» живёт на уровне всей вкладки «Персонаж».
 function pageTabs() {
-  const tabs = [['sheet', 'Карточка'], ['stats', 'Статы (WIP)']];
+  const tabs = [['sheet', 'Карточка'], ['stats', 'Статы']];
   return `<div class="subtabs page-tabs" role="tablist" aria-label="Разделы персонажа">${tabs.map(([id, text]) => `<button type="button" role="tab" data-page-tab="${id}" class="${UI.page === id ? 'on' : ''}" aria-selected="${UI.page === id}">${text}</button>`).join('')}</div>
   <select class="subtabs-select" data-page-select aria-label="Раздел персонажа">${tabs.map(([id, text]) => `<option value="${id}"${UI.page === id ? ' selected' : ''}>${text}</option>`).join('')}</select>`;
 }
@@ -604,8 +605,8 @@ function statsPanel(c, d) {
   }).join('');
 
   return `<section class="panel stats-panel">
-    <div class="inv-head"><div><h2>Статы (РАЗРАБОТКА В ПРОЦЕССЕ)</h2>
-      <p class="meta">Сумма бонусов от экипировки, имплантов, способностей, мутаций и способностей зверя. Базовые характеристики персонажа сюда не входят; транспорт и роботы не учитываются.</p></div>
+    <div class="inv-head"><div><h2>Статы</h2>
+      <p class="meta">Сумма бонусов от текущего оружия, экипировки и имплантов. Базовые характеристики персонажа, способности, мутации, способности зверя, транспорт и роботы сюда не входят.</p></div>
       <div class="chips"><span class="chip">Источников: ${num(s.sources.length)}</span>${s.conditional.length ? statsCondAllToggle(s.conditional) : '<span class="chip">Условных: 0</span>'}</div>
     </div>
     ${weaponSelect}
@@ -614,7 +615,41 @@ function statsPanel(c, d) {
   </section>
   <section class="panel"><h2>Источники</h2>
     <p class="meta">Пассивные бонусы учитываются сразу. Активные источники включаются галочкой. Условие («если…», «только в ближнем бою») — общая галочка источника; раскройте карточку, чтобы снять отдельные бонусы.</p>
-    ${sourceCards ? `<div class="part-list">${sourceCards}</div>` : '<p class="empty">Нет источников с бонусами. Наденьте экипировку, импланты или выберите способности.</p>'}
+    ${sourceCards ? `<div class="part-list">${sourceCards}</div>` : '<p class="empty">Нет источников с бонусами. Наденьте экипировку или импланты.</p>'}
+  </section>`;
+}
+
+// Печатная карточка: только персонаж, без инвентаря и служебных кнопок.
+function printSheet(c, d, r, stats, race, trait) {
+  const skillRows = r.skills.length
+    ? `<table class="print-table"><thead><tr><th>Навык</th><th>Характеристика</th><th>Ур.</th><th>Щепки</th></tr></thead><tbody>${r.skills.map((s) => `<tr><td>${esc(s.sk.name)}</td><td>${esc(d.statMap.get(s.sk.stat)?.name || s.sk.stat)}</td><td>${num(s.level)}</td><td>${num(s.shards.value)}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="meta">Навыки не выбраны.</p>';
+  const abilities = (c.abilities || []).filter(Boolean).map((id) => d.abilityMap.get(id)).filter(Boolean);
+  const abilityList = abilities.length
+    ? `<ul class="print-list">${abilities.map((a) => `<li><b>${esc(a.name)}</b>${a.kind === 'mutation' ? ' (мутация)' : ''}${a.description ? ` — ${esc(a.description)}` : ''}</li>`).join('')}</ul>`
+    : '<p class="meta">Способности не выбраны.</p>';
+  const roLine = RO_FACTIONS.map((f) => `${esc(f)} ${num(c.ro?.[f])} (${esc(RO_STATUS_LABEL[c.roStatus?.[f]] || '—')}, ранг ${roRankText(roRank(Number(c.ro?.[f]) || 0))})`).join('; ');
+  const notes = String(c.notes || '').trim();
+  const issues = Object.entries(r.statIssues);
+  return `<section class="print-sheet" aria-hidden="true">
+    <h1>${esc(c.name || 'Без имени')}</h1>
+    <p class="print-meta">${[c.player && `Игрок: ${c.player}`, race?.name, `Ранг ${r.rankLevel}`, c.class, trait?.name].filter(Boolean).map(esc).join(' · ')}</p>
+    <div class="print-grid">
+      <div><span>Свободные очки</span><b>${num(r.freePoints.value)}</b></div>
+      <div><span>Макс. ОЗ</span><b>${num(r.hpMax.value)}</b></div>
+      <div><span>Макс. Кронос</span><b>${num(r.kronosMax.value)}</b></div>
+      <div><span>Навыки</span><b>${num(r.skillCount)} / ${num(r.skillLimit)}</b></div>
+    </div>
+    <h2>Характеристики</h2>
+    <div class="print-stats">${stats.map((s) => `<span><b>${esc(s.name)}</b> ${num(c.stats[s.key])}</span>`).join('')}</div>
+    ${issues.length ? `<p class="bad">Не хватает характеристик: ${issues.map(([k, v]) => `${esc(d.statMap.get(k)?.name || k)} (нужно ${v.need}, есть ${v.have})`).join('; ')}</p>` : ''}
+    <h2>Навыки</h2>
+    ${skillRows}
+    <h2>Способности и мутации</h2>
+    ${abilityList}
+    <h2>РО</h2>
+    <p class="print-ro">${roLine}</p>
+    ${notes ? `<h2>Заметки</h2><p class="print-notes">${esc(notes)}</p>` : ''}
   </section>`;
 }
 
@@ -827,7 +862,13 @@ export function render(ctx) {
       <section class="panel char-data"><h2>Данные персонажа</h2>
         <div class="btns"><button class="danger" data-a="reset-char">Сбросить персонажа</button>
           <button data-a="export-char">Экспорт в .json</button>
-          <label class="btn">Импорт из .json<input type="file" accept=".json" data-a="import-char" hidden></label></div>
+          <label class="btn">Импорт из .json<input type="file" accept=".json" data-a="import-char" hidden></label>
+          <button data-a="print-char">Печать карточки</button></div>
+        <details class="char-code"><summary>Код сборки для чата</summary>
+          <div class="btns"><button data-a="copy-char-code">Скопировать код</button></div>
+          <label>Вставить код<textarea data-char-code rows="2" placeholder="INF1.…" spellcheck="false"></textarea></label>
+          <div class="btns"><button data-a="import-char-code">Загрузить код</button></div>
+        </details>
         <p class="meta">Сброс очищает только карточку персонажа. Гараж, роботы, тема и кэш базы остаются. Полная выгрузка всех данных — в «Настройках».</p>
         <p id="char-msg" class="meta">${esc(DATA_MSG)}</p></section>
     </div>
@@ -837,7 +878,7 @@ export function render(ctx) {
       ${skeletonPanel(c, d)}
       <section class="panel"><h2>Заметки</h2><textarea data-p="notes" rows="4" style="width:100%">${esc(c.notes)}</textarea></section>
     </div>
-  </div>`;
+  </div>${printSheet(c, d, r, stats, race, trait)}`;
 }
 
 export function bind(root, ctx) {
@@ -1096,6 +1137,36 @@ export function bind(root, ctx) {
     }
     const action = e.target.closest('[data-a]')?.dataset.a;
     if (action === 'export-char') { exportChar(ctx.char); return; }
+    if (action === 'copy-char-code') {
+      copyText(charToCode(ctx.char)).then((ok) => {
+        showToast(ok ? 'Код сборки скопирован' : 'Не удалось скопировать код');
+      });
+      return;
+    }
+    if (action === 'import-char-code') {
+      const raw = root.querySelector('[data-char-code]')?.value;
+      try {
+        ctx.char = codeToChar(raw);
+        ctx.save();
+        DATA_MSG = 'Персонаж загружен из кода сборки.';
+      } catch (err) {
+        DATA_MSG = err.message;
+      }
+      ctx.rerender();
+      return;
+    }
+    if (action === 'print-char') {
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      const body = document.body;
+      const restore = () => {
+        body.classList.remove('print-char');
+        window.removeEventListener('afterprint', restore);
+      };
+      body.classList.add('print-char');
+      window.addEventListener('afterprint', restore);
+      window.print();
+      return;
+    }
     if (action === 'reset-char' && (typeof confirm !== 'function' || confirm('Сбросить персонажа? Гараж, роботы и настройки останутся.'))) {
       ctx.char = blankChar();
       ctx.save();
@@ -1153,6 +1224,9 @@ export function bind(root, ctx) {
     if (rm) {
       const [kind, i] = rm.dataset.del.split('.');
       const idx = Number(i);
+      const removed = c[kind]?.[idx];
+      const prevStorage = c.storage;
+      const prevClinic = Array.isArray(c.clinicImplants) ? [...c.clinicImplants] : null;
       if (kind === 'implants') {
         const id = c.implants[idx];
         c.implants.splice(idx, 1);
@@ -1160,6 +1234,24 @@ export function bind(root, ctx) {
       } else c[kind].splice(idx, 1);
       if (c.storage && !c.pockets.some((x) => x.id === c.storage)) c.storage = null;
       done();
+      if (removed !== undefined) {
+        const id = typeof removed === 'string' ? removed : removed?.id;
+        const name = kind === 'beasts'
+          ? (d.beasts.find((b) => b.id === id)?.name || id)
+          : kind === 'skills' ? d.skillMap.get(id)?.name
+            : kind === 'repository' ? d.cardMap.get(id)?.name
+              : d.itemMap.get(id)?.name;
+        showToast(`Удалено: ${name || 'запись'}`, {
+          label: 'Отменить',
+          onAction: () => {
+            if (!Array.isArray(c[kind])) return;
+            c[kind].splice(Math.min(idx, c[kind].length), 0, removed);
+            if (prevClinic) c.clinicImplants = prevClinic;
+            if (prevStorage) c.storage = prevStorage;
+            done();
+          },
+        });
+      }
     }
     if (!add) return;
     const kind = add.dataset.add, input = root.querySelector(`[data-in="${kind}"]`);

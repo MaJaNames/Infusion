@@ -45,3 +45,32 @@ export async function importChar(file) {
   if (c?.v !== 1 || !c.stats) throw new Error('Это не карточка персонажа Инфузии');
   return normChar(c);
 }
+
+// Код сборки — base64url от JSON карточки. Удобно пересылать строкой в чате.
+export const CHAR_CODE_PREFIX = 'INF1.';
+export function charToCode(c) {
+  const bytes = new TextEncoder().encode(JSON.stringify(c));
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const base64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return CHAR_CODE_PREFIX + base64;
+}
+export function codeToChar(code) {
+  let raw = String(code ?? '').trim().replace(/\s+/g, '');
+  if (!raw) throw new Error('Вставьте код сборки');
+  if (raw.startsWith(CHAR_CODE_PREFIX)) raw = raw.slice(CHAR_CODE_PREFIX.length);
+  raw = raw.replace(/-/g, '+').replace(/_/g, '/');
+  while (raw.length % 4) raw += '=';
+  let json;
+  try {
+    const binary = atob(raw);
+    const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+    json = new TextDecoder().decode(bytes);
+  } catch {
+    throw new Error('Код сборки повреждён');
+  }
+  let c;
+  try { c = JSON.parse(json); } catch { throw new Error('Код сборки повреждён'); }
+  if (c?.v !== 1 || !c.stats) throw new Error('Это не код персонажа Инфузии');
+  return normChar(c);
+}

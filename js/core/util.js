@@ -15,6 +15,25 @@ export const money = (value, kind = 'credits') => {
 };
 export const opts = (rows, sel, text = (r) => r.name, val = (r) => r.id) =>
   rows.map((r) => `<option value="${esc(val(r))}"${String(val(r)) === String(sel) ? ' selected' : ''}>${esc(text(r))}</option>`).join('');
+// Копирование в буфер обмена с запасным вариантом для старых браузеров.
+export async function copyText(text) {
+  const value = String(text ?? '');
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try { await navigator.clipboard.writeText(value); return true; } catch { /* нет доступа к буферу */ }
+  }
+  if (typeof document === 'undefined') return false;
+  const area = document.createElement('textarea');
+  area.value = value;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { /* копирование недоступно */ }
+  area.remove();
+  return ok;
+}
 export const set = (obj, path, value) => { const k = path.split('.'), last = k.pop(); k.reduce((a, x) => a[x], obj)[last] = value; };
 export const fieldValue = (el) => (el.type === 'number' || el.dataset.n ? (el.value === '' ? null : Number(el.value)) : el.value === '' && el.tagName === 'SELECT' ? null : el.value);
 

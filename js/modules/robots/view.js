@@ -1,5 +1,6 @@
 import { esc, num, label, optLabel, money, set, RC } from '../../core/util.js';
 import { comboList, closeCombos, openCombo, comboKeydown, installComboClose } from '../../core/combo.js';
+import { showToast } from '../../core/toast.js';
 import { R, MAX_ROBOT_NAME, addRobot, removeRobot, saveRobots, currentRobot, exportRobots, importRobots } from './store.js';
 import { isRobotBase, isRobotWeapon, isRobotModule, isBmet, robotKind, robotKindLabel, robotBase, robotStats, availableCount, robotRequirement, robotMissing, moduleChecked, moduleIsActive, weaponIndex, hasImplant } from './parts.js';
 import { bmetLimit, ROBOT_IMPLANTS } from '../../character/rules.js';
@@ -262,12 +263,13 @@ export function render(ctx) {
   </section>`;
 }
 
-const commit = (ctx) => { saveRobots(R); ctx.rerender(); };
+const commit = (ctx) => { saveRobots(R); ctx.markSaved?.(); ctx.rerender(); };
 
 async function loadRobotsFile(file, ctx) {
   if (!file) return;
   try {
     const n = importRobots(await file.text());
+    ctx.markSaved?.();
     ctx.rerender();
     if (typeof alert === 'function') alert(`Загружено роботов: ${n}`);
   } catch (err) {
@@ -374,7 +376,23 @@ export function bind(root, ctx) {
     if (e.target.closest('[data-add-robot]')) { addRobot(); ctx.rerender(); return; }
     if (e.target.closest('[data-del-robot]')) {
       const robot = currentRobot();
-      if (robot && removeRobot(robot.id)) ctx.rerender();
+      if (!robot) return;
+      const name = robot.name;
+      const robots = [...R.robots], active = R.active;
+      if (removeRobot(robot.id)) {
+        ctx.markSaved?.();
+        ctx.rerender();
+        showToast(`Удалён робот: ${name}`, {
+          label: 'Отменить',
+          onAction: () => {
+            R.robots = robots;
+            R.active = active;
+            saveRobots(R);
+            ctx.markSaved?.();
+            ctx.rerender();
+          },
+        });
+      }
       return;
     }
     if (e.target.closest('[data-r-clear]')) {
