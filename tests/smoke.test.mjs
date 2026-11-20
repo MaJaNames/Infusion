@@ -286,14 +286,19 @@ check('OG: meta, canonical и редирект', ogHtml.includes('property="og:t
 const ogNano = ogEntries.find((e) => e.kind === 'items' && e.id === '0x1dc');
 const ogNanoHtml = renderPage(ogNano, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
 check('OG: заголовок [тег] Название [Р]', ogNanoHtml.includes('content="[Mod] Очищение нанитами [Р]"'), ogNano.title);
-check('OG: описание без префикса и заглушки', describe(ogNano) === 'Параметры: 1 АКТ\n\nЭффекты: Активный;\n\nУникальный Эффект: Модуль меха; При использовании мех снимает с себя 2 эффекта', describe(ogNano));
-const ogEmpty = ogEntries.find((e) => e.kind === 'items' && !e.description);
-check('OG: пустое описание не выводится', Boolean(ogEmpty)
-  && !renderPage(ogEmpty, { url: 'https://example.test/Infusion', basePath: '/Infusion/' }).includes('og:description'));
+check('OG: описание без префикса и заглушки', describe(ogNano) === 'Цена: 15 000 кр · Техник\n\nПараметры: 1 АКТ\n\nЭффекты: Активный;\n\nУникальный Эффект: Модуль меха; При использовании мех снимает с себя 2 эффекта', describe(ogNano));
+const ogNanoPage = renderPage(ogNano, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
+check('OG: провайдер по разделу', ogNanoPage.includes('property="og:site_name" content="Инфузия · Предметы"'));
+const ogIconic = ogEntries.find((e) => e.kind === 'items' && e.id === '0x0c1');
+check('OG: у закрытого предмета цена, категория, организация и «культовый»',
+  describe(ogIconic).startsWith('Цена: 10 000 кр · Контейнер · Чёрный Рынок · культовый\n\n'), describe(ogIconic));
+const ogEmpty = { kind: 'items', id: '0x000', path: 'p/db/items/0x000/', title: 'Пусто', type: 'Предмет', description: '' };
+check('OG: пустое описание не выводится',
+  !renderPage(ogEmpty, { url: 'https://example.test/Infusion', basePath: '/Infusion/' }).includes('og:description'));
 const ogCard = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x001');
 const ogCardText = describe(ogCard);
 check('OG: у карты сначала параметры, потом описание', ogCardText.startsWith('Параметры: КШ 10\n')
-  && ogCardText.includes('\nТип урона: ') && ogCardText.includes('\n\nВы модулируете снаряд'), ogCardText);
+  && ogCardText.includes('\nТип урона: ') && ogCardText.includes('\nЦена: 40 тали\nКлассы: Трансгрессор\n\nВы модулируете снаряд'), ogCardText);
 const ogCardParams = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x002');
 check('OG: у карты без описания остаются только параметры', describe(ogCardParams).startsWith('Параметры: 5 АТК')
   && !describe(ogCardParams).includes('\n\n'), describe(ogCardParams));

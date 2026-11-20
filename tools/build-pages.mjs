@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { esc, indexData, label, RARITY_SHORT } from '../js/core/util.js';
+import { esc, indexData, label, num, RARITY_SHORT } from '../js/core/util.js';
 import { hashRoute, permalinkPath } from '../js/core/links.js';
 import { rulesRows } from '../js/core/rules-rows.js';
 
@@ -52,7 +52,20 @@ export function describe(entry) {
     .map((block) => block.split(/\r?\n/).map(cleanText).filter(Boolean).join('\n'))
     .filter(Boolean)
     .join('\n\n');
-  return body ? truncate(body, 300) : '';
+  return body ? truncate(body, 400) : '';
+}
+
+// Цены — текстом, с обычными пробелами вместо неразрывных из toLocaleString.
+const numberText = (n) => String(num(n)).replace(/\u00a0/g, ' ');
+
+// Первая строка предмета: цена, категория и доступность.
+export function itemMeta(item) {
+  return [
+    item.cost ? `Цена: ${numberText(item.cost)} кр` : '',
+    item.category,
+    item.organization && item.organization !== 'Общедоступно' ? item.organization : '',
+    item.iconic && item.rarity !== 'Культовый' ? 'культовый' : '',
+  ].filter(Boolean).join(' · ');
 }
 
 // Поля карты — те же, что в карточке на сайте. Сначала параметры, потом текст.
@@ -65,6 +78,10 @@ const CARD_FIELDS = [
   ['Испытание', (c) => c.test],
   ['Усиление', (c) => c.amplify],
   ['Сотворение', (c) => (c.creation === 'Базис' ? '' : c.creation)],
+  ['Цена', (c) => (c.price_tali ? `${numberText(c.price_tali)} тали` : '')],
+  ['Кронос', (c) => (c.kronos ? numberText(c.kronos) : '')],
+  ['Классы', (c) => c.classes],
+  ['Расходуется', (c) => (c.consumable ? 'да' : '')],
 ];
 
 const fieldText = (value) => (Array.isArray(value) ? value.join(', ') : String(value ?? '')).trim();
@@ -92,7 +109,7 @@ export function collectEntries(d) {
     entries.push({
       kind: 'items', id: String(it.id), path: permalinkPath('items', it.id),
       title: entryTitle(it), type: 'Предмет',
-      description: it.description,
+      description: [itemMeta(it), it.description].filter(Boolean).join('\n\n'),
     });
   }
   for (const c of d.cards) {
@@ -114,6 +131,8 @@ export function collectEntries(d) {
 
 const PAGE_STYLE = 'body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#e8ebee;color:#17212b}main{padding:2rem;text-align:center}a{color:#0d5c6b}';
 
+const SECTIONS = { items: 'Предметы', cards: 'Карты', rules: 'Справочник' };
+
 export function renderPage(entry, site = siteConfig()) {
   const canonical = new URL(entry.path, `${site.url}/`).href;
   const target = `${site.basePath}${hashRoute(entry.kind, entry.id)}`;
@@ -121,6 +140,7 @@ export function renderPage(entry, site = siteConfig()) {
   const descMeta = description ? `<meta name="description" content="${esc(description)}">\n` : '';
   const descOg = description ? `<meta property="og:description" content="${esc(description)}">\n` : '';
   const descTwitter = description ? `<meta name="twitter:description" content="${esc(description)}">\n` : '';
+  const siteName = `Инфузия · ${SECTIONS[entry.kind] || 'База'}`;
   const title = `${entry.title} — Инфузия`;
   const scriptTarget = JSON.stringify(target).replace(/</g, '\\u003c');
   return `<!doctype html>
@@ -132,7 +152,7 @@ export function renderPage(entry, site = siteConfig()) {
 ${descMeta}<link rel="canonical" href="${esc(canonical)}">
 <meta name="robots" content="noindex, follow">
 <meta property="og:type" content="article">
-<meta property="og:site_name" content="Инфузия">
+<meta property="og:site_name" content="${esc(siteName)}">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:title" content="${esc(entry.title)}">
 ${descOg}<meta property="og:url" content="${esc(canonical)}">
