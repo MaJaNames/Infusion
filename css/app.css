@@ -422,6 +422,11 @@ body.drawer-open{overflow:hidden}
 .row-share{padding:.1rem .35rem;border:0;background:none;color:var(--mute);font-size:1rem;line-height:1}
 .row-share:hover{color:var(--acc)}
 
+/* Запись, открытая по прямой ссылке: акцент, чтобы её было видно в ленте. */
+details.row.is-permalink{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 7%,var(--panel));box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 28%,transparent),0 10px 26px color-mix(in srgb,var(--acc) 14%,transparent)}
+details.row.is-permalink>summary{background:color-mix(in srgb,var(--acc) 9%,var(--panel))}
+details.row.is-permalink>summary b{color:var(--acc)}
+
 /* Код сборки персонажа. */
 .char-code{margin:.7rem 0;padding:.5rem .65rem;border:1px dashed var(--line);border-radius:8px;background:var(--bg)}
 .char-code>summary{cursor:pointer;color:var(--mute)}

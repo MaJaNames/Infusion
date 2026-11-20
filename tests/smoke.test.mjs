@@ -8,6 +8,8 @@ import { derive } from '../js/character/derive.js';
 import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER } from '../js/character/stats.js';
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
+import { permalinkPath, hashRoute, permalinkUrl } from '../js/core/links.js';
+import { collectEntries, renderPage } from '../tools/build-pages.mjs';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
@@ -246,8 +248,14 @@ const deepItem = d.items[d.items.length - 1];
 databases.setRoute(`items/${deepItem.id}`);
 const deepDb = databases.render(ctx);
 check('база: глубокая ссылка раскрывает запись', deepDb.includes(`data-row="items:${deepItem.id}" data-deep-open="1"`));
-check('база: у записи есть кнопка «Поделиться»', deepDb.includes(`data-share="items/${deepItem.id}"`));
+check('база: у записи есть кнопка «Поделиться»', deepDb.includes(`data-share="p/db/items/${deepItem.id}/"`));
+check('база: запись по ссылке подсвечена', /class="row [a-z]+ is-permalink"/.test(deepDb));
 check('база: маршрут содержит ID записи', databases.currentRoute() === `items/${deepItem.id}`);
+const partItem = d.items.find((i) => i.tag === 'Tr Mod');
+databases.setRoute(`parts/${partItem.id}`);
+const deepPart = databases.render(ctx);
+check('база: деталь делится ссылкой на предмет', deepPart.includes(`data-share="p/db/items/${partItem.id}/"`) && deepPart.includes('is-permalink'));
+databases.setRoute('items');
 const deepCat = d.items[0].category;
 dbRoot.oninput({ target: { dataset: { k: 'q' }, value: 'тест' } });
 dbRoot.onchange({ target: { dataset: { k: 'category' }, value: deepCat } });
@@ -260,6 +268,18 @@ const restoredDb = databases.render(ctx);
 check('база: ссылка восстанавливает фильтры', restoredDb.includes('value="тест"')
   && restoredDb.includes(`value="${esc(deepCat)}" selected`) && restoredDb.includes('<option value="cost" selected>'));
 databases.setRoute('items');
+
+// Красивые пермалинки и OG-страницы.
+check('пермалинки: путь и hash', permalinkPath('items', '0x001') === 'p/db/items/0x001/' && hashRoute('items', '0x001') === '#db/items/0x001');
+check('пермалинки: абсолютный URL от базы', permalinkUrl('cards', '0x001', 'https://example.test/Infusion/') === 'https://example.test/Infusion/p/db/cards/0x001/');
+const ogEntries = collectEntries(d);
+const ogPaths = ogEntries.map((e) => e.path);
+check('OG: страницы для предметов, карт и справочника', ogEntries.length === d.items.length + d.cards.length + 267, ogEntries.length);
+check('OG: пермалинки уникальны', new Set(ogPaths).size === ogPaths.length);
+const ogItem = ogEntries.find((e) => e.kind === 'items' && e.id === d.items[0].id);
+const ogHtml = renderPage(ogItem, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
+check('OG: meta, canonical и редирект', ogHtml.includes('property="og:title"') && ogHtml.includes('https://example.test/Infusion/p/db/items/')
+  && ogHtml.includes('http-equiv="refresh"') && ogHtml.includes('/Infusion/#db/items/'));
 
 // Код сборки: base64url от JSON карточки.
 const charCode = charToCode(c);
@@ -346,7 +366,7 @@ const leftIds = [...garageHtml.matchAll(/data-vehicle="([^"]+)"/g)].map((m) => m
 check('автомастерская: удаление машины', leftIds.length === 1 && leftIds[0] === vehicleIds[0]);
 
 // Дрон: свои ОЗ, защита и ОП из описания, но в итоги машины они не входят.
-const dronePart = partsOf(d).find((p) => p.drone);
+const dronePart = partsOf(d).find((p) => /Бронированный холодильник/i.test(p.item.name));
 check('дрон: характеристики из описания', !!dronePart && dronePart.drone.hp === 300 && dronePart.drone.defP === 80 && dronePart.drone.op === 1, JSON.stringify(dronePart?.drone));
 const pickOf = (id) => { const p = partsOf(d).find((x) => x.item.id === id); return p ? { cost: p.item.cost, stats: p.stats, name: p.item.name, drone: p.drone } : null; };
 const withDrone = summarize({ body: pickOf(bodyPart.item.id), wheels: null, engine: null, weapons: [], modules: [pickOf(dronePart.item.id)] });

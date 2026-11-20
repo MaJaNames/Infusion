@@ -3,6 +3,8 @@ import { fuzzyFilter } from '../core/fuzzy.js';
 import { RULES } from '../character/rules.js';
 import { partsOf, KIND_LABEL, STAT_LABEL, statChips, droneChips } from '../modules/autoshop/parts.js';
 import { showToast } from '../core/toast.js';
+import { rulesRows } from '../core/rules-rows.js';
+import { permalinkPath } from '../core/links.js';
 
 const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали Кочевника'], ['rules', 'Справочник']];
 const DEFAULT_SORT = { items: ['id', 1], cards: ['id', 1], parts: ['id', 1], rules: ['group', 1] };
@@ -31,7 +33,7 @@ const RULE_GROUP_RANK = new Map(RULE_GROUPS.map((g, i) => [g, i]));
 const RULE_SUB_RANK = new Map([['Ранги', 0], ['Сущности', 1], ['Способности', 2], ['Мутации', 3], ['Черты', 4]]);
 
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' data-deep-open="1" open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div><span class="row-side">${o.badge || ''}<span class="price">${price}</span>${o.share ? `<button type="button" class="row-share" data-share="${esc(o.share)}" title="Скопировать ссылку" aria-label="Скопировать ссылку">🔗</button>` : ''}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}${o.permalink ? ' is-permalink' : ''}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' data-deep-open="1" open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div><span class="row-side">${o.badge || ''}<span class="price">${price}</span>${o.share ? `<button type="button" class="row-share" data-share="${esc(o.share)}" title="${esc(o.shareTitle || 'Скопировать ссылку')}" aria-label="${esc(o.shareTitle || 'Скопировать ссылку')}">🔗</button>` : ''}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 const credits = (n) => money(n, 'credits');
 const tali = (n) => money(n, 'tali');
@@ -187,17 +189,6 @@ function sortRows(kind, rows, scores = null) {
   });
 }
 
-function rulesRows(d) {
-  const rows = [];
-  d.ranks.forEach((x) => rows.push({ id: `rank-${x.level}`, group: 'Константы', sub: 'Ранги', type: 'Ранг', name: `${x.level}. ${x.name}`, sortName: `${String(x.level).padStart(3, '0')} ${x.name}`, rarity: '', detail: `Уровень ${x.level}`, description: `ОЗ ${x.hp_base}, Кронос ${x.kronos_max}` }));
-  d.essences.forEach((x) => rows.push({ id: `essence-${x.id}`, dbId: x.id, group: 'Константы', sub: 'Сущности', type: 'Сущность', name: x.name, rarity: '', detail: x.full_name || '', description: x.description }));
-  d.abilities.forEach((x) => rows.push({ id: `ability-${x.id}`, dbId: x.id, group: 'Способности', sub: x.kind === 'mutation' ? 'Мутации' : 'Способности', type: x.kind === 'mutation' ? 'Мутация' : 'Способность', name: x.name, rarity: '', detail: x.class_requirement || '', description: x.description }));
-  d.beasts.forEach((x) => rows.push({ id: `beast-${x.id}`, dbId: x.id, group: 'Зверь', sub: x.group_name || 'Без группы', type: 'Зверь', name: x.name, rarity: x.rarity || '', detail: x.group_name || '', description: x.description, rc: RC[x.rarity] }));
-  d.traits.forEach((x) => rows.push({ id: `trait-${x.id}`, dbId: x.id, group: 'Черта', sub: 'Черты', type: 'Черта', name: x.name, rarity: '', detail: '', description: x.description }));
-  d.skills.forEach((x) => rows.push({ id: `skill-${x.id}`, dbId: x.id, group: 'Навыки', sub: d.statMap.get(x.stat)?.name || x.stat, type: 'Навык', name: x.name, rarity: x.rarity || '', detail: `${d.statMap.get(x.stat)?.name || x.stat} ${x.tier}`, description: x.description }));
-  return rows;
-}
-
 const RULE_COLOR = { 'Ранг': 'c', 'Сущность': 'e', 'Способность': 'u', 'Мутация': 'u', 'Зверь': 'r', 'Черта': 'l', 'Навык': 'c' };
 const ruleRow = (r, o = {}) => row(r.rc || RULE_COLOR[r.type] || 'c', `<span class="tag">${esc(r.sub || r.type)}</span><b>${esc(r.name)}</b>`,
   `${esc(r.group)}${r.detail ? ' · ' + esc(r.detail) : ''}${r.rarity ? ' · ' + esc(r.rarity) : ''}`, '',
@@ -273,10 +264,9 @@ function routeString(openId = S.openId) {
   return qs ? `${path}?${qs}` : path;
 }
 
-function shareUrl(route) {
-  const hash = `#db/${route}`;
-  if (typeof location === 'undefined') return hash;
-  return `${location.href.split('#')[0]}${hash}`;
+function shareUrl(path) {
+  if (typeof document === 'undefined') return path;
+  try { return new URL(path, document.baseURI).href; } catch { return path; }
 }
 
 const deepIdOf = (kind, r) => (kind === 'parts' ? r.item?.id : r.id);
@@ -289,24 +279,24 @@ function collect(d) {
   if (S.tab === 'items') {
     ({ rows, scores } = fuzzyFilter(d.items.filter((i) => matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f)),
       q, (i) => `${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`));
-    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null, openKey: `items:${it.id}`, open: isOpen(it.id), share: routeString(it.id) });
+    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null, openKey: `items:${it.id}`, open: isOpen(it.id), permalink: isOpen(it.id), share: permalinkPath('items', it.id) });
     sortKind = 'items';
     ord = new Map(d.items.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'cards') {
     ({ rows, scores } = fuzzyFilter(d.cards.filter((c) => matches({ rar: c.rarity, classes: c.classes, school: c.school, essence: c.essence, creation: c.creation, consumable: c.consumable ? '1' : '0', iconic: c.iconic ? '1' : '0' }, f)),
       q, (c) => `${c.name} ${c.mechanics} ${c.school} ${arr(c.classes)} ${c.essence || ''}`));
-    draw = (cd, controls, o = {}) => cardRow(cd, controls, { ...o, id: S.showIds ? cd.id : null, openKey: `cards:${cd.id}`, open: isOpen(cd.id), share: routeString(cd.id) });
+    draw = (cd, controls, o = {}) => cardRow(cd, controls, { ...o, id: S.showIds ? cd.id : null, openKey: `cards:${cd.id}`, open: isOpen(cd.id), permalink: isOpen(cd.id), share: permalinkPath('cards', cd.id) });
     sortKind = 'cards';
     ord = new Map(d.cards.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'parts') {
     ({ rows, scores } = fuzzyFilter(partsOf(d).filter((p) => matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f)),
       q, (p) => `${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`));
-    draw = (p, controls, o = {}) => partRow(p, { ...o, id: S.showIds ? p.item.id : null, openKey: `parts:${p.item.id}`, open: isOpen(p.item.id), share: routeString(p.item.id) });
+    draw = (p, controls, o = {}) => partRow(p, { ...o, id: S.showIds ? p.item.id : null, openKey: `parts:${p.item.id}`, open: isOpen(p.item.id), permalink: isOpen(p.item.id), share: permalinkPath('items', p.item.id), shareTitle: 'Скопировать ссылку на предмет' });
     sortKind = 'parts';
   } else {
     ({ rows, scores } = fuzzyFilter(rulesRows(d).filter((r) => matches({ group: r.group, sub: r.sub, rar: r.rarity }, f)),
       q, (r) => `${r.name} ${r.description} ${r.detail} ${r.group} ${r.sub}`));
-    draw = (r, controls, o = {}) => ruleRow(r, { ...o, id: S.showIds ? r.dbId : null, openKey: `rules:${r.id}`, open: isOpen(r.id), share: routeString(r.id) });
+    draw = (r, controls, o = {}) => ruleRow(r, { ...o, id: S.showIds ? r.dbId : null, openKey: `rules:${r.id}`, open: isOpen(r.id), permalink: isOpen(r.id), share: permalinkPath('rules', r.id) });
     sortKind = 'rules';
   }
   // При поиске первична точность совпадения, выбранная сортировка — вторична.
