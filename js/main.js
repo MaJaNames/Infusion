@@ -182,8 +182,8 @@ function chooseSource() {
         <h2>Откуда загружать базу?</h2>
         <p class="meta">Это влияет только на справочники. Персонаж, транспорт и роботы хранятся отдельно и не затрагиваются. Выбор сохранится в браузере, поменять его можно в «Настройках».</p>
         <div class="source-choice">
-          <button data-source-choice="${SOURCE_SNAPSHOT}"><b>Снимок</b><span>data/data.json — стабильно и быстро. Обновляется GitHub Actions раз в сутки.</span></button>
-          <button data-source-choice="${SOURCE_LIVE}"><b>Автообновление (Supabase)</b><span>Свежая база прямо из Supabase. Если сервис недоступен, сайт покажет сохранённую копию.</span></button>
+          <button data-source-choice="${SOURCE_SNAPSHOT}"><b>Снимок</b><span>Автоматически обновляется раз в сутки: стабильно, но данные не обновляются в реальном времени</span></button>
+          <button data-source-choice="${SOURCE_LIVE}"><b>Автообновление</b><span>Свежая база прямо из СУБД: Актуально, но может быть долго. Если сервис недоступен, сайт покажет сохранённую копию.</span></button>
         </div>
         <p class="meta">Если сомневаетесь, выберите снимок: он не зависит от доступности Supabase.</p>
       </section>`;

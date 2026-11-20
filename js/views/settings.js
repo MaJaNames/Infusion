@@ -24,10 +24,10 @@ export function render(ctx) {
       <p class="meta">Сейчас: ${esc(d.source)} · версия: ${esc(String(d.version).slice(0, 19))} · предметов ${d.items.length}, карт ${d.cards.length}</p>
       <div class="source-modes">
         <button data-source-mode="${SOURCE_SNAPSHOT}" class="${live ? '' : 'on'}">Снимок</button>
-        <button data-source-mode="${SOURCE_LIVE}" class="${live ? 'on' : ''}">Автообновление (Supabase)</button>
+        <button data-source-mode="${SOURCE_LIVE}" class="${live ? 'on' : ''}">Автообновление</button>
         <button data-a="reload-db">Обновить базу</button>
       </div>
-      <p class="meta">Снимок — data/data.json, который GitHub Actions обновляет раз в сутки: быстро и стабильно. Автообновление — свежие данные прямо из Supabase: версия проверяется каждые 10 минут и при возврате на вкладку, а с включённым Realtime обновление приходит сразу после изменения. Если источник недоступен, сайт покажет последнюю сохранённую копию.</p>
+      <p class="meta">Снимок автоматически обновляется раз в сутки: стабильно, но данные не обновляются в реальном времени. Автообновление подгружает данные напрямую из СУБД: Всегда актуальные данные, но могут быть задержки, если с СУБД будут какие-то проблемы. В случае если СУБД недоступна: переключается на режим "Снимок"</p>
       ${d.sourceFallback ? `<p class="meta bad">Не удалось обновить базу: ${esc(d.sourceError || 'нет связи')}. Показаны сохранённые данные.</p>` : ''}</section>
     <section class="panel system"><h2>Системные</h2>
       <p class="meta">Полная очистка локальных данных сайта: персонаж, гараж, роботы, тема, кэш базы и service worker. После этого страница перезагрузится.</p>
