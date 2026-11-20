@@ -27,7 +27,7 @@ export function render(ctx) {
         <button data-source-mode="${SOURCE_LIVE}" class="${live ? 'on' : ''}">Автообновление (Supabase)</button>
         <button data-a="reload-db">Обновить базу</button>
       </div>
-      <p class="meta">Снимок — data/data.json, который GitHub Actions обновляет раз в сутки: быстро и стабильно. Автообновление — свежие данные прямо из Supabase: версия проверяется каждые 10 минут и при возврате на вкладку. Если источник недоступен, сайт покажет последнюю сохранённую копию.</p>
+      <p class="meta">Снимок — data/data.json, который GitHub Actions обновляет раз в сутки: быстро и стабильно. Автообновление — свежие данные прямо из Supabase: версия проверяется каждые 10 минут и при возврате на вкладку, а с включённым Realtime обновление приходит сразу после изменения. Если источник недоступен, сайт покажет последнюю сохранённую копию.</p>
       ${d.sourceFallback ? `<p class="meta bad">Не удалось обновить базу: ${esc(d.sourceError || 'нет связи')}. Показаны сохранённые данные.</p>` : ''}</section>
     <section class="panel system"><h2>Системные</h2>
       <p class="meta">Полная очистка локальных данных сайта: персонаж, гараж, роботы, тема, кэш базы и service worker. После этого страница перезагрузится.</p>
@@ -61,6 +61,7 @@ function restoreBackup(text, ctx) {
 // Переключение источника и принудительное обновление базы.
 async function switchSource(mode, root, ctx, msg) {
   setSourcePreference(mode);
+  ctx.sourceChanged?.();
   const label = mode === SOURCE_LIVE ? 'Supabase' : 'снимок data.json';
   msg(`Загружаем базу: ${label}…`);
   root.querySelectorAll?.('[data-source-mode], [data-a="reload-db"]').forEach((btn) => { btn.disabled = true; });

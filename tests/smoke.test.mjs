@@ -452,10 +452,14 @@ check('иконка сайта: paw.webp', indexSource.includes('rel="icon"') &&
 check('обновление интерфейса: данные персонажа не затрагиваются', !swSource.includes('localStorage') && !swSource.includes('indexedDB'));
 const mainSource = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
 const settingsSource = readFileSync(new URL('../js/views/settings.js', import.meta.url), 'utf8');
+const realtimeSource = readFileSync(new URL('../js/core/realtime.js', import.meta.url), 'utf8');
 check('источник: первый запуск предлагает снимок или Supabase', mainSource.includes('data-source-choice') && mainSource.includes('setSourcePreference'));
 check('источник: настройки переключают режим и обновляют базу', settingsSource.includes('data-source-mode') && settingsSource.includes('loadData({ source: mode'));
 check('источник: онлайн-режим проверяет обновления по таймеру и при возврате на вкладку',
   mainSource.includes('LIVE_REFRESH_MS') && mainSource.includes('refreshLive') && mainSource.includes('visibilitychange'));
+check('источник: Realtime подписывается на meta и отступает при ошибке',
+  mainSource.includes('startRealtime') && realtimeSource.includes('realtime:public:meta')
+  && realtimeSource.includes('postgres_changes') && realtimeSource.includes('scheduleReconnect'));
 const fakeRoot = { addEventListener() {} };
 character.bind(fakeRoot, ctx);
 const clickTab = (itab) => fakeRoot.onclick({ target: { closest: (s) => s === '[data-itab]' ? { dataset: { itab } } : null } });

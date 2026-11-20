@@ -4,6 +4,7 @@ import { loadChar, saveChar } from './core/storage.js';
 import { applyTheme } from './core/theme.js';
 import { helpBlock } from './core/help.js';
 import { showToast } from './core/toast.js';
+import { startRealtime, stopRealtime } from './core/realtime.js';
 import * as databases from './views/databases.js';
 import * as character from './views/character.js';
 import * as utilities from './views/utilities.js';
@@ -15,6 +16,7 @@ let CURRENT = TABS[0];
 const LIVE_REFRESH_MS = 10 * 60 * 1000;
 let liveTimer = 0;
 let liveBusy = false;
+let liveAgain = false;
 let liveCheckedAt = 0;
 let pendingData = null;
 
@@ -85,6 +87,7 @@ const ctx = {
   rerender: () => draw(false),
   setData: (d) => { ctx.data = indexData(d); draw(true); },
   route: (sub) => setHash(CURRENT, sub),
+  sourceChanged: () => syncLiveWatch(),
 };
 
 function draw(full) {
@@ -125,11 +128,12 @@ function applyPendingData() {
 }
 
 // Проверяем только версию базы; таблицы скачиваются, если она изменилась.
-async function refreshLive() {
-  if (liveBusy || !ctx.data || getSourcePreference() !== SOURCE_LIVE) return;
+async function refreshLive({ force = false } = {}) {
+  if (liveBusy) { liveAgain = true; return; }
+  if (!ctx.data || getSourcePreference() !== SOURCE_LIVE) return;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
   // Частые переключения вкладок не должны дёргать Supabase без нужды.
-  if (Date.now() - liveCheckedAt < 60 * 1000) return;
+  if (!force && Date.now() - liveCheckedAt < 60 * 1000) return;
   liveCheckedAt = Date.now();
   liveBusy = true;
   try {
@@ -142,6 +146,17 @@ async function refreshLive() {
     // Следующая проверка попробует снова; текущая база остаётся на экране.
   } finally {
     liveBusy = false;
+    if (liveAgain) { liveAgain = false; refreshLive({ force: true }); }
+  }
+}
+
+// Realtime сообщает об изменении meta сразу; если подписка недоступна,
+// тот же refreshLive продолжает работать по таймеру.
+function syncLiveWatch() {
+  if (getSourcePreference() === SOURCE_LIVE) {
+    startRealtime(() => { liveCheckedAt = 0; refreshLive({ force: true }); });
+  } else {
+    stopRealtime();
   }
 }
 
@@ -199,5 +214,6 @@ async function boot() {
   draw(true);
   addEventListener('hashchange', () => draw(true));
   startLiveRefresh();
+  syncLiveWatch();
 }
 boot();

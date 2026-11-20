@@ -9,8 +9,8 @@ export const SOURCE_SNAPSHOT = 'snapshot';
 export const SOURCE_LIVE = 'live';
 
 // Публичный ключ Supabase даёт только чтение — этого достаточно для справочников.
-const SUPABASE_URL = 'https://awsotgciwopymcornpyg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_wEyPdxTM_po23ZZqnoIZ5Q_USO6ZwqN';
+export const SUPABASE_URL = 'https://awsotgciwopymcornpyg.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_wEyPdxTM_po23ZZqnoIZ5Q_USO6ZwqN';
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
 const ATTEMPTS = 3;
