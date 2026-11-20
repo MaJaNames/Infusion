@@ -9,7 +9,7 @@ import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats,
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
 import { permalinkPath, hashRoute, permalinkUrl } from '../js/core/links.js';
-import { collectEntries, renderPage } from '../tools/build-pages.mjs';
+import { collectEntries, describe, renderPage } from '../tools/build-pages.mjs';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
@@ -280,6 +280,15 @@ const ogItem = ogEntries.find((e) => e.kind === 'items' && e.id === d.items[0].i
 const ogHtml = renderPage(ogItem, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
 check('OG: meta, canonical и редирект', ogHtml.includes('property="og:title"') && ogHtml.includes('https://example.test/Infusion/p/db/items/')
   && ogHtml.includes('http-equiv="refresh"') && ogHtml.includes('/Infusion/#db/items/'));
+
+// Заголовок — как в списках, описание — только текст записи.
+const ogNano = ogEntries.find((e) => e.kind === 'items' && e.id === '0x1dc');
+const ogNanoHtml = renderPage(ogNano, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
+check('OG: заголовок [тег] Название [Р]', ogNanoHtml.includes('content="[Mod] Очищение нанитами [Р]"'), ogNano.title);
+check('OG: описание без префикса и заглушки', describe(ogNano) === 'Параметры: 1 АКТ\n\nЭффекты: Активный;\n\nУникальный Эффект: Модуль меха; При использовании мех снимает с себя 2 эффекта', describe(ogNano));
+const ogEmpty = ogEntries.find((e) => e.kind === 'items' && !e.description);
+check('OG: пустое описание не выводится', Boolean(ogEmpty)
+  && !renderPage(ogEmpty, { url: 'https://example.test/Infusion', basePath: '/Infusion/' }).includes('og:description'));
 
 // Код сборки: base64url от JSON карточки.
 const charCode = charToCode(c);

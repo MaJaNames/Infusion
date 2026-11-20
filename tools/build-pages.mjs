@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { esc, indexData } from '../js/core/util.js';
+import { esc, indexData, label, RARITY_SHORT } from '../js/core/util.js';
 import { hashRoute, permalinkPath } from '../js/core/links.js';
 import { rulesRows } from '../js/core/rules-rows.js';
 
@@ -44,10 +44,22 @@ function truncate(text, max) {
   return `${(at > max * 0.55 ? slice.slice(0, at) : slice).trim()}…`;
 }
 
+// Описание в превью — только сам текст записи, абзацами.
+// Ни типа, ни редкости, ни заглушки: пустое описание просто не выводится.
 export function describe(entry) {
-  const head = [entry.type, entry.meta].filter(Boolean).join(' · ');
-  const body = cleanText(entry.description) || 'Запись из базы «Кибер Инфузия».';
-  return truncate([head, body].filter(Boolean).join('. '), 200);
+  const body = String(entry.description ?? '')
+    .split(/\r?\n\s*\r?\n/)
+    .map(cleanText)
+    .filter(Boolean)
+    .join('\n\n');
+  return body ? truncate(body, 200) : '';
+}
+
+// Заголовок превью: [Тег] Название [Р] — как в выпадающих списках.
+export function entryTitle(row) {
+  const base = label(row).trim() || 'Без названия';
+  const short = row.rarity ? RARITY_SHORT[row.rarity] || String(row.rarity).slice(0, 1) : '';
+  return short ? `${base} [${short}]` : base;
 }
 
 // Всё, для чего на сайте есть кнопка «Поделиться» и отдельная OG-страница.
@@ -57,31 +69,21 @@ export function collectEntries(d) {
   for (const it of d.items) {
     entries.push({
       kind: 'items', id: String(it.id), path: permalinkPath('items', it.id),
-      title: it.name || 'Без названия', type: 'Предмет',
-      meta: [
-        it.tag ? `[${it.tag}]` : '', it.rarity, it.category,
-        it.organization && it.organization !== 'Общедоступно' ? it.organization : '',
-        it.iconic && it.rarity !== 'Культовый' ? 'культовый' : '',
-      ].filter(Boolean).join(' · '),
+      title: entryTitle(it), type: 'Предмет',
       description: it.description,
     });
   }
   for (const c of d.cards) {
     entries.push({
       kind: 'cards', id: String(c.id), path: permalinkPath('cards', c.id),
-      title: c.name || 'Без названия', type: 'Карта',
-      meta: [
-        c.tag ? `[${c.tag}]` : '', c.rarity, c.school, c.essence,
-        c.iconic && c.rarity !== 'Культовый' ? 'культовый' : '',
-      ].filter(Boolean).join(' · '),
+      title: entryTitle(c), type: 'Карта',
       description: c.mechanics,
     });
   }
   for (const r of rulesRows(d)) {
     entries.push({
       kind: 'rules', id: String(r.id), path: permalinkPath('rules', r.id),
-      title: r.name || 'Без названия', type: r.type || 'Справочник',
-      meta: [r.detail, r.rarity].filter(Boolean).join(' · '),
+      title: entryTitle(r), type: r.type || 'Справочник',
       description: r.description,
     });
   }
@@ -94,6 +96,9 @@ export function renderPage(entry, site = siteConfig()) {
   const canonical = new URL(entry.path, `${site.url}/`).href;
   const target = `${site.basePath}${hashRoute(entry.kind, entry.id)}`;
   const description = describe(entry);
+  const descMeta = description ? `<meta name="description" content="${esc(description)}">\n` : '';
+  const descOg = description ? `<meta property="og:description" content="${esc(description)}">\n` : '';
+  const descTwitter = description ? `<meta name="twitter:description" content="${esc(description)}">\n` : '';
   const title = `${entry.title} — Инфузия`;
   const scriptTarget = JSON.stringify(target).replace(/</g, '\\u003c');
   return `<!doctype html>
@@ -102,20 +107,17 @@ export function renderPage(entry, site = siteConfig()) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}">
-<link rel="canonical" href="${esc(canonical)}">
+${descMeta}<link rel="canonical" href="${esc(canonical)}">
 <meta name="robots" content="noindex, follow">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Инфузия">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:title" content="${esc(entry.title)}">
-<meta property="og:description" content="${esc(description)}">
-<meta property="og:url" content="${esc(canonical)}">
+${descOg}<meta property="og:url" content="${esc(canonical)}">
 <meta property="article:section" content="${esc(entry.type)}">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="${esc(entry.title)}">
-<meta name="twitter:description" content="${esc(description)}">
-<meta http-equiv="refresh" content="0; url=${esc(target)}">
+${descTwitter}<meta http-equiv="refresh" content="0; url=${esc(target)}">
 <link rel="icon" type="image/webp" href="${esc(site.basePath)}assets/icons/paw.webp">
 <style>${PAGE_STYLE}</style>
 </head>
