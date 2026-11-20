@@ -4,6 +4,7 @@ import { indexData, optLabel, num, esc } from '../js/core/util.js';
 import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
 import { blankChar, normChar, charToCode, codeToChar } from '../js/core/storage.js';
+import { loadData, getSourcePreference, setSourcePreference, SOURCE_LIVE, SOURCE_SNAPSHOT } from '../js/core/data-source.js';
 import { derive } from '../js/character/derive.js';
 import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER } from '../js/character/stats.js';
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
@@ -449,6 +450,10 @@ check('комбобокс: строки не сжимаются в плоско�
 check('обновление интерфейса: service worker и свежие файлы', swSource.includes("cache: 'no-store'") && indexSource.includes("register('sw.js'"));
 check('иконка сайта: paw.webp', indexSource.includes('rel="icon"') && indexSource.includes('assets/icons/paw.webp'));
 check('обновление интерфейса: данные персонажа не затрагиваются', !swSource.includes('localStorage') && !swSource.includes('indexedDB'));
+const mainSource = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+const settingsSource = readFileSync(new URL('../js/views/settings.js', import.meta.url), 'utf8');
+check('источник: первый запуск предлагает снимок или Supabase', mainSource.includes('data-source-choice') && mainSource.includes('setSourcePreference'));
+check('источник: настройки переключают режим и обновляют базу', settingsSource.includes('data-source-mode') && settingsSource.includes('loadData({ source: mode'));
 const fakeRoot = { addEventListener() {} };
 character.bind(fakeRoot, ctx);
 const clickTab = (itab) => fakeRoot.onclick({ target: { closest: (s) => s === '[data-itab]' ? { dataset: { itab } } : null } });
@@ -529,6 +534,9 @@ const systemAt = settingsHtml.indexOf('Системные');
 check('настройки: полная выгрузка всех данных и сброс кэша',
   settingsHtml.includes('data-a="export-all"') && !settingsHtml.includes('data-a="reset-char"') && !settingsHtml.includes('data-a="export"')
   && systemAt > 0 && settingsHtml.indexOf('data-a="reset-cache"') > systemAt);
+check('настройки: выбор источника базы и обновление',
+  settingsHtml.includes(`data-source-mode="${SOURCE_SNAPSHOT}"`) && settingsHtml.includes(`data-source-mode="${SOURCE_LIVE}"`)
+  && settingsHtml.includes('data-a="reload-db"') && settingsHtml.includes('Источник базы'));
 const charDataHtml = character.render(ctx);
 check('персонаж: выгрузка, загрузка и сброс на своей вкладке',
   charDataHtml.includes('data-a="reset-char"') && charDataHtml.includes('data-a="export-char"') && charDataHtml.includes('data-a="import-char"'));
@@ -828,6 +836,64 @@ check('статы: галочки и оружие сохраняются в ка
   statToggleChar.statsToggles.effects[condEffectKey] === true
   && statToggleChar.statsToggles.sources[activeSourceKey] === true
   && statToggleChar.statsWeapon === statWeaponB.id);
+
+// --- Источник базы: сохранённый выбор, Supabase, версия и запасной кэш ---
+const originalLocalStorage = globalThis.localStorage;
+const originalFetch = globalThis.fetch;
+const store = new Map();
+globalThis.localStorage = {
+  getItem: (key) => (store.has(key) ? store.get(key) : null),
+  setItem: (key, value) => { store.set(key, String(value)); },
+  removeItem: (key) => { store.delete(key); },
+  clear: () => store.clear(),
+};
+const liveRows = {
+  items: [{ id: '0x001', name: 'Онлайн', category: 'Тест', rarity: 'Обычный', cost: 1, description: '' }],
+  cards: [], ranks: [], races: [], classes: [], stats: [], skills: [], abilities: [],
+  beasts: [], traits: [], essences: [], slots: [], implant_combos: [],
+};
+let liveVersion = 'v1';
+let tableCalls = 0;
+globalThis.fetch = async (url) => {
+  const value = String(url);
+  if (value.startsWith('data/data.json')) {
+    return { ok: true, status: 200, json: async () => ({ ...liveRows, version: 'snapshot-v1' }) };
+  }
+  if (value.includes('/rest/v1/meta?')) {
+    return { ok: true, status: 200, json: async () => [{ value: liveVersion }] };
+  }
+  const table = value.split('/rest/v1/')[1].split('?')[0];
+  tableCalls += 1;
+  return { ok: true, status: 200, json: async () => liveRows[table] || [] };
+};
+try {
+  check('источник: по умолчанию выбора нет', getSourcePreference() === null);
+  setSourcePreference(SOURCE_LIVE);
+  check('источник: выбор сохраняется', getSourcePreference() === SOURCE_LIVE && store.get('infusion.dbSource') === SOURCE_LIVE);
+  const live = await loadData();
+  check('источник: онлайн-база загружается из Supabase', live.sourceMode === SOURCE_LIVE
+    && live.items[0].name === 'Онлайн' && !live.sourceFallback && tableCalls > 0, `${tableCalls}`);
+  const callsAfterFirst = tableCalls;
+  const cachedLive = await loadData();
+  check('источник: при той же версии таблицы не перезагружаются', cachedLive.items[0].name === 'Онлайн'
+    && tableCalls === callsAfterFirst && cachedLive.source.includes('без изменений'));
+  liveVersion = 'v2';
+  const freshLive = await loadData();
+  check('источник: новая версия перезагружает таблицы', tableCalls > callsAfterFirst && freshLive.items[0].name === 'Онлайн');
+  setSourcePreference(SOURCE_SNAPSHOT);
+  const snapshot = await loadData({ force: true });
+  check('источник: снимок читает data/data.json', snapshot.sourceMode === SOURCE_SNAPSHOT
+    && snapshot.version === 'snapshot-v1' && snapshot.source.includes('снимок'));
+  setSourcePreference(SOURCE_LIVE);
+  globalThis.fetch = async () => { throw new Error('сеть недоступна'); };
+  const fallback = await loadData();
+  check('источник: при сбое Supabase показывается сохранённый кэш', fallback.sourceFallback === true
+    && fallback.items[0].name === 'Онлайн' && fallback.source.includes('кэш браузера'), fallback.source);
+} finally {
+  globalThis.fetch = originalFetch;
+  if (originalLocalStorage === undefined) delete globalThis.localStorage;
+  else globalThis.localStorage = originalLocalStorage;
+}
 
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');
 process.exit(fail ? 1 : 0);

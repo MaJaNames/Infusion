@@ -1,4 +1,4 @@
-import { loadData } from './core/data-source.js';
+import { loadData, getSourcePreference, setSourcePreference, SOURCE_LIVE, SOURCE_SNAPSHOT } from './core/data-source.js';
 import { indexData } from './core/util.js';
 import { loadChar, saveChar } from './core/storage.js';
 import { applyTheme } from './core/theme.js';
@@ -98,6 +98,31 @@ function draw(full) {
   scrollTo(0, full ? 0 : y);
 }
 
+// Первый запуск: спрашиваем, откуда брать справочники. Выбор запоминается,
+// позже его можно поменять на вкладке «Настройки».
+function chooseSource() {
+  const app = $('app');
+  return new Promise((resolve) => {
+    app.innerHTML = `<section class="panel">
+        <h2>Откуда загружать базу?</h2>
+        <p class="meta">Это влияет только на справочники. Персонаж, транспорт и роботы хранятся отдельно и не затрагиваются. Выбор сохранится в браузере, поменять его можно в «Настройках».</p>
+        <div class="source-choice">
+          <button data-source-choice="${SOURCE_SNAPSHOT}"><b>Снимок</b><span>data/data.json — стабильно и быстро. Обновляется GitHub Actions раз в сутки.</span></button>
+          <button data-source-choice="${SOURCE_LIVE}"><b>Автообновление (Supabase)</b><span>Свежая база прямо из Supabase. Если сервис недоступен, сайт покажет сохранённую копию.</span></button>
+        </div>
+        <p class="meta">Если сомневаетесь, выберите снимок: он не зависит от доступности Supabase.</p>
+      </section>`;
+    app.onclick = (e) => {
+      const btn = e.target.closest('[data-source-choice]');
+      if (!btn) return;
+      const choice = btn.dataset.sourceChoice === SOURCE_LIVE ? SOURCE_LIVE : SOURCE_SNAPSHOT;
+      app.onclick = null;
+      app.innerHTML = `<div class="empty">Загружаем базу: ${choice === SOURCE_LIVE ? 'Supabase' : 'снимок data.json'}…</div>`;
+      resolve(choice);
+    };
+  });
+}
+
 async function boot() {
   applyTheme();
   // Ввод в поля карточки помечает состояние как изменённое; обработчик раздела сразу сохранит его.
@@ -105,7 +130,12 @@ async function boot() {
   const marksDirty = (el) => el?.dataset?.p !== undefined;
   $('app').addEventListener('input', (e) => { if (marksDirty(e.target)) setSaved(false); }, true);
   $('app').addEventListener('change', (e) => { if (marksDirty(e.target)) setSaved(false); }, true);
-  try { ctx.data = indexData(await loadData()); } catch (e) { $('app').innerHTML = `<div class="empty">Не удалось загрузить базу: ${e.message}</div>`; return; }
+  let source = getSourcePreference();
+  if (!source) {
+    source = await chooseSource();
+    setSourcePreference(source);
+  }
+  try { ctx.data = indexData(await loadData({ source })); } catch (e) { $('app').innerHTML = `<div class="empty">Не удалось загрузить базу: ${e.message}</div>`; return; }
   draw(true);
   addEventListener('hashchange', () => draw(true));
 }
