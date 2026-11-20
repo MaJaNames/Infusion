@@ -1,5 +1,6 @@
 import { parsePart } from '../autoshop/parser.js';
 import { ROBOT_IMPLANTS, CORE_IMPLANT, CORE_IMPLANT_ATK, CORE_IMPLANT_TCHN } from '../../character/rules.js';
+import { canonId } from '../../core/ids.js';
 
 const has = (v, re) => re.test(String(v || ''));
 export const isBmet = (it) => has(it?.name, /^БМЕТ/i);
@@ -109,7 +110,9 @@ export function robotStats(robot, d, c = null) {
 
 export const hasImplant = (c, d, req) => {
   const ids = Array.isArray(req) ? req : [req];
-  return ids.some((x) => (typeof x === 'string' ? (c.implants || []).includes(x) : (x.id ? (c.implants || []).includes(x.id) : (c.implants || []).some((id) => d.itemMap.get(id)?.name === x.name))));
+  // Карточка могла быть сохранена до перехода на четырёхзначные ID.
+  const have = (c.implants || []).map(canonId);
+  return ids.some((x) => (typeof x === 'string' ? have.includes(canonId(x)) : (x.id ? have.includes(canonId(x.id)) : have.some((id) => d.itemMap.get(id)?.name === x.name))));
 };
 
 const implantName = (req, d) => (typeof req === 'string' ? (d.itemMap.get(req)?.name || req) : req.name);

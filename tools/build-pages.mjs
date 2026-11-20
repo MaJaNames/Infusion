@@ -8,6 +8,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { esc, indexData, label, num, RARITY_SHORT } from '../js/core/util.js';
 import { hashRoute, permalinkPath } from '../js/core/links.js';
+import { legacyKey } from '../js/core/ids.js';
 import { rulesRows } from '../js/core/rules-rows.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -173,6 +174,35 @@ ${descTwitter}<meta http-equiv="refresh" content="0; url=${esc(target)}">
 </html>`;
 }
 
+// Страница-редирект с уже разошедшейся ссылки: ID записи был трёхзначным.
+// Отдаём канонический адрес и в canonical, и в og:url, чтобы поисковики склеили дубли.
+export function renderLegacyRedirect(entry, site = siteConfig()) {
+  const canonical = new URL(entry.path, `${site.url}/`).href;
+  const target = `${site.basePath}${hashRoute(entry.kind, entry.id)}`;
+  const scriptTarget = JSON.stringify(target).replace(/</g, '\\u003c');
+  return `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(entry.title)} — Инфузия</title>
+<link rel="canonical" href="${esc(canonical)}">
+<meta name="robots" content="noindex, follow">
+<meta property="og:url" content="${esc(canonical)}">
+<meta http-equiv="refresh" content="0; url=${esc(target)}">
+<link rel="icon" type="image/webp" href="${esc(site.basePath)}assets/icons/paw.webp">
+<style>${PAGE_STYLE}</style>
+</head>
+<body>
+<main>
+<p>Открываем «${esc(entry.title)}»…</p>
+<p><a href="${esc(target)}">Открыть в «Инфузии»</a></p>
+</main>
+<script>location.replace(${scriptTarget});</script>
+</body>
+</html>`;
+}
+
 export function render404(site = siteConfig()) {
   const target = `${site.basePath}#db`;
   return `<!doctype html>
@@ -233,6 +263,21 @@ async function main() {
     await writeFile(file, renderPage(entry, site), 'utf8');
   }
 
+  // Ссылки, скопированные до перехода на четырёхзначные ID (0x0c9), продолжают работать:
+  // для каждой записи кладём страницу-редирект со старым адресом.
+  let legacy = 0;
+  for (const entry of entries) {
+    const oldId = legacyKey(entry.id);
+    if (!oldId || oldId === entry.id) continue;
+    const path = permalinkPath(entry.kind, oldId);
+    if (seen.has(path)) continue;
+    seen.add(path);
+    const file = join(OUT, path, 'index.html');
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, renderLegacyRedirect(entry, site), 'utf8');
+    legacy++;
+  }
+
   const counts = entries.reduce((acc, entry) => {
     acc[entry.kind] = (acc[entry.kind] || 0) + 1;
     return acc;
@@ -240,6 +285,7 @@ async function main() {
   console.log(`Сайт: ${site.url}/`);
   console.log(`Скопировано файлов: ${copied}`);
   console.log(`OG-страниц: ${entries.length} (предметы ${counts.items}, карты ${counts.cards}, справочник ${counts.rules})`);
+  console.log(`Редиректов со старых ID: ${legacy}`);
   console.log(`Готово: ${relative(ROOT, OUT)}`);
 }
 

@@ -1,8 +1,9 @@
 -- Инфузия — схема Supabase. Выполнить целиком: Supabase → SQL Editor → New query → Run.
--- Идентификаторы везде вида 0x327: номер из последовательности в hex. Номера не повторяются, даже если запись удалили.
+-- Идентификаторы везде вида 0x0c9: номер из последовательности в hex, минимум четыре цифры.
+-- Номера не повторяются, даже если запись удалили.
 
 create function hex_id(seq regclass) returns text language sql volatile as
-$$ select '0x' || lpad(to_hex(nextval(seq)), 3, '0') $$;
+$$ select '0x' || lpad(to_hex(nextval(seq)), 4, '0') $$;
 
 create sequence items_seq; create sequence cards_seq; create sequence skills_seq; create sequence abilities_seq;
 create sequence beasts_seq; create sequence traits_seq; create sequence essences_seq; create sequence races_seq;

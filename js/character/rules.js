@@ -1,3 +1,5 @@
+import { canonId } from '../core/ids.js';
+
 // Жёсткие константы правил. Это не хранимые данные, поэтому они живут в коде,
 // а не в таблице formulas базы Supabase.
 export const RULES = Object.freeze({
@@ -21,13 +23,14 @@ export const skillAvailable = (stat, tier) => stat >= tier;
 // Ограничения классов по расе. Ключ — ID расы из data.json.
 // only — разрешённый список, except — запрещённые классы (остальные доступны).
 export const CLASS_RESTRICTIONS = Object.freeze({
-  '0x001': Object.freeze({ only: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант', 'Свой']) }), // Новуссит
-  '0x002': Object.freeze({ except: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант', 'Зверь']) }), // Поляриец
-  '0x003': Object.freeze({ only: Object.freeze(['Кочевник', 'Зверь', 'Рокер']) }), // Хуманиец
+  '0x0001': Object.freeze({ only: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант', 'Свой']) }), // Новуссит
+  '0x0002': Object.freeze({ except: Object.freeze(['Трансгрессор', 'Авангард', 'Медикус', 'Нейромант', 'Зверь']) }), // Поляриец
+  '0x0003': Object.freeze({ only: Object.freeze(['Кочевник', 'Зверь', 'Рокер']) }), // Хуманиец
 });
 
+// Раса приходит из карточки и из старых выгрузок: сравниваем в каноническом виде.
 export function classAllowed(raceId, name) {
-  const rule = CLASS_RESTRICTIONS[raceId];
+  const rule = CLASS_RESTRICTIONS[canonId(raceId)];
   if (!rule) return true;
   return rule.only ? rule.only.includes(name) : !rule.except.includes(name);
 }
@@ -110,12 +113,12 @@ export const BEAST_EXTRA_L_ABILITY = 'Я Особенный';
 // Импланты, которые открывают управление роботами.
 export const ROBOT_IMPLANTS = Object.freeze({
   // D.P.L РобоСофт, Атсуши продвинутый, Догмат Единства, Перераспределитель энерго-ядра.
-  prism: Object.freeze(['0x189', '0x1ac', '0x1ad', '0x271']),
-  bmet: Object.freeze(['0x1ac']), // Атсуши продвинутый робософт
-  skeleton: Object.freeze(['0x1ad']), // Догмат Единства
+  prism: Object.freeze(['0x0189', '0x01ac', '0x01ad', '0x0271']),
+  bmet: Object.freeze(['0x01ac']), // Атсуши продвинутый робософт
+  skeleton: Object.freeze(['0x01ad']), // Догмат Единства
 });
 // «Перераспределитель энерго-ядра»: +20 АТК и +10 ТЧН получает SAT (робот), а не персонаж.
-export const CORE_IMPLANT = Object.freeze({ id: '0x271', name: 'Перераспределитель энерго-ядра' });
+export const CORE_IMPLANT = Object.freeze({ id: '0x0271', name: 'Перераспределитель энерго-ядра' });
 export const CORE_IMPLANT_ATK = 20;
 export const CORE_IMPLANT_TCHN = 10;
 

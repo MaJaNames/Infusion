@@ -5,6 +5,7 @@ import { partsOf, KIND_LABEL, STAT_LABEL, statChips, droneChips } from '../modul
 import { showToast } from '../core/toast.js';
 import { rulesRows } from '../core/rules-rows.js';
 import { permalinkPath } from '../core/links.js';
+import { canonKey } from '../core/ids.js';
 
 const TABS = [['items', 'Предметы'], ['cards', 'Карты'], ['parts', 'Детали Кочевника'], ['rules', 'Справочник']];
 const DEFAULT_SORT = { items: ['id', 1], cards: ['id', 1], parts: ['id', 1], rules: ['group', 1] };
@@ -497,7 +498,9 @@ function applyRoute(sub) {
   const query = cut >= 0 ? raw.slice(cut + 1) : '';
   const [tab, idPart] = path.split('/');
   if (!TAB_IDS.has(tab)) return;
-  const openId = idPart ? decodeURIComponent(idPart) : null;
+  // Старая ссылка вида #db/items/0x0c9 открывает ту же запись: ID приводим к канону,
+  // а draw() затем переписывает адрес через replaceState — получается тихий редирект.
+  const openId = idPart ? canonKey(decodeURIComponent(idPart)) : null;
   S.scrollToOpen = !!openId && openId !== S.openId;
   S.tab = tab;
   S.openId = openId;

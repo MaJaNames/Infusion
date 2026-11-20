@@ -1,5 +1,7 @@
 // Гараж транспорта Кочевника: несколько машин, активная и её сборка.
 // Данные живут в localStorage; модуль общий для Автомастерской и Экипировки персонажа.
+import { canonId } from '../../core/ids.js';
+
 export const GARAGE_KEY = 'infusion.garage';
 export const LEGACY_KEY = 'infusion.build';
 export const MAX_NAME = 48;
@@ -17,18 +19,20 @@ const read = (key) => { try { return JSON.parse(localStorage.getItem(key)); } ca
 const normPartHp = (v) => {
   if (!v || typeof v !== 'object') return {};
   const out = {};
-  for (const [id, n] of Object.entries(v)) {
+  for (const [key, n] of Object.entries(v)) {
+    const id = canonId(key);
     const hp = Math.max(0, Math.round(Number(n) || 0));
     if (id && hp) out[id] = hp;
   }
   return out;
 };
 
+// ID деталей в гараже могли быть записаны до перехода на четырёхзначные номера.
 export const normBuild = (b) => {
   const src = b && typeof b === 'object' ? b : {};
   return {
-    body: src.body ?? null, wheels: src.wheels ?? null, engine: src.engine ?? null,
-    weapons: list(src.weapons, 3), modules: list(src.modules, 5),
+    body: canonId(src.body) ?? null, wheels: canonId(src.wheels) ?? null, engine: canonId(src.engine) ?? null,
+    weapons: list(src.weapons, 3).map(canonId), modules: list(src.modules, 5).map(canonId),
     discount: Math.min(100, Math.max(0, Number(src.discount) || 0)),
     currentHp: src.currentHp == null || src.currentHp === '' ? null : Math.max(0, Math.round(Number(src.currentHp) || 0)),
     partHp: normPartHp(src.partHp),

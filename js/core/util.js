@@ -1,3 +1,5 @@
+import { canonId, legacyId } from './ids.js';
+
 export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const num = (n) => Number(n || 0).toLocaleString('ru-RU');
 export const RC = { 'Обычный': 'c', 'Необычный': 'u', 'Редкий': 'r', 'Эпический': 'e', 'Легендарный': 'l', 'Культовый': 'k' };
@@ -38,7 +40,23 @@ export const set = (obj, path, value) => { const k = path.split('.'), last = k.p
 export const fieldValue = (el) => (el.type === 'number' || el.dataset.n ? (el.value === '' ? null : Number(el.value)) : el.value === '' && el.tagName === 'SELECT' ? null : el.value);
 
 const map = (rows, key = 'id') => new Map(rows.map((r) => [r[key], r]));
+// Справочники приходят из Supabase или снимка: ID приводим к канону один раз здесь.
+// Тогда шаблоны, ссылки и сравнения с константами работают с одним видом записи.
+const canonRows = (rows = []) => rows.map((r) => (typeof r?.id === 'string' ? { ...r, id: canonId(r.id) } : r));
+// В Map кладём и прежний трёхзначный ключ: старые карточки и ссылки продолжат находить запись.
+const idMap = (rows) => {
+  const m = new Map();
+  for (const r of rows) {
+    m.set(r.id, r);
+    const old = legacyId(r.id);
+    if (old) m.set(old, r);
+  }
+  return m;
+};
 export function indexData(d) {
-  return { ...d, itemMap: map(d.items), cardMap: map(d.cards), skillMap: map(d.skills), abilityMap: map(d.abilities), traitMap: map(d.traits),
-    essenceMap: map(d.essences), raceMap: map(d.races), rankMap: map(d.ranks, 'level'), statMap: map(d.stats, 'key') };
+  const items = canonRows(d.items), cards = canonRows(d.cards), skills = canonRows(d.skills), abilities = canonRows(d.abilities);
+  const beasts = canonRows(d.beasts), traits = canonRows(d.traits), essences = canonRows(d.essences), races = canonRows(d.races);
+  return { ...d, items, cards, skills, abilities, beasts, traits, essences, races,
+    itemMap: idMap(items), cardMap: idMap(cards), skillMap: idMap(skills), abilityMap: idMap(abilities), traitMap: idMap(traits),
+    essenceMap: idMap(essences), raceMap: idMap(races), rankMap: map(d.ranks, 'level'), statMap: map(d.stats, 'key') };
 }

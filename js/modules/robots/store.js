@@ -1,6 +1,7 @@
 // Мастерская техники: собранные роботы хранятся в браузере и доступны
 // в «Утилитах» и в карточке Техника. Предметы при этом остаются в инвентаре.
 import { downloadJson } from '../../core/storage.js';
+import { canonId } from '../../core/ids.js';
 
 export const ROBOTS_KEY = 'infusion.robots';
 export const MAX_ROBOT_NAME = 48;
@@ -17,16 +18,17 @@ export const blankRobot = () => ({
   notes: '', currentHp: null,
 });
 
+// Ссылки на предметы приводим к каноническому ID: сборка могла быть сохранена раньше.
 export const normRobot = (r, i = 0) => {
   const src = r && typeof r === 'object' ? r : {};
   const weapon = Number.isInteger(src.weapon) && src.weapon >= 0 ? src.weapon : null;
   return {
     id: String(src.id || newRobotId()),
     name: String(src.name ?? '').trim().slice(0, MAX_ROBOT_NAME) || `Робот ${i + 1}`,
-    base: src.base ?? null,
-    weapons: list(src.weapons, 2),
+    base: canonId(src.base) ?? null,
+    weapons: list(src.weapons, 2).map(canonId),
     weapon,
-    modules: list(src.modules, 5),
+    modules: list(src.modules, 5).map(canonId),
     modulesActive: flags(src.modulesActive, 5),
     notes: String(src.notes ?? ''),
     currentHp: src.currentHp == null || src.currentHp === '' ? null : Math.max(0, Math.round(Number(src.currentHp) || 0)),

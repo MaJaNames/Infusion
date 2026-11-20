@@ -10,7 +10,8 @@ import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats,
 import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS, blankRO, blankROStatus, roRank, normalizeROStatus, bmetLimit, BEAST_SLOTS, ROBOT_IMPLANTS } from '../js/character/rules.js';
 import { helpBlock } from '../js/core/help.js';
 import { permalinkPath, hashRoute, permalinkUrl } from '../js/core/links.js';
-import { collectEntries, describe, renderPage } from '../tools/build-pages.mjs';
+import { canonId, legacyId, canonKey, legacyKey, padIds } from '../js/core/ids.js';
+import { collectEntries, describe, renderPage, renderLegacyRedirect } from '../tools/build-pages.mjs';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
@@ -97,14 +98,14 @@ check('сумма: хранилище + импланты + репозитори�
 check('сумма: 1 Тали = 10 кредитов', RULES.taliToCredits === 10 && invHtml.includes('1 Тали = 10 кредитов'));
 const summaryHtml = invHtml.match(/<div class="chips inv-summary">([\s\S]*?)<\/div>/)?.[1] || '';
 check('сводка карт: только суммарные тали', summaryHtml.includes('Карты: 70 тали') && !summaryHtml.includes('Кронос'), summaryHtml);
-const invGear = character.render({ ...ctx, char: { ...c, equipment: ['0x0e7'] } });
+const invGear = character.render({ ...ctx, char: { ...c, equipment: ['0x00e7'] } });
 check('сумма: экипировка не входит', invGear.includes(`Сумма: ${num(expectedSum)}`) && !invGear.includes(`Сумма: ${num(expectedSum + 1300)}`));
 const implantItem = d.items.find((i) => i.category === 'Имплант');
 const implantStored = character.render({ ...ctx, char: { ...blankChar(), pockets: [{ id: implantItem.id, qty: 1 }], implants: [implantItem.id] } });
 check('импланты: установленный не занимает место и не дублируется', implantStored.includes('Позиций: 0 / 20') && implantStored.includes(`Сумма: ${num(implantItem.cost || 0)}`));
 check('хранилище: без ручной цены продажи и глобальной клиники', !invHtml.includes('overrides.sellPrice') && blankChar().overrides.sellPrice === undefined && blankChar().clinic === undefined && Array.isArray(blankChar().clinicImplants));
 const clinicItem = d.items.find((i) => i.category === 'Имплант' && RULES.clinicCost[i.rarity]);
-const clinicBase = { ...blankChar(), race: '0x002', class: 'Соло', implants: [clinicItem.id] };
+const clinicBase = { ...blankChar(), race: '0x0002', class: 'Соло', implants: [clinicItem.id] };
 const clinicOff = character.render({ ...ctx, char: clinicBase });
 const clinicOn = character.render({ ...ctx, char: { ...clinicBase, clinicImplants: [clinicItem.id] } });
 const clinicInstall = RULES.clinicCost[clinicItem.rarity];
@@ -113,15 +114,15 @@ check('клиника: установка входит в цену имплан�
 const clinicItems = d.items.filter((i) => i.category === 'Имплант' && RULES.clinicCost[i.rarity]).slice(0, 2);
 const mixedSum = clinicItems.reduce((a, i) => a + (i.cost || 0), 0) + RULES.clinicCost[clinicItems[0].rarity];
 const bothSum = mixedSum + RULES.clinicCost[clinicItems[1].rarity];
-const mixedClinic = character.render({ ...ctx, char: { ...blankChar(), race: '0x002', class: 'Соло', implants: clinicItems.map((i) => i.id), clinicImplants: [clinicItems[0].id] } });
+const mixedClinic = character.render({ ...ctx, char: { ...blankChar(), race: '0x0002', class: 'Соло', implants: clinicItems.map((i) => i.id), clinicImplants: [clinicItems[0].id] } });
 check('клиника: установка только у отмеченного импланта', mixedClinic.includes(`Сумма: ${num(mixedSum)}`) && !mixedClinic.includes(`Сумма: ${num(bothSum)}`));
 check('карточка предмета: количество и состояние раскрытия', (() => {
-  const html = databases.itemRow(d.items[0], '', { qty: 4, openKey: 'pockets.0x001', open: true });
-  return html.includes('<small>Кол-во: 4</small>') && html.includes('data-row="pockets.0x001"') && html.includes(' open>');
+  const html = databases.itemRow(d.items[0], '', { qty: 4, openKey: 'pockets.0x0001', open: true });
+  return html.includes('<small>Кол-во: 4</small>') && html.includes('data-row="pockets.0x0001"') && html.includes(' open>');
 })());
 check('карточка карты: количество и состояние раскрытия', (() => {
-  const html = databases.cardRow(d.cards[0], '', { qty: 3, openKey: 'repository.0x001', open: true });
-  return html.includes('<small>Кол-во: 3</small>') && html.includes('data-row="repository.0x001"') && html.includes(' open>');
+  const html = databases.cardRow(d.cards[0], '', { qty: 3, openKey: 'repository.0x0001', open: true });
+  return html.includes('<small>Кол-во: 3</small>') && html.includes('data-row="repository.0x0001"') && html.includes(' open>');
 })());
 const STAT_ORDER = ['strength', 'dexterity', 'intelligence', 'will', 'charisma', 'perception', 'technique', 'luck', 'constitution'];
 const statPos = STAT_ORDER.map((k) => invHtml.indexOf(`data-p="stats.${k}"`));
@@ -271,8 +272,8 @@ check('база: ссылка восстанавливает фильтры', re
 databases.setRoute('items');
 
 // Красивые пермалинки и OG-страницы.
-check('пермалинки: путь и hash', permalinkPath('items', '0x001') === 'p/db/items/0x001/' && hashRoute('items', '0x001') === '#db/items/0x001');
-check('пермалинки: абсолютный URL от базы', permalinkUrl('cards', '0x001', 'https://example.test/Infusion/') === 'https://example.test/Infusion/p/db/cards/0x001/');
+check('пермалинки: путь и hash', permalinkPath('items', '0x0001') === 'p/db/items/0x0001/' && hashRoute('items', '0x0001') === '#db/items/0x0001');
+check('пермалинки: абсолютный URL от базы', permalinkUrl('cards', '0x0001', 'https://example.test/Infusion/') === 'https://example.test/Infusion/p/db/cards/0x0001/');
 const ogEntries = collectEntries(d);
 const ogPaths = ogEntries.map((e) => e.path);
 check('OG: страницы для предметов, карт и справочника', ogEntries.length === d.items.length + d.cards.length + 267, ogEntries.length);
@@ -283,25 +284,53 @@ check('OG: meta, canonical и редирект', ogHtml.includes('property="og:t
   && ogHtml.includes('http-equiv="refresh"') && ogHtml.includes('/Infusion/#db/items/'));
 
 // Заголовок — как в списках, описание — только текст записи.
-const ogNano = ogEntries.find((e) => e.kind === 'items' && e.id === '0x1dc');
+const ogNano = ogEntries.find((e) => e.kind === 'items' && e.id === '0x01dc');
 const ogNanoHtml = renderPage(ogNano, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
 check('OG: заголовок [тег] Название [Р]', ogNanoHtml.includes('content="[Mod] Очищение нанитами [Р]"'), ogNano.title);
 check('OG: описание без префикса и заглушки', describe(ogNano) === 'Цена: 15 000 кр · Техник\n\nПараметры: 1 АКТ\n\nЭффекты: Активный;\n\nУникальный Эффект: Модуль меха; При использовании мех снимает с себя 2 эффекта', describe(ogNano));
 const ogNanoPage = renderPage(ogNano, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
 check('OG: провайдер по разделу', ogNanoPage.includes('property="og:site_name" content="Инфузия · Предметы"'));
-const ogIconic = ogEntries.find((e) => e.kind === 'items' && e.id === '0x0c1');
+const ogIconic = ogEntries.find((e) => e.kind === 'items' && e.id === '0x00c1');
 check('OG: у закрытого предмета цена, категория, организация и «культовый»',
   describe(ogIconic).startsWith('Цена: 10 000 кр · Контейнер · Чёрный Рынок · культовый\n\n'), describe(ogIconic));
-const ogEmpty = { kind: 'items', id: '0x000', path: 'p/db/items/0x000/', title: 'Пусто', type: 'Предмет', description: '' };
+const ogEmpty = { kind: 'items', id: '0x0000', path: 'p/db/items/0x0000/', title: 'Пусто', type: 'Предмет', description: '' };
 check('OG: пустое описание не выводится',
   !renderPage(ogEmpty, { url: 'https://example.test/Infusion', basePath: '/Infusion/' }).includes('og:description'));
-const ogCard = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x001');
+const ogCard = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x0001');
 const ogCardText = describe(ogCard);
 check('OG: у карты сначала параметры, потом описание', ogCardText.startsWith('Параметры: КШ 10\n')
   && ogCardText.includes('\nТип урона: ') && ogCardText.includes('\nЦена: 40 тали\nКлассы: Трансгрессор\n\nВы модулируете снаряд'), ogCardText);
-const ogCardParams = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x002');
+const ogCardParams = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x0002');
 check('OG: у карты без описания остаются только параметры', describe(ogCardParams).startsWith('Параметры: 5 АТК')
   && !describe(ogCardParams).includes('\n\n'), describe(ogCardParams));
+
+// ID записи: канон 0x00c9 и совместимость со старым трёхзначным видом 0x0c9.
+check('ID: канон дополняет нули', canonId('0x0c9') === '0x00c9' && canonId('0x0001') === '0x0001' && canonId('0x1000') === '0x1000');
+check('ID: регистр и посторонние строки', canonId('0X1AC') === '0x01ac' && canonId('Молот') === 'Молот' && canonId(null) === null);
+check('ID: старый вид восстанавливается', legacyId('0x00c9') === '0x0c9' && legacyId('0x0000') === '0x000' && legacyId('0x1000') === null);
+check('ID: составной ключ справочника', canonKey('skill-0x0c1') === 'skill-0x00c1' && legacyKey('skill-0x00c1') === 'skill-0x0c1'
+  && canonKey('rank-1') === 'rank-1' && legacyKey('rank-1') === null);
+const firstItem = d.items[0];
+check('ID: справочник отдаёт канон', d.items.every((x) => canonId(x.id) === x.id) && firstItem.id === canonId(firstItem.id));
+check('ID: старый ключ находит ту же запись', d.itemMap.get(legacyId(firstItem.id)) === d.itemMap.get(firstItem.id));
+check('ID: старая ссылка открывает запись по канону', legacyId(firstItem.id) === null || (() => {
+  databases.setRoute(`items/${legacyId(firstItem.id)}`);
+  return databases.currentRoute().startsWith(`items/${firstItem.id}`);
+})());
+databases.setRoute('items');
+
+// Карточки, гараж и роботы могли быть сохранены со старыми ID — правим при загрузке.
+check('ID: карточка персонажа', normChar({ ...blankChar(), race: '0x002', implants: ['0x1ac'] }).implants[0] === '0x01ac'
+  && normChar({ ...blankChar(), race: '0x002' }).race === '0x0002');
+const padded = padIds({ pockets: [{ id: '0x03f', qty: 1 }], statsToggles: { sources: { '0x1ac': true } } });
+check('ID: глубокая правка ссылок и ключей', padded.pockets[0].id === '0x003f' && padded.statsToggles.sources['0x01ac'] === true);
+const paddedBuild = normGarage({ vehicles: [{ build: { body: '0x03f', weapons: ['0x03b'], partHp: { '0x03f': 5 } } }] }).vehicles[0].build;
+check('ID: детали транспорта', paddedBuild.body === '0x003f' && paddedBuild.weapons[0] === '0x003b' && paddedBuild.partHp['0x003f'] === 5);
+const paddedRobot = normRobot({ base: '0x1d5', weapons: ['0x16c'], modules: [null, '0x1ac'] });
+check('ID: детали робота', paddedRobot.base === '0x01d5' && paddedRobot.weapons[0] === '0x016c' && paddedRobot.modules[1] === '0x01ac' && paddedRobot.modules[0] === null);
+const legacyPage = renderLegacyRedirect(ogItem, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
+check('ID: страница-редирект со старой ссылки', legacyPage.includes(`https://example.test/Infusion/p/db/items/${ogItem.id}/`)
+  && legacyPage.includes(`/Infusion/#db/items/${ogItem.id}`) && legacyPage.includes('name="robots" content="noindex, follow"'));
 
 // Код сборки: base64url от JSON карточки.
 const charCode = charToCode(c);
@@ -399,14 +428,14 @@ const droneHtml = utilities.render(ctx);
 check('дрон: карточка показывает свои статы', droneHtml.includes('Дрон') && droneHtml.includes('ОЗ 300') && droneHtml.includes('ДЕФ(П) 80') && droneHtml.includes('ОП 1') && droneHtml.includes('не входят в итоги'));
 
 // Уникальные механические эффекты двигателей.
-const motor5 = partsOf(d).find((p) => p.item.id === '0x03f');
-const motor1 = partsOf(d).find((p) => p.item.id === '0x03b');
-const torus5 = partsOf(d).find((p) => p.item.id === '0x044');
-const athena = partsOf(d).find((p) => p.item.id === '0x00e');
-const tracks = partsOf(d).find((p) => p.item.id === '0x04f');
-const gida = partsOf(d).find((p) => p.item.id === '0x07f');
-const elada = partsOf(d).find((p) => p.item.id === '0x05d');
-const offroad = partsOf(d).find((p) => p.item.id === '0x045');
+const motor5 = partsOf(d).find((p) => p.item.id === '0x003f');
+const motor1 = partsOf(d).find((p) => p.item.id === '0x003b');
+const torus5 = partsOf(d).find((p) => p.item.id === '0x0044');
+const athena = partsOf(d).find((p) => p.item.id === '0x000e');
+const tracks = partsOf(d).find((p) => p.item.id === '0x004f');
+const gida = partsOf(d).find((p) => p.item.id === '0x007f');
+const elada = partsOf(d).find((p) => p.item.id === '0x005d');
+const offroad = partsOf(d).find((p) => p.item.id === '0x0045');
 check('двигатели: пол Скорохода из уникального эффекта', motor5.stats.speedFloor === 2 && motor1.stats.speedFloor === 0, `${motor5.stats.speedFloor}/${motor1.stats.speedFloor}`);
 check('двигатели: Торус требует «Элиада»', torus5.stats.wheelReq === 'Элиада', torus5.stats.wheelReq);
 const floorBuild = summarize({ body: pickOf(athena.item.id), wheels: pickOf(tracks.item.id), engine: pickOf(motor5.item.id), weapons: [], modules: [pickOf(gida.item.id)] });
@@ -430,21 +459,21 @@ shopRoot.onchange({ target: { dataset: { b: 'wheels' }, value: elada.item.id, ty
 const torusOkHtml = utilities.render(ctx);
 check('Торус: с «Элиадой» предупреждение исчезает', currentVehicle().build.wheels === elada.item.id && !torusOkHtml.includes('нужны колёса «Элиада»'));
 
-check('по умолчанию Поляриец-Соло', blankChar().race === '0x002' && blankChar().class === 'Соло');
+check('по умолчанию Поляриец-Соло', blankChar().race === '0x0002' && blankChar().class === 'Соло');
 check('метка выбора: [Тег] Название [Р]*', optLabel({ tag: 'Acs', name: 'Тест', rarity: 'Редкий', iconic: true }) === '[Acs] Тест [Р]*');
 check('метка выбора: «Культовый» без звёздочки', optLabel({ tag: 'Acs', name: 'Тест', rarity: 'Культовый', iconic: true }) === '[Acs] Тест [К]');
 const optTexts = (html) => [...html.matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map((m) => m[1]);
 check('в выборе нет ID предмета', !optTexts(invHtml).some((t) => /0x[0-9a-f]/i.test(t)) && !optTexts(utilities.render(ctx)).some((t) => /0x[0-9a-f]/i.test(t)));
 const classSelect = (html) => html.match(/<select data-p="class">([\s\S]*?)<\/select>/)?.[1] || '';
-const polar = classSelect(character.render({ ...ctx, char: { ...c, race: '0x002', class: 'Соло' } }));
-const novus = classSelect(character.render({ ...ctx, char: { ...c, race: '0x001', class: 'Свой' } }));
-const human = classSelect(character.render({ ...ctx, char: { ...c, race: '0x003', class: 'Рокер' } }));
+const polar = classSelect(character.render({ ...ctx, char: { ...c, race: '0x0002', class: 'Соло' } }));
+const novus = classSelect(character.render({ ...ctx, char: { ...c, race: '0x0001', class: 'Свой' } }));
+const human = classSelect(character.render({ ...ctx, char: { ...c, race: '0x0003', class: 'Рокер' } }));
 check('классы Полярийца: без Трансгрессора и Зверя', polar.includes('>Соло<') && !polar.includes('>Трансгрессор<') && !polar.includes('>Зверь<'));
 check('классы Новуссита: только 4 и Свой', novus.includes('>Трансгрессор<') && novus.includes('>Свой<') && !novus.includes('>Соло<'));
 check('классы Хуманийца: только Кочевник, Зверь, Рокер', human.includes('>Рокер<') && !human.includes('>Соло<') && !human.includes('>Трансгрессор<'));
-check('правило классов работает по ID расы', classAllowed('0x002', 'Соло') && !classAllowed('0x002', 'Медикус') && !classAllowed('0x002', 'Зверь') && classAllowed('0x001', 'Медикус') && !classAllowed('0x001', 'Соло') && classAllowed('0x003', 'Зверь') && !classAllowed('0x003', 'Техник'));
-const polarHtml = character.render({ ...ctx, char: { ...c, race: '0x002', class: 'Соло' } });
-const novusHtml = character.render({ ...ctx, char: { ...c, race: '0x001', class: 'Свой' } });
+check('правило классов работает по ID расы', classAllowed('0x0002', 'Соло') && !classAllowed('0x0002', 'Медикус') && !classAllowed('0x0002', 'Зверь') && classAllowed('0x0001', 'Медикус') && !classAllowed('0x0001', 'Соло') && classAllowed('0x0003', 'Зверь') && !classAllowed('0x0003', 'Техник'));
+const polarHtml = character.render({ ...ctx, char: { ...c, race: '0x0002', class: 'Соло' } });
+const novusHtml = character.render({ ...ctx, char: { ...c, race: '0x0001', class: 'Свой' } });
 check('сущность доступна только Новусситу', !polarHtml.includes('data-p="essence"') && novusHtml.includes('data-p="essence"'));
 check('подсказки: списки вместо сплошного текста', helpBlock('char').includes('<ul>') && helpBlock('char').includes('Хранилище') && helpBlock('db').includes('<li>'));
 check('подсказки: гараж, текущее ОЗ и клиника', helpBlock('util').includes('вкладками') && helpBlock('util').includes('Текущее ОЗ') && helpBlock('util').includes('Выгрузка') && helpBlock('char').includes('Клиника:'));
@@ -481,14 +510,14 @@ clickTab('equipment');
 const eqHtml = character.render(ctx);
 check('экипировка: по-прежнему из хранилища', eqHtml.includes('Выбрать из хранилища…') && !eqHtml.includes('Выбрать имплант…'));
 clickTab('repository');
-const repHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x001', class: 'Трансгрессор' } });
+const repHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x0001', class: 'Трансгрессор' } });
 const repSelect = repHtml.match(/<select data-in="repository"[\s\S]*?<\/select>/)?.[0] || '';
 const repGroups = [...repSelect.matchAll(/<optgroup label="([^"]+)"/g)].map((m) => m[1]);
 check('репозиторий: выбранный класс → общие → остальные', repGroups[0] === 'Трансгрессор' && repGroups[1] === 'Общие' && repGroups[2] === 'Другие классы', repGroups.join(' → '));
 clickTab('beasts');
 const beastGeneral = d.beasts.find((b) => b.group_name === 'Общие');
 const beastOther = d.beasts.find((b) => b.group_name === 'Сокрытие' && !/^Путь/.test(b.name));
-const beastChar = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id] };
+const beastChar = { ...blankChar(), race: '0x0003', class: 'Зверь', beasts: [d.beasts[0].id] };
 const beastHtml = character.render({ ...ctx, char: beastChar });
 check('звери: путь определяется по взятой способности', beastHtml.includes('data-beast-path="Хищник"') && beastHtml.includes('class="beast-path on"'));
 check('звери: способность пути в списке, общие — в меню', beastHtml.includes(`data-beast-row="${d.beasts[0].id}"`) && beastHtml.includes(beastGeneral.name));
@@ -497,20 +526,20 @@ check('звери: способности чужого пути скрыты', b
 check('звери: выбор через adder с поиском и группами', beastHtml.includes('data-combo="beasts"') && beastHtml.includes('data-in="beasts"') && beastHtml.includes('data-search="beasts"') && beastHtml.includes('<optgroup label="Общие">'));
 check('звери: корень пути не удаляется, требования видны', !beastHtml.includes('data-del="beasts.0"') && beastHtml.includes('путь') && beastHtml.includes('нужно: Кровавая ярость'));
 
-const bc = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id, beastGeneral.id], beastPath: 'Хищник' };
+const bc = { ...blankChar(), race: '0x0003', class: 'Зверь', beasts: [d.beasts[0].id, beastGeneral.id], beastPath: 'Хищник' };
 const bRoot = { addEventListener() {}, querySelector: () => null };
 character.bind(bRoot, { ...ctx, char: bc });
 bRoot.onclick({ target: { closest: (s) => s === '[data-beast-path]' ? { dataset: { beastPath: 'Сокрытие' } } : null } });
 const hideRoot = d.beasts.find((b) => b.group_name === 'Сокрытие' && /^Путь/.test(b.name));
 check('звери: смена пути оставляет общие и берёт корень пути', bc.beastPath === 'Сокрытие' && bc.beasts.includes(hideRoot.id) && bc.beasts.includes(beastGeneral.id) && !bc.beasts.includes(d.beasts[0].id));
 
-const bcAdd = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id], beastPath: 'Хищник' };
+const bcAdd = { ...blankChar(), race: '0x0003', class: 'Зверь', beasts: [d.beasts[0].id], beastPath: 'Хищник' };
 const addRoot = { addEventListener() {}, querySelector: (s) => (s === '[data-in="beasts"]' ? { value: beastGeneral.id } : null) };
 character.bind(addRoot, { ...ctx, char: bcAdd });
 addRoot.onclick({ target: { closest: (s) => s === '[data-add]' ? { dataset: { add: 'beasts' } } : null } });
 check('звери: добавление способности из меню', bcAdd.beasts.includes(beastGeneral.id), bcAdd.beasts.join(','));
 
-const bcDel = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [d.beasts[0].id, beastGeneral.id], beastPath: 'Хищник' };
+const bcDel = { ...blankChar(), race: '0x0003', class: 'Зверь', beasts: [d.beasts[0].id, beastGeneral.id], beastPath: 'Хищник' };
 const delRoot = { addEventListener() {}, querySelector: () => null };
 character.bind(delRoot, { ...ctx, char: bcDel });
 delRoot.onclick({ target: { closest: (s) => s === '[data-del]' ? { dataset: { del: 'beasts.1' } } : null } });
@@ -578,14 +607,14 @@ check('звери: слоты по рангам', BEAST_SLOTS[1]['Обычный
   && BEAST_SLOTS[9]['Легендарный'] === 4 && BEAST_SLOTS[10]['Легендарный'] === 4);
 const normalBeasts = d.beasts.filter((b) => b.rarity === 'Обычный').slice(0, 3);
 clickTab('beasts');
-const overChar = { ...blankChar(), race: '0x003', class: 'Зверь', beasts: normalBeasts.map((b) => b.id), beastPath: normalBeasts[0].group_name };
+const overChar = { ...blankChar(), race: '0x0003', class: 'Зверь', beasts: normalBeasts.map((b) => b.id), beastPath: normalBeasts[0].group_name };
 const overHtml = character.render({ ...ctx, char: overChar });
 check('звери: превышение слотов разрешено и подсвечено', overHtml.includes('Превышен лимит слотов') && overHtml.includes('Слоты: О 2') && overHtml.includes('Взято: О 3'));
 check('звери: редкость помечена цветом', overHtml.includes('chip rar-c'));
 const legendBeast = d.beasts.find((b) => b.rarity === 'Легендарный');
-const legendHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x003', class: 'Зверь', beasts: [legendBeast.id], beastPath: legendBeast.group_name } });
+const legendHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x0003', class: 'Зверь', beasts: [legendBeast.id], beastPath: legendBeast.group_name } });
 check('звери: легендарная редкость оранжево-жёлтая', legendHtml.includes('chip rar-l'));
-const extraLHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x003', class: 'Зверь', rank: 1, abilities: ['0x002'], beasts: [d.beasts[0].id], beastPath: d.beasts[0].group_name } });
+const extraLHtml = character.render({ ...ctx, char: { ...blankChar(), race: '0x0003', class: 'Зверь', rank: 1, abilities: ['0x0002'], beasts: [d.beasts[0].id], beastPath: d.beasts[0].group_name } });
 check('звери: «Я Особенный» добавляет слот Л', extraLHtml.includes('+1 Л') && extraLHtml.includes('Л 1'));
 
 check('БД: порядковый номер предмета из data.json', databases.itemRow(d.items[0], '', { ord: 1 }).includes('row-no') && databases.itemRow(d.items[0], '', { ord: 1 }).includes('>#1<'));
@@ -603,13 +632,13 @@ const noImp = { ...blankChar(), class: 'Техник', pockets: [{ id: bmetOrion
 robotStore.robots = [normRobot({ id: 'r-test-bmet', name: 'Орион', base: bmetOrion.id, notes: 'разведка' })];
 robotStore.active = 'r-test-bmet';
 check('роботы: БМЕТ требует «Атсуши продвинутый робософт»', !robotRequirement(robotStore.robots[0], d, noImp).ok
-  && robotRequirement(robotStore.robots[0], d, { ...noImp, implants: ['0x1ac'] }).ok);
-const bmetHtml = robotsView.render({ ...ctx, char: { ...noImp, implants: ['0x1ac'] } });
+  && robotRequirement(robotStore.robots[0], d, { ...noImp, implants: ['0x01ac'] }).ok);
+const bmetHtml = robotsView.render({ ...ctx, char: { ...noImp, implants: ['0x01ac'] } });
 check('роботы: мастерская показывает БМЕТ, ОЗ и уникальный эффект', bmetHtml.includes('БМЕТ') && bmetHtml.includes('250')
   && bmetHtml.includes('разведка') && bmetHtml.includes(esc(bmetOrion.description)) && !/undefined|NaN/.test(bmetHtml));
 
 const prismChar = {
-  ...blankChar(), class: 'Техник', implants: ['0x189'],
+  ...blankChar(), class: 'Техник', implants: ['0x0189'],
   pockets: [{ id: prism.id, qty: 1 }, { id: robotWeapon.id, qty: 1 }, { id: robotModule.id, qty: 1 }],
 };
 robotStore.robots = [normRobot({ id: 'r-test-prism', name: 'Призма', base: prism.id, weapons: [robotWeapon.id, null], modules: [robotModule.id, null, null, null, null] })];
@@ -627,8 +656,8 @@ check('Техник: карточка показывает робота, ОЗ и
 
 // АТК — по текущему оружию; пассивные модули учитываются всегда, активные — по галочке.
 const weapon2 = d.items.find((i) => i.category === 'Оружие' && i.id !== robotWeapon.id);
-const atkModule = d.items.find((i) => i.id === '0x1d5');
-const activeModule = d.items.find((i) => i.id === '0x16c');
+const atkModule = d.items.find((i) => i.id === '0x01d5');
+const activeModule = d.items.find((i) => i.id === '0x016c');
 robotStore.robots = [normRobot({
   id: 'r-atk', name: 'АТК', base: prism.id,
   weapons: [robotWeapon.id, weapon2.id], weapon: 0,
@@ -663,7 +692,7 @@ check('роботы: в карточке есть выбор оружия и а�
 
 // «Перераспределитель энерго-ядра»: управляет Ядром и Призмой, отдаёт параметры SAT.
 const core = d.items.find((i) => i.name === 'Ядро-III');
-const coreChar = { ...blankChar(), class: 'Техник', implants: ['0x271'], pockets: [{ id: core.id, qty: 1 }, { id: prism.id, qty: 1 }, { id: robotWeapon.id, qty: 1 }] };
+const coreChar = { ...blankChar(), class: 'Техник', implants: ['0x0271'], pockets: [{ id: core.id, qty: 1 }, { id: prism.id, qty: 1 }, { id: robotWeapon.id, qty: 1 }] };
 robotStore.robots = [normRobot({ id: 'r-core', name: 'Ядро', base: core.id, weapons: [robotWeapon.id, null], weapon: 0 })];
 robotStore.active = 'r-core';
 const coreStats = robotStats(robotStore.robots[0], d, coreChar).total;
@@ -673,7 +702,7 @@ check('роботы: Ядро управляется Перераспредел�
 check('роботы: Перераспределитель подходит и Призме', robotRequirement({ ...robotStore.robots[0], base: prism.id }, d, coreChar).ok);
 
 // Сборка из любых деталей и плашка о недостающем.
-const emptyTech = { ...blankChar(), class: 'Техник', implants: ['0x189'] };
+const emptyTech = { ...blankChar(), class: 'Техник', implants: ['0x0189'] };
 robotStore.robots = [normRobot({ id: 'r-missing', name: 'Недобор', base: prism.id, weapons: [robotWeapon.id, null] })];
 robotStore.active = 'r-missing';
 const missingParts = robotMissing(robotStore.robots[0], d, emptyTech);
@@ -688,7 +717,7 @@ check('роботы: без деталей надеть нельзя', !robotReq
 robotStore.robots = [normRobot({ id: 'r-b-count', name: 'Орион', base: bmetOrion.id })];
 robotStore.active = 'r-b-count';
 const noBmetImplantHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Техник', robots: ['r-b-count'] } });
-const withBmetImplantHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Техник', implants: ['0x1ac'], robots: ['r-b-count'] } });
+const withBmetImplantHtml = character.render({ ...ctx, char: { ...blankChar(), class: 'Техник', implants: ['0x01ac'], robots: ['r-b-count'] } });
 check('Техник: счётчик БМЕТ только при Робософте', !noBmetImplantHtml.includes('БМЕТ: 1 / 1') && withBmetImplantHtml.includes('БМЕТ: 1 / 1'));
 
 robotStore.robots = [
@@ -696,7 +725,7 @@ robotStore.robots = [
   normRobot({ id: 'r-b2', name: 'Кладис', base: bmetKladis.id }),
 ];
 robotStore.active = 'r-b1';
-const limitChar = { ...blankChar(), class: 'Техник', implants: ['0x1ac'], ro: { ...blankRO(), 'Ацуши': -60 }, robots: ['r-b1'] };
+const limitChar = { ...blankChar(), class: 'Техник', implants: ['0x01ac'], ro: { ...blankRO(), 'Ацуши': -60 }, robots: ['r-b1'] };
 const limitHtml = character.render({ ...ctx, char: limitChar });
 check('Техник: РО «Ацуши» ограничивает число БМЕТов', limitHtml.includes('БМЕТ: 1 / 1') && /data-robot-use="r-b2"[^>]*disabled/.test(limitHtml));
 let robotRenders = 0;
@@ -705,7 +734,7 @@ robotsView.bind(rbRoot, { ...ctx, char: limitChar, rerender() { robotRenders++; 
 rbRoot.onchange({ target: { dataset: { robotName: '' }, value: 'Разведчик' } });
 check('роботы: переименование сохраняется', robotStore.robots[0].name === 'Разведчик' && robotRenders === 1);
 
-const skelChar = { ...blankChar(), class: 'Техник', implants: ['0x1ad'], pockets: [{ id: skeletonItem.id, qty: 1 }, { id: robotModule.id, qty: 1 }], equipment: [skeletonItem.id] };
+const skelChar = { ...blankChar(), class: 'Техник', implants: ['0x01ad'], pockets: [{ id: skeletonItem.id, qty: 1 }, { id: robotModule.id, qty: 1 }], equipment: [skeletonItem.id] };
 const skelHtml = character.render({ ...ctx, char: skelChar });
 check('скелет: 3 модуля [Acs] и карточки модулей', skelHtml.includes('Модульный скелет') && skelHtml.includes('data-skel-mod="2"')
   && skelHtml.includes('Посмотреть карточки модулей') && skelHtml.includes('skel-catalog') && !/undefined|NaN/.test(skelHtml));
@@ -748,18 +777,18 @@ check('статы: формула с n и условные ближний/дал
 check('статы: способности, мутации и способности зверя не учитываются', (() => {
   const s = collectCharacterStats({
     ...blankChar(), rank: 5,
-    abilities: ['0x014', '0x04f', '0x055', '0x056', '0x026'],
-    beasts: ['0x00d', '0x019', '0x020', '0x01a'],
+    abilities: ['0x0014', '0x004f', '0x0055', '0x0056', '0x0026'],
+    beasts: ['0x000d', '0x0019', '0x0020', '0x001a'],
   }, d);
   return s.sources.length === 0 && s.conditional.length === 0
     && CHAR_STAT_ORDER.every((k) => !s.totals[k]);
 })());
 
-const statWeaponA = d.itemMap.get('0x0c9');
-const statWeaponB = d.itemMap.get('0x0cb');
-const statCondItem = d.itemMap.get('0x0d7');
-const statCondItem2 = d.itemMap.get('0x0e5');
-const statActiveImplant = d.itemMap.get('0x10c');
+const statWeaponA = d.itemMap.get('0x00c9');
+const statWeaponB = d.itemMap.get('0x00cb');
+const statCondItem = d.itemMap.get('0x00d7');
+const statCondItem2 = d.itemMap.get('0x00e5');
+const statActiveImplant = d.itemMap.get('0x010c');
 const statChar = {
   ...blankChar(), rank: 5,
   equipment: [statWeaponA.id, statWeaponB.id],
@@ -786,8 +815,8 @@ check('статы: активный бонус импланта включает
   return off.totals.od === 0 && on.totals.od === 1;
 })());
 check('статы: активный источник по умолчанию выключен', charStats.sources.some((x) => x.key === activeSourceKey && x.hasActive && !x.sourceOn));
-check('статы: перераспределитель энерго-ядра — не оружие', !isWeaponItem(d.itemMap.get('0x271')));
-const coreImplantStats = collectCharacterStats({ ...blankChar(), implants: ['0x271'] }, d);
+check('статы: перераспределитель энерго-ядра — не оружие', !isWeaponItem(d.itemMap.get('0x0271')));
+const coreImplantStats = collectCharacterStats({ ...blankChar(), implants: ['0x0271'] }, d);
 check('статы: параметры перераспределителя уходят SAT, а не персонажу', coreImplantStats.totals.atk === 0
   && coreImplantStats.totals.tchn === 0 && coreImplantStats.sources.length === 0);
 const statNorm = normChar({ name: 'Норм', statsToggles: { effects: { e: true } } });
@@ -818,9 +847,9 @@ check('статы: одна галочка включает все услови�
 condAllRoot.onchange({ target: { dataset: { statsCondAll: '' }, checked: false, type: 'checkbox' } });
 check('статы: одна галочка снимает все условия', condAllKeys.every((k) => condAllChar.statsToggles.effects[k] === false));
 
-const groupChar = { ...blankChar(), rank: 5, implants: ['0x120'] };
+const groupChar = { ...blankChar(), rank: 5, implants: ['0x0120'] };
 const groupStats = collectCharacterStats(groupChar, d);
-const groupKey = groupStats.conditional.find((x) => x.sourceKey === 'imp:0x120:0')?.sourceKey;
+const groupKey = groupStats.conditional.find((x) => x.sourceKey === 'imp:0x0120:0')?.sourceKey;
 const groupRoot = { addEventListener() {}, querySelector: () => null };
 character.bind(groupRoot, { ...ctx, char: groupChar, save() {}, rerender() {} });
 groupRoot.onchange({ target: { dataset: { statsCondGroup: groupKey }, checked: true, type: 'checkbox' } });
@@ -859,7 +888,7 @@ globalThis.localStorage = {
   clear: () => store.clear(),
 };
 const liveRows = {
-  items: [{ id: '0x001', name: 'Онлайн', category: 'Тест', rarity: 'Обычный', cost: 1, description: '' }],
+  items: [{ id: '0x0001', name: 'Онлайн', category: 'Тест', rarity: 'Обычный', cost: 1, description: '' }],
   cards: [], ranks: [], races: [], classes: [], stats: [], skills: [], abilities: [],
   beasts: [], traits: [], essences: [], slots: [], implant_combos: [],
 };
