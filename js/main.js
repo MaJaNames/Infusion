@@ -3,6 +3,7 @@ import { indexData } from './core/util.js';
 import { loadChar, saveChar } from './core/storage.js';
 import { applyTheme } from './core/theme.js';
 import { helpBlock } from './core/help.js';
+import { showToast } from './core/toast.js';
 import * as databases from './views/databases.js';
 import * as character from './views/character.js';
 import * as utilities from './views/utilities.js';
@@ -11,6 +12,11 @@ import * as settings from './views/settings.js';
 const TABS = [['db', 'Базы данных', databases], ['char', 'Персонаж', character], ['util', 'Утилиты', utilities], ['settings', 'Настройки', settings]];
 const $ = (id) => document.getElementById(id);
 let CURRENT = TABS[0];
+const LIVE_REFRESH_MS = 10 * 60 * 1000;
+let liveTimer = 0;
+let liveBusy = false;
+let liveCheckedAt = 0;
+let pendingData = null;
 
 // Индикатор сохранения: карточка и настройки пишутся в localStorage сразу.
 function setSaved(saved) {
@@ -98,6 +104,60 @@ function draw(full) {
   scrollTo(0, full ? 0 : y);
 }
 
+// Не перерисовываем интерфейс посреди ввода или открытого списка/фильтров:
+// новые данные подождут, пока пользователь закончит.
+function canApplyLive() {
+  if (isEditable(document.activeElement)) return false;
+  if (document.body.classList.contains('drawer-open')) return false;
+  if (document.querySelector('#app .combo-pop:not([hidden])')) return false;
+  return true;
+}
+
+function applyPendingData() {
+  if (!pendingData) return;
+  if (getSourcePreference() !== SOURCE_LIVE) { pendingData = null; return; }
+  if (!canApplyLive()) return;
+  const data = pendingData;
+  pendingData = null;
+  ctx.data = indexData(data);
+  draw(false);
+  showToast('База обновлена из Supabase.');
+}
+
+// Проверяем только версию базы; таблицы скачиваются, если она изменилась.
+async function refreshLive() {
+  if (liveBusy || !ctx.data || getSourcePreference() !== SOURCE_LIVE) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  // Частые переключения вкладок не должны дёргать Supabase без нужды.
+  if (Date.now() - liveCheckedAt < 60 * 1000) return;
+  liveCheckedAt = Date.now();
+  liveBusy = true;
+  try {
+    const data = await loadData({ source: SOURCE_LIVE });
+    if (getSourcePreference() !== SOURCE_LIVE || !ctx.data) return;
+    if (String(data.version) === String(ctx.data.version)) return;
+    pendingData = data;
+    applyPendingData();
+  } catch {
+    // Следующая проверка попробует снова; текущая база остаётся на экране.
+  } finally {
+    liveBusy = false;
+  }
+}
+
+function startLiveRefresh() {
+  if (liveTimer) return;
+  liveTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshLive();
+  }, LIVE_REFRESH_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { applyPendingData(); refreshLive(); }
+  });
+  addEventListener('focus', () => { applyPendingData(); refreshLive(); });
+  addEventListener('online', () => { liveCheckedAt = 0; refreshLive(); });
+  document.addEventListener('focusout', () => { setTimeout(applyPendingData, 0); }, true);
+}
+
 // Первый запуск: спрашиваем, откуда брать справочники. Выбор запоминается,
 // позже его можно поменять на вкладке «Настройки».
 function chooseSource() {
@@ -138,5 +198,6 @@ async function boot() {
   try { ctx.data = indexData(await loadData({ source })); } catch (e) { $('app').innerHTML = `<div class="empty">Не удалось загрузить базу: ${e.message}</div>`; return; }
   draw(true);
   addEventListener('hashchange', () => draw(true));
+  startLiveRefresh();
 }
 boot();

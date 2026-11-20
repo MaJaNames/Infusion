@@ -454,6 +454,8 @@ const mainSource = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8
 const settingsSource = readFileSync(new URL('../js/views/settings.js', import.meta.url), 'utf8');
 check('источник: первый запуск предлагает снимок или Supabase', mainSource.includes('data-source-choice') && mainSource.includes('setSourcePreference'));
 check('источник: настройки переключают режим и обновляют базу', settingsSource.includes('data-source-mode') && settingsSource.includes('loadData({ source: mode'));
+check('источник: онлайн-режим проверяет обновления по таймеру и при возврате на вкладку',
+  mainSource.includes('LIVE_REFRESH_MS') && mainSource.includes('refreshLive') && mainSource.includes('visibilitychange'));
 const fakeRoot = { addEventListener() {} };
 character.bind(fakeRoot, ctx);
 const clickTab = (itab) => fakeRoot.onclick({ target: { closest: (s) => s === '[data-itab]' ? { dataset: { itab } } : null } });
