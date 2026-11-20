@@ -871,6 +871,14 @@
       // загрузить записи и собрать UPDATE, который потом выполняется в SQL Editor.
       const SUPABASE_REST = "https://awsotgciwopymcornpyg.supabase.co/rest/v1";
       const SUPABASE_KEY = "sb_publishable_wEyPdxTM_po23ZZqnoIZ5Q_USO6ZwqN";
+      // PostgREST отдаёт не больше 1000 строк за запрос, поэтому таблица читается
+      // страницами. Каждая попытка ограничена таймаутом, временные сбои (сеть,
+      // 5xx, 429) повторяются с нарастающей паузой.
+      const SUPABASE_PAGE_SIZE = 1000;
+      const SUPABASE_MAX_PAGES = 50;
+      const SUPABASE_ATTEMPTS = 3;
+      const SUPABASE_TIMEOUT_MS = 10000;
+      const SUPABASE_RETRY_BASE_MS = 700;
 
       const EDIT_LABELS = {
         id: "ID", tag: "Тег", name: "Название", description: "Описание",
@@ -1056,6 +1064,7 @@
       // STATE
       // Database editor state
       const EDITOR_PAGE_SIZE = 100;
+      const EDITOR_CACHE_TTL_MS = 5 * 60 * 1000; // загруженные таблицы живут в памяти 5 минут
       let editorSource = 'supabase';
       let editorTable = 'items';
       let editorRows = [];
@@ -1068,6 +1077,7 @@
       let editorCache = {};       // `${source}:${table}` -> { rows, at }
       let editorSnapshotPromise = null;
       let editorLoadToken = 0;
+      let editorLoadAbort = null; // AbortController текущей загрузки таблицы
       let editorBatch = [];       // [{ uid, kind, table, tableLabel, pk, pkValue, pkLiteral, label, sets, values, changed }]
 
       // UTILS
@@ -1947,15 +1957,142 @@
         editorSetStatus(`Открыта запись из пакета: «${entry.label}». Изменённых полей — ${entry.changed.length}.`);
       }
 
-      async function fetchEditorSupabase(meta, tableKey) {
-        const url = `${SUPABASE_REST}/${tableKey}?select=*&order=${encodeURIComponent(meta.order)}.asc&limit=2000`;
-        const res = await fetch(url, {
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-        });
-        if (!res.ok) throw new Error(`Supabase ${res.status} ${res.statusText}`);
-        const rows = await res.json();
-        if (!Array.isArray(rows)) throw new Error('неожиданный ответ Supabase');
-        return rows;
+      function editorSleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function editorAbortError() {
+        const err = new Error('загрузка отменена');
+        err.name = 'AbortError';
+        return err;
+      }
+
+      function supabaseRetryableStatus(status) {
+        return status === 408 || status === 425 || status === 429 || status >= 500;
+      }
+
+      function supabaseRetryAfterMs(value) {
+        if (!value) return 0;
+        const seconds = Number(value);
+        if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+        const date = Date.parse(value);
+        return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
+      }
+
+      function supabaseRetryDelay(attempt, err) {
+        if (err && err.retryAfterMs) return Math.min(err.retryAfterMs, 10000);
+        const base = SUPABASE_RETRY_BASE_MS * 2 ** (attempt - 1);
+        return Math.round(base + Math.random() * base * 0.5);
+      }
+
+      // Одна попытка запроса с таймаутом и поддержкой внешней отмены.
+      async function supabaseRequestOnce(url, outerSignal) {
+        const controller = new AbortController();
+        const abortFromOuter = () => controller.abort();
+        if (outerSignal) {
+          if (outerSignal.aborted) throw editorAbortError();
+          outerSignal.addEventListener('abort', abortFromOuter, { once: true });
+        }
+        const timer = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
+        try {
+          const res = await fetch(url, {
+            cache: 'no-store',
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              Accept: 'application/json'
+            },
+            signal: controller.signal
+          });
+          if (!res.ok) {
+            const err = new Error(`Supabase ${res.status} ${res.statusText || ''}`.trim());
+            err.status = res.status;
+            err.retryable = supabaseRetryableStatus(res.status);
+            err.retryAfterMs = supabaseRetryAfterMs(res.headers.get('Retry-After'));
+            throw err;
+          }
+          let data;
+          try {
+            data = await res.json();
+          } catch (parseErr) {
+            if (outerSignal && outerSignal.aborted) throw editorAbortError();
+            const err = new Error('ответ Supabase оборван или повреждён');
+            err.retryable = true;
+            throw err;
+          }
+          if (!Array.isArray(data)) {
+            const err = new Error('неожиданный ответ Supabase');
+            err.retryable = true;
+            throw err;
+          }
+          return data;
+        } catch (err) {
+          if (outerSignal && outerSignal.aborted) throw editorAbortError();
+          if (controller.signal.aborted) {
+            const timeoutErr = new Error(`Supabase не ответил за ${Math.round(SUPABASE_TIMEOUT_MS / 1000)} с`);
+            timeoutErr.retryable = true;
+            throw timeoutErr;
+          }
+          if (err && err.name === 'TypeError') {
+            const netErr = new Error(`нет связи с Supabase (${err.message})`);
+            netErr.retryable = true;
+            netErr.cause = err;
+            throw netErr;
+          }
+          throw err;
+        } finally {
+          clearTimeout(timer);
+          if (outerSignal) outerSignal.removeEventListener('abort', abortFromOuter);
+        }
+      }
+
+      // Запрос с повторами: сеть, таймауты, 408/425/429 и 5xx считаются
+      // временными. Остальные 4xx (например, неверный ключ) не повторяются.
+      async function supabaseRequest(url, signal, onRetry) {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          const offlineErr = new Error('браузер в офлайн-режиме');
+          offlineErr.retryable = false;
+          throw offlineErr;
+        }
+        let lastErr = null;
+        for (let attempt = 1; attempt <= SUPABASE_ATTEMPTS; attempt += 1) {
+          if (signal && signal.aborted) throw editorAbortError();
+          try {
+            return await supabaseRequestOnce(url, signal);
+          } catch (err) {
+            if (err && err.name === 'AbortError') throw err;
+            lastErr = err;
+            if ((err && err.retryable === false) || attempt >= SUPABASE_ATTEMPTS) break;
+            const delay = supabaseRetryDelay(attempt, err);
+            if (onRetry) onRetry({ attempt, attempts: SUPABASE_ATTEMPTS, delay, error: err });
+            await editorSleep(delay);
+          }
+        }
+        throw lastErr;
+      }
+
+      // Читает таблицу целиком: PostgREST ограничивает ответ 1000 строками,
+      // поэтому страницы запрашиваются по offset, пока не кончится таблица.
+      async function fetchEditorSupabase(meta, tableKey, options = {}) {
+        const signal = options.signal;
+        const onRetry = options.onRetry;
+        const rows = [];
+        for (let page = 0; page < SUPABASE_MAX_PAGES; page += 1) {
+          const query = new URLSearchParams({
+            select: '*',
+            order: `${meta.order}.asc`,
+            limit: String(SUPABASE_PAGE_SIZE),
+            offset: String(page * SUPABASE_PAGE_SIZE)
+          });
+          const chunk = await supabaseRequest(
+            `${SUPABASE_REST}/${tableKey}?${query.toString()}`,
+            signal,
+            onRetry
+          );
+          rows.push(...chunk);
+          if (chunk.length < SUPABASE_PAGE_SIZE) return rows;
+        }
+        throw new Error('Supabase не отдал таблицу целиком (слишком много страниц)');
       }
 
       async function fetchEditorSnapshot(tableKey) {
@@ -1995,7 +2132,14 @@
         const token = ++editorLoadToken;
         editorPage = 1;
 
-        if (!force && cached) {
+        // Новая загрузка отменяет предыдущую, чтобы ответы не обгоняли друг друга.
+        if (editorLoadAbort) {
+          editorLoadAbort.abort();
+          editorLoadAbort = null;
+        }
+
+        if (!force && cached && Date.now() - (cached.at || 0) < EDITOR_CACHE_TTL_MS) {
+          loadBtn.disabled = false;
           editorRows = cached.rows;
           editorSelectedIndex = -1;
           renderEditorList();
@@ -2004,6 +2148,8 @@
           return;
         }
 
+        const controller = new AbortController();
+        editorLoadAbort = controller;
         loadBtn.disabled = true;
         editorSetStatus(`Загрузка «${meta.label}»...`);
         editorRows = [];
@@ -2011,7 +2157,17 @@
         renderEditorList();
         renderEditorForm();
         try {
-          const rows = source === 'supabase' ? await fetchEditorSupabase(meta, tableKey) : await fetchEditorSnapshot(tableKey);
+          const rows = source === 'supabase'
+            ? await fetchEditorSupabase(meta, tableKey, {
+                signal: controller.signal,
+                onRetry: ({ attempt, attempts, delay, error }) => {
+                  if (token !== editorLoadToken) return;
+                  editorSetStatus(
+                    `Supabase не ответил (${error.message}). Повтор ${attempt + 1}/${attempts} через ${(delay / 1000).toFixed(1)} с...`
+                  );
+                }
+              })
+            : await fetchEditorSnapshot(tableKey);
           if (token !== editorLoadToken) return;
           editorRows = rows;
           editorCache[cacheKey] = { rows, at: Date.now() };
@@ -2022,10 +2178,11 @@
           editorLoadStatus(`${srcLabel}: ${editorRecordsLabel(rows.length)} (${meta.label}).`);
         } catch (err) {
           if (token !== editorLoadToken) return;
+          if (err && err.name === 'AbortError') return;
           if (source === 'supabase') {
-            // Офлайн-режим: переключаемся на снимок, чтобы редактор оставался рабочим.
-            editorSource = 'snapshot';
-            document.getElementById('editor-source').value = 'snapshot';
+            // Supabase временно недоступен: показываем снимок, но источник
+            // оставляем онлайн — следующая загрузка снова попробует Supabase.
+            delete editorCache[cacheKey];
             try {
               const rows = await fetchEditorSnapshot(tableKey);
               if (token !== editorLoadToken) return;
@@ -2034,7 +2191,7 @@
               editorSelectedIndex = -1;
               renderEditorList();
               renderEditorForm();
-              editorLoadStatus(`Supabase недоступен (${err.message}). Загружен снимок data.json: ${editorRecordsLabel(rows.length)}.`, true);
+              editorLoadStatus(`Supabase недоступен (${err.message}). Показан снимок data.json: ${editorRecordsLabel(rows.length)}. Нажмите «Загрузить», чтобы повторить.`, true);
             } catch (fallbackErr) {
               if (token !== editorLoadToken) return;
               editorRows = [];
@@ -2051,7 +2208,10 @@
             editorLoadStatus(`Не удалось загрузить data.json: ${err.message}`, true);
           }
         } finally {
-          if (token === editorLoadToken) loadBtn.disabled = false;
+          if (token === editorLoadToken) {
+            loadBtn.disabled = false;
+            if (editorLoadAbort === controller) editorLoadAbort = null;
+          }
         }
       }
 
