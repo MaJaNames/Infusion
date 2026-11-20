@@ -289,6 +289,13 @@ check('OG: описание без префикса и заглушки', descri
 const ogEmpty = ogEntries.find((e) => e.kind === 'items' && !e.description);
 check('OG: пустое описание не выводится', Boolean(ogEmpty)
   && !renderPage(ogEmpty, { url: 'https://example.test/Infusion', basePath: '/Infusion/' }).includes('og:description'));
+const ogCard = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x001');
+const ogCardText = describe(ogCard);
+check('OG: у карты сначала параметры, потом описание', ogCardText.startsWith('Параметры: КШ 10\n')
+  && ogCardText.includes('\nТип урона: ') && ogCardText.includes('\n\nВы модулируете снаряд'), ogCardText);
+const ogCardParams = ogEntries.find((e) => e.kind === 'cards' && e.id === '0x002');
+check('OG: у карты без описания остаются только параметры', describe(ogCardParams).startsWith('Параметры: 5 АТК')
+  && !describe(ogCardParams).includes('\n\n'), describe(ogCardParams));
 
 // Код сборки: base64url от JSON карточки.
 const charCode = charToCode(c);

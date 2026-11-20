@@ -49,10 +49,32 @@ function truncate(text, max) {
 export function describe(entry) {
   const body = String(entry.description ?? '')
     .split(/\r?\n\s*\r?\n/)
-    .map(cleanText)
+    .map((block) => block.split(/\r?\n/).map(cleanText).filter(Boolean).join('\n'))
     .filter(Boolean)
     .join('\n\n');
-  return body ? truncate(body, 200) : '';
+  return body ? truncate(body, 300) : '';
+}
+
+// Поля карты — те же, что в карточке на сайте. Сначала параметры, потом текст.
+const CARD_FIELDS = [
+  ['Параметры', (c) => c.params],
+  ['Тип урона', (c) => c.damage_type],
+  ['Дальность', (c) => c.distance],
+  ['Срабатывание', (c) => c.activation],
+  ['Эффекты', (c) => c.effects],
+  ['Испытание', (c) => c.test],
+  ['Усиление', (c) => c.amplify],
+  ['Сотворение', (c) => (c.creation === 'Базис' ? '' : c.creation)],
+];
+
+const fieldText = (value) => (Array.isArray(value) ? value.join(', ') : String(value ?? '')).trim();
+
+export function cardDescription(card) {
+  const lines = CARD_FIELDS
+    .map(([name, get]) => [name, fieldText(get(card))])
+    .filter(([, value]) => value)
+    .map(([name, value]) => `${name}: ${value}`);
+  return [lines.join('\n'), String(card.mechanics ?? '').trim()].filter(Boolean).join('\n\n');
 }
 
 // Заголовок превью: [Тег] Название [Р] — как в выпадающих списках.
@@ -77,7 +99,7 @@ export function collectEntries(d) {
     entries.push({
       kind: 'cards', id: String(c.id), path: permalinkPath('cards', c.id),
       title: entryTitle(c), type: 'Карта',
-      description: c.mechanics,
+      description: cardDescription(c),
     });
   }
   for (const r of rulesRows(d)) {
