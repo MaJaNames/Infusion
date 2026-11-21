@@ -1,6 +1,7 @@
 import { esc, num, label, optLabel, money, set, RC } from '../../core/util.js';
 import { comboList, closeCombos, openCombo, comboKeydown, installComboClose } from '../../core/combo.js';
 import { showToast } from '../../core/toast.js';
+import { fuzzyFilter } from '../../core/fuzzy.js';
 import { R, MAX_ROBOT_NAME, addRobot, removeRobot, saveRobots, currentRobot, exportRobots, importRobots } from './store.js';
 import { isRobotBase, isRobotWeapon, isRobotModule, isBmet, robotKind, robotKindLabel, robotBase, robotStats, availableCount, robotRequirement, robotMissing, moduleChecked, moduleIsActive, weaponIndex, hasImplant } from './parts.js';
 import { bmetLimit, ROBOT_IMPLANTS } from '../../character/rules.js';
@@ -52,7 +53,7 @@ const inStock = (ctx, id) => (ctx.char?.pockets || []).some((e) => e.id === id &
 const rowsFor = (path, robot, ctx) => itemsFor(path, robot, ctx).map((it) => {
   const free = availableCount(ctx.char, R.robots, it.id, { robotId: robot.id, path });
   const stock = inStock(ctx, it.id) ? `свободно ${num(free)}` : 'нет в инвентаре';
-  return { id: it.id, text: `${optLabel(it)} · ${stock}` };
+  return { id: it.id, text: `${optLabel(it)} · ${stock}`, search: it.description || '' };
 });
 
 function picker(path, robot, ctx, slot, extra = '') {
@@ -283,8 +284,10 @@ export function bind(root, ctx) {
     if (comboPath) {
       const robot = currentRobot(), box = e.target.closest('[data-combo]');
       if (!robot || !box) return;
-      const q = e.target.value.trim().toLowerCase();
-      box.querySelector('[data-combo-list]').innerHTML = comboList(rowsFor(comboPath, robot, ctx).filter((r) => !q || r.text.toLowerCase().includes(q)));
+      const rows = fuzzyFilter(rowsFor(comboPath, robot, ctx), e.target.value, (r) => [
+        { text: r.text, weight: 1 }, { text: r.search, weight: 0.7 },
+      ]).rows;
+      box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
       return;
     }
     const path = e.target.dataset.rsearch;
@@ -292,8 +295,9 @@ export function bind(root, ctx) {
     const robot = currentRobot(), box = e.target.closest('[data-rbox]');
     const select = box?.querySelector(`select[data-rb="${path}"]`);
     if (!robot || !select) return;
-    const q = e.target.value.trim().toLowerCase();
-    const rows = rowsFor(path, robot, ctx).filter((r) => !q || r.text.toLowerCase().includes(q));
+    const rows = fuzzyFilter(rowsFor(path, robot, ctx), e.target.value, (r) => [
+      { text: r.text, weight: 1 }, { text: r.search, weight: 0.7 },
+    ]).rows;
     select.innerHTML = `<option value="">—</option>${rows.map((r) => `<option value="${esc(r.id)}">${esc(r.text)}</option>`).join('')}`;
   };
   root.onchange = (e) => {

@@ -4,6 +4,7 @@ import { summarize } from './aggregate.js';
 import { G, MAX_NAME, blankBuild as blank, newId, currentVehicle as current, partCount, saveGarage, exportGarage, importGarage } from './store.js';
 import { comboList, closeCombos, openCombo, comboKeydown, installComboClose } from '../../core/combo.js';
 import { showToast } from '../../core/toast.js';
+import { fuzzyFilter } from '../../core/fuzzy.js';
 
 let OPEN_SOURCE = null; // раскрытый параметр в «Итогах»
 const OPEN_PART = new Set(); // раскрытые карточки деталей (ключ: транспорт + предмет)
@@ -23,7 +24,7 @@ const itemsForPath = (path, data, build) => {
 };
 // Детали в меню идут в порядке базы (по ID), без группировки по редкости.
 const rowsForPath = (path, data, build) => itemsForPath(path, data, build).map((p) => ({
-  id: p.item.id, text: optLabel(p.item),
+  id: p.item.id, text: optLabel(p.item), search: p.item.description || '',
 }));
 const fixWheels = (build, data) => {
   const parts = partsOf(data);
@@ -256,8 +257,9 @@ export function bind(root, ctx) {
       if (!box) return;
       const curr = current();
       if (!curr) return;
-      const q = e.target.value.trim().toLowerCase();
-      const rows = rowsForPath(comboPath, ctx.data, curr.build).filter((r) => !q || r.text.toLowerCase().includes(q));
+      const rows = fuzzyFilter(rowsForPath(comboPath, ctx.data, curr.build), e.target.value, (r) => [
+        { text: r.text, weight: 1 }, { text: r.search, weight: 0.7 },
+      ]).rows;
       box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
       return;
     }
@@ -268,10 +270,11 @@ export function bind(root, ctx) {
     if (!select) return;
     const curr = current();
     if (!curr) return;
-    const q = e.target.value.trim().toLowerCase();
-    const items = itemsForPath(path, ctx.data, curr.build).filter((p) => !q || optLabel(p.item).toLowerCase().includes(q));
+    const found = fuzzyFilter(rowsForPath(path, ctx.data, curr.build), e.target.value, (r) => [
+      { text: r.text, weight: 1 }, { text: r.search, weight: 0.7 },
+    ]).rows;
     const hint = box.dataset.hint || '—';
-    select.innerHTML = `<option value="">${esc(hint)}</option>${items.length ? opts(items, select.value, (p) => optLabel(p.item), (p) => p.item.id) : '<option value="" disabled>Ничего не найдено</option>'}`;
+    select.innerHTML = `<option value="">${esc(hint)}</option>${found.length ? opts(found, select.value, (r) => r.text, (r) => r.id) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
   root.onchange = (e) => {
     const t = e.target;

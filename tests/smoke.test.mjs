@@ -75,6 +75,20 @@ check('инвентарь: добавление через dropdown', invHtml.in
 check('инвентарь: комбобокс с поиском внутри', invHtml.includes('data-combo="pockets"') && invHtml.includes('data-combo-search="pockets"') && invHtml.includes('class="combo-pop"') && invHtml.includes('data-combo-list="pockets"'));
 const comboTexts = [...invHtml.matchAll(/data-combo-opt="[^"]*">([^<]*)<\/button>/g)].map((m) => m[1]);
 check('комбобокс: список не дублируется в HTML', comboTexts.length === 0);
+// Добавление навыков и способностей: без дублей и с нечётким поиском.
+const skillsSelect = invHtml.match(/<select data-in="skills"[\s\S]*?<\/select>/)?.[0] || '';
+check('навыки: добавленный навык не предлагается повторно', skillsSelect.includes(`value="${d.skills[3].id}"`)
+  && !skillsSelect.includes(`value="${d.skills[0].id}"`));
+const fuzzyList = { innerHTML: '' };
+const fuzzyBox = { querySelector: () => fuzzyList };
+const fuzzyRoot = { addEventListener() {}, querySelector: () => null };
+character.bind(fuzzyRoot, ctx);
+fuzzyRoot.oninput({ target: { dataset: { comboSearch: 'skills' }, value: 'атлетик', closest: () => fuzzyBox } });
+check('навыки: fuzzy-поиск находит опечатку', fuzzyList.innerHTML.includes(d.skills[3].id));
+const abilityDupId = c.abilities[0];
+const abilityDupHtml = character.render({ ...ctx, char: { ...c, abilities: [abilityDupId, abilityDupId, null, null, null, null, null, null, null] } });
+const slot2Select = abilityDupHtml.match(/<select class="grow ability-native" data-p="abilities\.1"[\s\S]*?<\/select>/)?.[0] || '';
+check('способности: дубликат не предлагается в другой слот', slot2Select.length > 0 && !slot2Select.includes(`value="${abilityDupId}"`));
 check('способности: комбобокс с поиском', invHtml.includes('data-combo="abilities.0"') && invHtml.includes('class="grow ability-native" data-p="abilities.0"') && invHtml.includes(`Способность: ${d.abilities[0].name}`));
 const abilitySelect = invHtml.match(/<select class="grow ability-native"[\s\S]*?<\/select>/)?.[0] || '';
 const abilityGroups = [...abilitySelect.matchAll(/<optgroup label="([^"]+)"/g)].map((m) => m[1]);
@@ -874,14 +888,30 @@ check('статы: одна галочка включает все услови�
 condAllRoot.onchange({ target: { dataset: { statsCondAll: '' }, checked: false, type: 'checkbox' } });
 check('статы: одна галочка снимает все условия', condAllKeys.every((k) => condAllChar.statsToggles.effects[k] === false));
 
-const groupChar = { ...blankChar(), rank: 5, implants: ['0x0120'] };
+const groupChar = { ...blankChar(), rank: 5, implants: ['0x00d7'] };
 const groupStats = collectCharacterStats(groupChar, d);
-const groupKey = groupStats.conditional.find((x) => x.sourceKey === 'imp:0x0120:0')?.sourceKey;
+const groupKey = groupStats.conditional[0]?.sourceKey;
 const groupRoot = { addEventListener() {}, querySelector: () => null };
 character.bind(groupRoot, { ...ctx, char: groupChar, save() {}, rerender() {} });
 groupRoot.onchange({ target: { dataset: { statsCondGroup: groupKey }, checked: true, type: 'checkbox' } });
-check('статы: галочка источника включает только его условия', groupStats.conditional
-  .every((x) => !!groupChar.statsToggles.effects[x.effectKey] === (x.sourceKey === groupKey)));
+check('статы: галочка источника включает только его условия', groupStats.conditional.length > 0
+  && groupStats.conditional.every((x) => !!groupChar.statsToggles.effects[x.effectKey] === (x.sourceKey === groupKey)));
+
+// Регрессия: условия, которые по смыслу не должны требовать галочек.
+const neuroChar = { ...blankChar(), implants: ['0x0127'] };
+const neuroStats = collectCharacterStats(neuroChar, d);
+check('статы: нейробустер не создаёт лишнее условие', neuroStats.conditional.length === 0
+  && neuroStats.totals.kc === 1);
+const ballistic = 'eq:0x01e6:0:0';
+const ballisticOff = collectCharacterStats({ ...blankChar(), equipment: ['0x01e6'] }, d);
+const ballisticOneToggle = collectCharacterStats({
+  ...blankChar(), equipment: ['0x01e6'], statsToggles: { sources: {}, effects: { [ballistic]: true } },
+}, d);
+check('статы: баллистическая система — одна галочка условия', ballisticOff.totals.atk === 0
+  && ballisticOneToggle.totals.atk === 20);
+const linkStats = collectCharacterStats({ ...blankChar(), implants: ['0x0120'] }, d);
+check('статы: смарт линк даёт 3 пассивных бонуса без условий', linkStats.conditional.length === 0
+  && linkStats.totals.atk === 20 && linkStats.totals.tchn === 50 && linkStats.totals.ksh === 20);
 character.setRoute('pockets');
 check('статы: возврат на карточку', character.currentRoute() === 'pockets');
 let pageRoute = '';

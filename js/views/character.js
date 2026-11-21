@@ -21,7 +21,7 @@ import {
 } from '../modules/robots/parts.js';
 import { parsePart } from '../modules/autoshop/parser.js';
 import { comboList, groupedRows, closeCombos, openCombo, comboKeydown, installComboClose } from '../core/combo.js';
-import { fuzzyScore } from '../core/fuzzy.js';
+import { fuzzyScore, fuzzyFilter } from '../core/fuzzy.js';
 
 const OPEN = new Set(); // раскрытые описания навыков, чтобы состояние переживало перерисовку
 const OPEN_ROWS = new Set(); // раскрытые карточки предметов и карт
@@ -75,8 +75,10 @@ const optionLabel = (it) => optLabel(it);
 const abilityText = (a) => `${a.kind === 'mutation' ? 'Мутация' : 'Способность'}: ${a.name}${a.class_requirement ? ' (' + a.class_requirement + ')' : ''}`;
 // Порядок групп: общие → способности текущего класса → мутации → способности других классов.
 // Внутри группы — по ID.
-function abilityRows(d, cls) {
-  return d.abilities.map((a) => {
+function abilityRows(d, cls, c, slot = -1) {
+  // Одна и та же способность не должна занимать несколько слотов.
+  const used = new Set((c?.abilities || []).filter((id, i) => i !== slot && !!id));
+  return d.abilities.filter((a) => !used.has(a.id)).map((a) => {
     const mutation = a.kind === 'mutation';
     const general = !mutation && !a.class_requirement;
     const own = !mutation && !!cls && a.class_requirement === cls;
@@ -86,13 +88,27 @@ function abilityRows(d, cls) {
       group: mutation ? 'Мутации' : general ? 'Общие' : own ? cls : 'Другие классы',
       rank: mutation ? 2 : general ? 0 : own ? 1 : 3,
       order: a.id,
+      search: `${a.description || ''} ${a.class_requirement || ''}`,
     };
   });
 }
 // На телефоне нативный select тоже получает группы, как выпадающий список на ПК.
-const abilityOptions = (d, id, cls) => groupedRows(abilityRows(d, cls)).map(([g, list]) =>
+const abilityOptions = (d, id, cls, c, slot) => groupedRows(abilityRows(d, cls, c, slot)).map(([g, list]) =>
   `<optgroup label="${esc(g)}">${list.map((r) => `<option value="${esc(r.id)}"${r.id === id ? ' selected' : ''}>${esc(r.text)}</option>`).join('')}</optgroup>`).join('');
-const comboRows = (kind, c, d) => (kind.startsWith('abilities.') ? abilityRows(d, c.class) : adderRows(kind, c, d));
+const comboRows = (kind, c, d) => (kind.startsWith('abilities.')
+  ? abilityRows(d, c.class, c, Number(kind.slice('abilities.'.length)))
+  : adderRows(kind, c, d));
+
+// fuzzyFilter во всех списках выбора: опечатки, раскладка, порядок слов и релевантность.
+const searchRows = (rows, q) => {
+  const query = String(q || '').trim();
+  if (!query) return rows;
+  return fuzzyFilter(rows, query, (r) => [
+    { text: r.text, weight: 1 },
+    { text: r.search || '', weight: 0.7 },
+    { text: r.group || '', weight: 0.4 },
+  ]).rows;
+};
 
 // Состояние подвкладок и сортировки переживает перерисовку, как и OPEN у навыков.
 const UI = {
@@ -112,16 +128,20 @@ const cmpRarity = (a, b) => (RARITY_RANK.get(a) ?? 99) - (RARITY_RANK.get(b) ?? 
 const sdef = (name, get, cmp = cmpText) => ({ name, get, cmp });
 
 function adderRows(kind, c, d) {
-  if (kind === 'skills') return d.skills.map((s) => ({ id: s.id, text: `${s.name} · ${d.statMap.get(s.stat)?.name || s.stat} ${s.tier}`, group: d.statMap.get(s.stat)?.name || 'Навыки' }));
+  // Уже добавленный навык не предлагается второй раз: дубли съедают лимит и щепки.
+  if (kind === 'skills') return d.skills.filter((s) => !c.skills.some((x) => x.id === s.id)).map((s) => ({
+    id: s.id, text: `${s.name} · ${d.statMap.get(s.stat)?.name || s.stat} ${s.tier}`,
+    group: d.statMap.get(s.stat)?.name || 'Навыки', search: s.description || '',
+  }));
   if (kind === 'beasts') return beastAdderRows(c, d);
-  if (kind === 'pockets') return d.items.map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
+  if (kind === 'pockets') return d.items.map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории', search: it.description || '' }));
   if (kind === 'repository') return d.cards.map((x) => {
     const own = c.class && x.classes.includes(c.class), general = x.classes.includes('Общие');
-    return { id: x.id, text: optLabel(x), group: own ? c.class : general ? 'Общие' : 'Другие классы', rank: own ? 0 : general ? 1 : 2 };
+    return { id: x.id, text: optLabel(x), group: own ? c.class : general ? 'Общие' : 'Другие классы', rank: own ? 0 : general ? 1 : 2, search: x.mechanics || '' };
   });
   // Импланты ставятся сразу из справочника и не занимают места в хранилище.
-  if (kind === 'implants') return d.items.filter((it) => it.category === 'Имплант').map((it) => ({ id: it.id, text: optionLabel(it), group: 'Импланты' }));
-  return c.pockets.map((e) => d.itemMap.get(e.id)).filter(Boolean).filter((it) => it.tag !== STORAGE_TAG).map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории' }));
+  if (kind === 'implants') return d.items.filter((it) => it.category === 'Имплант').map((it) => ({ id: it.id, text: optionLabel(it), group: 'Импланты', search: it.description || '' }));
+  return c.pockets.map((e) => d.itemMap.get(e.id)).filter(Boolean).filter((it) => it.tag !== STORAGE_TAG).map((it) => ({ id: it.id, text: optionLabel(it), group: it.category || 'Без категории', search: it.description || '' }));
 }
 
 function groupOptions(rows) {
@@ -391,9 +411,9 @@ const skillRow = (s, d) => {
   </details>`;
 };
 
-function abilityCombo(id, i, d, cls) {
+function abilityCombo(id, i, d, cls, c) {
   const chosen = id ? d.abilityMap.get(id) : null, key = `abilities.${i}`, hint = `Слот ${i + 1}: пусто`;
-  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${abilityOptions(d, id, cls)}</select>
+  return `<div class="line"><select class="grow ability-native" data-p="${key}"><option value="">${esc(hint)}</option>${abilityOptions(d, id, cls, c, i)}</select>
     <div class="combo grow" data-combo="${key}" data-combo-target="${key}">
       <button type="button" class="combo-btn" data-combo-btn="${key}" aria-haspopup="listbox" aria-expanded="false"><span data-combo-label="${key}">${esc(chosen ? abilityText(chosen) : hint)}</span><span class="combo-caret" aria-hidden="true">▾</span></button>
       <div class="combo-pop" data-combo-pop="${key}" hidden>
@@ -860,7 +880,7 @@ export function render(ctx) {
         ${adder('skills', full ? `Лимит навыков: ${r.skillLimit}` : 'Найти навык…', c, d, full)}
         ${full ? `<p class="meta bad">Лимит навыков: ${r.skillLimit} (4 × ранг ${r.rankLevel}).</p>` : ''}
         ${r.skills.map((s) => skillRow(s, d)).join('') || '<p class="meta">Навыки не выбраны.</p>'}</section>
-      <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d, c.class)).join('')}</section>
+      <section class="panel"><h2>Способности и мутации</h2>${ab.map((id, i) => abilityCombo(id, i, d, c.class, c)).join('')}</section>
       ${roPanel(c)}
       <section class="panel char-data"><h2>Данные персонажа</h2>
         <div class="btns"><button class="danger" data-a="reset-char">Сбросить персонажа</button>
@@ -933,8 +953,7 @@ export function bind(root, ctx) {
     if (comboKind) {
       const box = e.target.closest('[data-combo]');
       if (!box) return;
-      const q = e.target.value.trim().toLowerCase();
-      const rows = comboRows(comboKind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group || ''} ${r.search || ''}`.toLowerCase().includes(q));
+      const rows = searchRows(comboRows(comboKind, c, ctx.data), e.target.value);
       box.querySelector('[data-combo-list]').innerHTML = comboList(rows);
       return;
     }
@@ -942,8 +961,7 @@ export function bind(root, ctx) {
     if (!kind) return;
     const box = e.target.closest('[data-addbox]'), select = box?.querySelector(`[data-in="${kind}"]`);
     if (!select) return;
-    const q = e.target.value.trim().toLowerCase();
-    const rows = adderRows(kind, c, ctx.data).filter((r) => !q || `${r.text} ${r.group || ''} ${r.search || ''}`.toLowerCase().includes(q));
+    const rows = searchRows(adderRows(kind, c, ctx.data), e.target.value);
     const hint = box.dataset.hint || 'Выберите…';
     select.innerHTML = `<option value="">${esc(hint)}</option>${rows.length ? groupOptions(rows) : '<option value="" disabled>Ничего не найдено</option>'}`;
   };
@@ -1085,6 +1103,14 @@ export function bind(root, ctx) {
     if (e.target.dataset.p) {
       const path = e.target.dataset.p;
       set(c, path, e.target.type === 'checkbox' ? e.target.checked : fieldValue(e.target));
+      if (path.startsWith('abilities.')) {
+        const slot = Number(path.slice('abilities.'.length));
+        const id = c.abilities[slot];
+        if (id && c.abilities.some((x, i) => i !== slot && x === id)) {
+          c.abilities[slot] = null;
+          e.target.value = '';
+        }
+      }
       if (path.startsWith('stats.')) {
         const key = path.slice(6), max = ctx.data.statMap.get(key)?.max || 10;
         c.stats[key] = Math.min(max, Math.max(1, Math.round(Number(c.stats[key]) || 1)));
