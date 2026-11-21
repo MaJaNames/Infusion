@@ -75,8 +75,8 @@ const copyTextResult = character.inventoryText({
   name: 'Тест', pockets: [{ id: copyItem.id, qty: 5 }, { id: copyItem.id, qty: 2 }],
   equipment: [], implants: [], repository: [],
 }, d);
-const copyLine = `- ${label(copyItem)} [${RARITY_SHORT[copyItem.rarity] || '?'}]`;
-check('инвентарь: копирование — только название и редкость, без дублей', copyTextResult.startsWith('ИНВЕНТАРЬ · Тест')
+const copyLine = `- ${label(copyItem)} [${RARITY_SHORT[copyItem.rarity] || '?'}] ×7`;
+check('инвентарь: копирование — название, редкость и количество, без дублей', copyTextResult.startsWith('ИНВЕНТАРЬ · Тест')
   && copyTextResult.includes('ХРАНИЛИЩЕ') && copyTextResult.includes(copyLine)
   && copyTextResult.split(copyLine).length === 2 && !copyTextResult.includes('Кол-во'));
 check('инвентарь: сортировка по параметрам', invHtml.includes('data-sort="pockets"') && invHtml.includes('Количество') && invHtml.includes('Цена продажи'));

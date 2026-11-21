@@ -555,25 +555,33 @@ function inventoryPanel(c, d, r, race) {
   </section>`;
 }
 
-// Текстовый список инвентаря: только названия и редкости, уникальные позиции.
+// Текстовый список инвентаря: название, редкость и количество; позиции уникальны.
 export function inventoryText(c, d) {
   const rarity = (r) => RARITY_SHORT[r] || String(r || '?').slice(0, 1);
   const lines = [`ИНВЕНТАРЬ · ${c.name || 'Без имени'}`];
-  const group = (title, ids, map) => {
-    const seen = new Set(), out = [];
-    for (const id of ids || []) {
-      if (!id || seen.has(id)) continue;
+  const qtyOf = (rows) => {
+    const m = new Map();
+    for (const e of rows || []) if (e?.id) m.set(e.id, (m.get(e.id) || 0) + (Number(e.qty) || 0));
+    return m;
+  };
+  const countOf = (ids) => {
+    const m = new Map();
+    for (const id of ids || []) if (id) m.set(id, (m.get(id) || 0) + 1);
+    return m;
+  };
+  const group = (title, qty, map) => {
+    const out = [];
+    for (const [id, n] of qty) {
       const it = map.get(id);
-      if (!it) continue;
-      seen.add(id);
-      out.push(`- ${label(it)} [${rarity(it.rarity)}]`);
+      if (!it || n <= 0) continue;
+      out.push(`- ${label(it)} [${rarity(it.rarity)}] ×${num(n)}`);
     }
     if (out.length) lines.push('', title, ...out);
   };
-  group('ХРАНИЛИЩЕ', (c.pockets || []).map((e) => e.id), d.itemMap);
-  //group('ЭКИПИРОВКА', c.equipment, d.itemMap);
-  //group('ИМПЛАНТЫ', c.implants, d.itemMap);
-  //group('РЕПОЗИТОРИЙ', (c.repository || []).map((e) => e.id), d.cardMap);
+  group('ХРАНИЛИЩЕ', qtyOf(c.pockets), d.itemMap);
+  //group('ЭКИПИРОВКА', countOf(c.equipment), d.itemMap);
+  //group('ИМПЛАНТЫ', countOf(c.implants), d.itemMap);
+  //group('РЕПОЗИТОРИЙ', qtyOf(c.repository), d.cardMap);
   return lines.length > 1 ? lines.join('\n') : `${lines[0]}\n\nПусто.`;
 }
 
