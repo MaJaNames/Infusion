@@ -362,25 +362,23 @@ function normalizeToggles(t) {
 
 function addEffects(result, source, effects, toggles) {
   if (!effects.length) return;
-  // Условие — свойство всего источника: один тоггл действует на все его бонусы.
+  // И активность, и условие — свойства всего источника: один тоггл на все его бонусы.
+  // Активный эффект где-то внутри делает активным весь предмет (нейробустер и т. п.).
   const hasConditional = effects.some((e) => e.conditional);
+  const hasActive = effects.some((e) => e.active);
   const condKey = `cond:${source.key}`;
   const condOn = toggles.effects[condKey] === true;
   const sourceOn = toggles.sources[source.key] === true;
-  const prepared = effects.map((e, i) => {
-    const active = !!e.active;
-    return {
-      ...e,
-      key: `${source.key}:${i}`,
-      conditional: hasConditional,
-      active,
-      sourceOn,
-      condOn,
-      condKey,
-      enabled: (!active || sourceOn) && (!hasConditional || condOn),
-    };
-  });
-  const hasActive = prepared.some((e) => e.active);
+  const prepared = effects.map((e, i) => ({
+    ...e,
+    key: `${source.key}:${i}`,
+    conditional: hasConditional,
+    active: hasActive,
+    sourceOn,
+    condOn,
+    condKey,
+    enabled: (!hasActive || sourceOn) && (!hasConditional || condOn),
+  }));
   const condText = effects.filter((e) => e.conditional).map((e) => e.text).filter(Boolean).slice(0, 3).join(' ');
   const sourceCard = { ...source, effects: prepared, hasActive, hasConditional, condOn, condKey, condText, sourceOn };
   result.sources.push(sourceCard);

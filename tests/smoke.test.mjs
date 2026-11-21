@@ -901,8 +901,13 @@ check('статы: галочка источника включает тольк
 // Регрессия: условия, которые по смыслу не должны требовать галочек.
 const neuroChar = { ...blankChar(), implants: ['0x0127'] };
 const neuroStats = collectCharacterStats(neuroChar, d);
-check('статы: нейробустер не создаёт лишнее условие', neuroStats.conditional.length === 0
-  && neuroStats.totals.kc === 1);
+const neuroOn = collectCharacterStats({
+  ...blankChar(), implants: ['0x0127'], statsToggles: { sources: { 'imp:0x0127:0': true }, effects: {} },
+}, d);
+check('статы: нейробустер целиком активный, без условия', neuroStats.conditional.length === 0
+  && neuroStats.sources[0].hasActive && neuroStats.sources[0].effects.every((e) => e.active)
+  && neuroStats.totals.atk === 0 && neuroStats.totals.kc === 0
+  && neuroOn.totals.atk === 30 && neuroOn.totals.ksh === 10 && neuroOn.totals.od === 1 && neuroOn.totals.kc === 1);
 const ballisticCond = 'cond:eq:0x01e6:0';
 const ballisticOff = collectCharacterStats({ ...blankChar(), equipment: ['0x01e6'] }, d);
 const ballisticOneToggle = collectCharacterStats({
