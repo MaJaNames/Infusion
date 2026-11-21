@@ -27,6 +27,13 @@ jobs:
         with:
           node-version: '22'
 
+      # Тесты гоняем до сборки: сломанная база или расчёт не должны уйти на Pages.
+      - name: Тесты
+        run: |
+          node tests/smoke.test.mjs
+          node tests/parser.test.mjs
+          node tests/relationships.test.mjs
+
       # Даёт base_url проекта (например, https://majanames.github.io/Infusion).
       - id: pages
         uses: actions/configure-pages@v5

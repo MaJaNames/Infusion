@@ -2,8 +2,12 @@ import { blankRO, blankROStatus } from '../character/rules.js';
 import { padIds } from './ids.js';
 
 const KEY = 'infusion.char';
+// v:1 — карточки до перехода на четырёхзначные ID и явных миграций; v:2 — текущая схема.
+export const CHAR_VERSION = 2;
+const versionOk = (v) => v === 1 || v === CHAR_VERSION;
+
 export const blankChar = () => ({
-  v: 1, name: '', player: '', race: '0x0002', rank: 1, class: 'Соло', trait: null, essence: null,
+  v: CHAR_VERSION, name: '', player: '', race: '0x0002', rank: 1, class: 'Соло', trait: null, essence: null,
   stats: { strength: 5, dexterity: 5, intelligence: 5, will: 5, charisma: 5, perception: 5, technique: 5, luck: 5, constitution: 5 },
   skills: [], abilities: [], pockets: [], equipment: [], implants: [], repository: [], beasts: [], beastPath: null, storage: null, notes: '', clinicImplants: [],
   transport: null, ro: blankRO(), roStatus: blankROStatus(), robots: [],
@@ -17,7 +21,7 @@ export const normChar = (raw) => {
   const c = padIds(raw);
   const b = blankChar();
   return {
-    ...b, ...c,
+    ...b, ...c, v: CHAR_VERSION,
     stats: { ...b.stats, ...(c?.stats || {}) },
     ro: { ...b.ro, ...(c?.ro || {}) },
     roStatus: { ...b.roStatus, ...(c?.roStatus || {}) },
@@ -46,7 +50,7 @@ export function exportChar(c) {
 }
 export async function importChar(file) {
   const c = JSON.parse(await file.text());
-  if (c?.v !== 1 || !c.stats) throw new Error('Это не карточка персонажа Инфузии');
+  if (!versionOk(c?.v) || !c.stats) throw new Error('Это не карточка персонажа Инфузии');
   return normChar(c);
 }
 
@@ -75,6 +79,6 @@ export function codeToChar(code) {
   }
   let c;
   try { c = JSON.parse(json); } catch { throw new Error('Код сборки повреждён'); }
-  if (c?.v !== 1 || !c.stats) throw new Error('Это не код персонажа Инфузии');
+  if (!versionOk(c?.v) || !c.stats) throw new Error('Это не код персонажа Инфузии');
   return normChar(c);
 }

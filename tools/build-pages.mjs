@@ -203,6 +203,32 @@ export function renderLegacyRedirect(entry, site = siteConfig()) {
 </html>`;
 }
 
+// Запись удалена из базы, но её пермалинк уже мог разойтись: отдаём страницу
+// с понятным сообщением и ссылкой на раздел вместо 404.
+export function renderArchived(kind, id, title, site = siteConfig()) {
+  const target = `${site.basePath}#db/${kind}`;
+  const scriptTarget = JSON.stringify(target).replace(/</g, '\\u003c');
+  return `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)} — запись удалена — Инфузия</title>
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=${esc(target)}">
+<link rel="icon" type="image/webp" href="${esc(site.basePath)}assets/icons/paw.webp">
+<style>${PAGE_STYLE}</style>
+</head>
+<body>
+<main>
+<p>Запись «${esc(title)}» (${esc(id)}) удалена из базы.</p>
+<p><a href="${esc(target)}">Открыть раздел справочника</a></p>
+</main>
+<script>location.replace(${scriptTarget});</script>
+</body>
+</html>`;
+}
+
 export function render404(site = siteConfig()) {
   const target = `${site.basePath}#db`;
   return `<!doctype html>
@@ -278,6 +304,27 @@ async function main() {
     legacy++;
   }
 
+  // Удалённые записи: страницы с сообщением вместо 404 по старым пермалинкам.
+  let archivedPages = 0;
+  try {
+    const archived = JSON.parse((await readFile(join(ROOT, 'data/archived-links.json'), 'utf8')).replace(/^\uFEFF/, ''));
+    for (const kind of ['items', 'cards', 'rules']) {
+      for (const [id, info] of Object.entries(archived[kind] || {})) {
+        const old = legacyKey(id);
+        const paths = [permalinkPath(kind, id)];
+        if (old) paths.push(permalinkPath(kind, old));
+        for (const path of paths) {
+          if (seen.has(path)) continue;
+          seen.add(path);
+          const file = join(OUT, path, 'index.html');
+          await mkdir(dirname(file), { recursive: true });
+          await writeFile(file, renderArchived(kind, id, String(info?.title || id), site), 'utf8');
+          archivedPages += 1;
+        }
+      }
+    }
+  } catch { /* архив ещё не создан — это нормально */ }
+
   const counts = entries.reduce((acc, entry) => {
     acc[entry.kind] = (acc[entry.kind] || 0) + 1;
     return acc;
@@ -286,6 +333,7 @@ async function main() {
   console.log(`Скопировано файлов: ${copied}`);
   console.log(`OG-страниц: ${entries.length} (предметы ${counts.items}, карты ${counts.cards}, справочник ${counts.rules})`);
   console.log(`Редиректов со старых ID: ${legacy}`);
+  console.log(`Страниц удалённых записей: ${archivedPages}`);
   console.log(`Готово: ${relative(ROOT, OUT)}`);
 }
 

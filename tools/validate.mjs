@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { indexData } from '../js/core/util.js';
 import { derive } from '../js/character/derive.js';
+import { CLASS_RESTRICTIONS, ROBOT_IMPLANTS, CORE_IMPLANT } from '../js/character/rules.js';
 
 const J = (p) => JSON.parse(readFileSync(new URL('../' + p, import.meta.url), 'utf8'));
 const data = indexData(J('data/data.json'));
@@ -26,6 +27,18 @@ for (const [name, list, idOf] of catalogues) {
 }
 for (const s of data.skills) if (!data.statMap.has(s.stat)) err(`навык «${s.name}»: нет характеристики ${s.stat}`);
 for (const s of data.slots) if (!['gear', 'implant'].includes(s.grp)) err(`слот ${s.tag}: неизвестная группа ${s.grp}`);
+
+// ID, зашитые в коде: удаление такой записи из базы ломает классы и роботов молча.
+const hardIds = [
+  ...Object.keys(CLASS_RESTRICTIONS).map((id) => ['раса', id, data.raceMap]),
+  ...Object.values(ROBOT_IMPLANTS).flat().map((id) => ['имплант робота', id, data.itemMap]),
+  ['ядро', CORE_IMPLANT.id, data.itemMap],
+];
+for (const [what, id, map] of hardIds) {
+  if (!map.has(id)) err(`${what}: в базе нет ID ${id}, зашитого в коде`);
+}
+const core = data.itemMap.get(CORE_IMPLANT.id);
+if (core && core.name !== CORE_IMPLANT.name) err(`ядро: в коде «${CORE_IMPLANT.name}», в базе «${core.name}»`);
 
 const files = process.argv.slice(2);
 if (!files.length) {

@@ -29,10 +29,13 @@ const KIND = { 'кузов': 'body', 'колеса': 'wheels', 'двигател
 
 export function parsePart(text = '') {
   const t = String(text);
+  // «200 АТК урона» в уникальном эффекте — урон, а не характеристика, поэтому
+  // перевёрнутая запись «15 АТК» ищется только в блоке параметров.
+  const params = t.split(/Эффект:|Уникальный эффект:/i)[0];
   const out = {};
   for (const [key, [re, dflt]] of Object.entries(NUMERIC)) { const v = find(re, t); out[key] = v === undefined ? dflt : int(v); }
   // В модулях техники АТК часто записан наоборот: «15 АТК».
-  if (!out.atk) out.atk = Number(find(/(\d+)\s*атк/i, t)) || 0;
+  if (!out.atk) out.atk = Number(find(/(\d+)\s*атк/i, params)) || 0;
 
   const def = find(/(\d+)\s*деф/i, t) ?? find(/деф\s*п?\.?\s*(\d+)/i, t);
   out.defP = def === undefined ? 0 : int(def);

@@ -134,6 +134,9 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .db-toolbar input[type=search]{flex:1 1 18rem;max-width:28rem}
 .db-filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end}
 .db-filters select{min-width:9rem}
+.db-multi{display:flex;flex-direction:column;gap:.25rem;min-width:9rem}
+.db-multi-values{display:flex;flex-wrap:wrap;gap:.25rem;max-width:18rem}
+.chip-filter{border-color:var(--acc);color:var(--acc);cursor:pointer}
 .db-filters .sortbar{margin-left:0}
 .db-show-ids{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .55rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--mute);font-size:.88rem;cursor:pointer;width:fit-content;min-height:2.5rem}
 .db-show-ids input{width:auto;flex:0 0 auto;min-height:0}
@@ -419,6 +422,8 @@ body.drawer-open{overflow:hidden}
 :root[data-ui=mobile] .ro-row{grid-template-columns:1fr}
 
 /* Индикатор сохранения в шапке. */
+.data-state{font-size:.78rem;line-height:1.2;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.data-state.fallback{color:var(--l)}
 .save-state{margin-left:auto;font-size:.78rem;line-height:1.2;padding:.2rem .55rem;border:1px solid var(--line);border-radius:99px;color:var(--mute);background:var(--bg);white-space:nowrap}
 .save-state.saved{border-color:var(--u);color:var(--u)}
 .save-state.dirty{border-color:var(--l);color:var(--l)}
@@ -427,6 +432,8 @@ body.drawer-open{overflow:hidden}
 .row-side{display:flex;align-items:center;gap:.55rem;flex:0 0 auto}
 .row-share{padding:.1rem .35rem;border:0;background:none;color:var(--mute);font-size:1rem;line-height:1}
 .row-share:hover{color:var(--acc)}
+.row-fav{padding:.1rem .3rem;border:0;background:none;color:var(--line);font-size:1rem;line-height:1}
+.row-fav:hover,.row-fav.on{color:var(--l)}
 
 /* Запись, открытая по прямой ссылке: акцент, чтобы её было видно в ленте. */
 details.row.is-permalink{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 7%,var(--panel));box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 28%,transparent),0 10px 26px color-mix(in srgb,var(--acc) 14%,transparent)}

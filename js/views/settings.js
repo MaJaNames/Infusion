@@ -38,6 +38,7 @@ export function render(ctx) {
 function restoreBackup(text, ctx) {
   const raw = JSON.parse(text);
   if (!raw || typeof raw !== 'object' || raw.kind !== 'infusion-backup') throw new Error('это не резервная копия Инфузии');
+  if (raw.v !== undefined && raw.v !== 1 && raw.v !== 2) throw new Error('неизвестная версия резервной копии');
   if (!raw.char || !raw.garage || !raw.robots) throw new Error('в резервной копии не хватает данных');
   const ok = typeof confirm !== 'function' || confirm('Заменить текущего персонажа, транспорт, роботов и тему данными из файла?');
   if (!ok) return false;
@@ -88,7 +89,7 @@ export function bind(root, ctx) {
     if (a === 'reload-db') { await switchSource(getSourcePreference() || SOURCE_SNAPSHOT, root, ctx, msg); return; }
     if (a === 'export-all') {
       downloadJson({
-        v: 1, kind: 'infusion-backup', exportedAt: new Date().toISOString(),
+        v: 2, kind: 'infusion-backup', exportedAt: new Date().toISOString(),
         char: ctx.char, garage: G, robots: R, theme: getTheme(),
       }, 'infusion-backup.json');
       msg('Все данные выгружены.');

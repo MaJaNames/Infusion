@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import { indexData, optLabel, num, esc } from '../js/core/util.js';
 import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
-import { blankChar, normChar, charToCode, codeToChar } from '../js/core/storage.js';
+import { blankChar, normChar, charToCode, codeToChar, CHAR_VERSION } from '../js/core/storage.js';
+import { pruneMissing } from '../js/core/prune.js';
+import { favoriteKey, isFavorite, toggleFavorite, favoriteCount } from '../js/core/favorites.js';
 import { loadData, getSourcePreference, setSourcePreference, SOURCE_LIVE, SOURCE_SNAPSHOT } from '../js/core/data-source.js';
 import { derive } from '../js/character/derive.js';
 import { evalStatFormula, parseStatEffects, isWeaponItem, collectCharacterStats, CHAR_STAT_ORDER } from '../js/character/stats.js';
@@ -11,7 +13,7 @@ import { classAllowed, RULES, RO_FACTIONS, RO_VALUES, RO_MIN, RO_MAX, RO_STATUS,
 import { helpBlock } from '../js/core/help.js';
 import { permalinkPath, hashRoute, permalinkUrl } from '../js/core/links.js';
 import { canonId, legacyId, canonKey, legacyKey, padIds } from '../js/core/ids.js';
-import { collectEntries, describe, renderPage, renderLegacyRedirect } from '../tools/build-pages.mjs';
+import { collectEntries, describe, renderPage, renderLegacyRedirect, renderArchived } from '../tools/build-pages.mjs';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
@@ -134,7 +136,7 @@ check('база: раздел «Справочник»', dbHtml.includes('Спр
 check('база: сортировка по параметрам', dbHtml.includes('data-sort="items"') && dbHtml.includes('Сортировка'));
 check('база: сортировка по ID по умолчанию', dbHtml.includes('<option value="id" selected>ID</option>'));
 check('база: мобильные вкладки и лист фильтров', dbHtml.includes('data-tab-select') && dbHtml.includes('data-filters-panel') && dbHtml.includes('data-filters-open'));
-check('база: фильтры по категории и организации, без тега', dbHtml.includes('data-k="category"') && dbHtml.includes('data-k="organization"') && !dbHtml.includes('data-k="tag"'));
+check('база: фильтры по категории и организации, без тега', dbHtml.includes('data-add-k="category"') && dbHtml.includes('data-add-k="organization"') && !dbHtml.includes('data-add-k="tag"'));
 check('база: нет сортировки по проблеме оформления', !dbHtml.includes('Проблема оформления') && !dbHtml.includes('value="issue"'));
 check('база: цена с иконкой кредитов', dbHtml.includes('assets/icons/croncred.webp'));
 check('база: цена продажи — мелким текстом без «продажа» и «+»', (() => {
@@ -152,7 +154,7 @@ databases.bind(dbRoot, ctx);
 const clickDbTab = (tab) => dbRoot.onclick({ target: { closest: (s) => (s === '[data-tab]' ? { dataset: { tab } } : null) } });
 clickDbTab('cards');
 const cardsDb = databases.render(ctx);
-check('база: у карт фильтры по классу, школе и сущности', ['classes', 'school', 'essence', 'creation', 'consumable', 'iconic'].every((k) => cardsDb.includes(`data-k="${k}"`)));
+check('база: у карт фильтры по классу, школе и сущности', ['classes', 'school', 'essence', 'creation', 'consumable', 'iconic'].every((k) => cardsDb.includes(`data-add-k="${k}"`)));
 check('база: цена карт с иконкой тали', cardsDb.includes('assets/icons/tali.webp'));
 check('база: галочка «Показывать ID» в фильтрах', cardsDb.includes('data-show-ids') && cardsDb.includes('Показывать ID') && !dbRes.innerHTML.includes('row-id'));
 dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: true } });
@@ -162,17 +164,16 @@ dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: false } });
 check('база: ID снова скрываются', !dbRes.innerHTML.includes('row-id'));
 clickDbTab('parts');
 const partsDb = databases.render(ctx);
-check('база: у деталей фильтры по типу и организации', partsDb.includes('data-k="kind"') && partsDb.includes('data-k="organization"'));
+check('база: у деталей фильтры по типу и организации', partsDb.includes('data-add-k="kind"') && partsDb.includes('data-add-k="organization"'));
 clickDbTab('rules');
 const rulesDb = databases.render(ctx);
 check('справочник: разделы «Константы», «Способности», «Зверь», «Черта», «Навыки»', ['Константы', 'Способности', 'Зверь', 'Черта', 'Навыки'].every((x) => rulesDb.includes(`>${x}<`)));
 check('справочник: подразделы «Ранги» и «Сущности»', rulesDb.includes('>Ранги<') && rulesDb.includes('>Сущности<'));
-check('справочник: фильтры, сортировка и бесконечная лента', rulesDb.includes('data-k="group"') && rulesDb.includes('data-k="sub"') && rulesDb.includes('data-sort="rules"') && rulesDb.includes('data-more="rules"') && rulesDb.includes('data-more-sentinel') && !rulesDb.includes('data-pager'));
+check('справочник: фильтры, сортировка и бесконечная лента', rulesDb.includes('data-add-k="group"') && rulesDb.includes('data-add-k="sub"') && rulesDb.includes('data-sort="rules"') && rulesDb.includes('data-more="rules"') && rulesDb.includes('data-more-sentinel') && !rulesDb.includes('data-pager'));
 dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: true } });
 check('справочник: ID из БД показываются по галочке', dbRes.innerHTML.includes('row-id')
   && d.essences.some((e) => dbRes.innerHTML.includes(`ID ${e.id}`)));
 dbRoot.onchange({ target: { dataset: { showIds: '' }, checked: false } });
-dbRoot.onchange({ target: { dataset: { k: 'group' }, value: '' } });
 const initialRules = (dbRes.innerHTML.match(/<details/g) || []).length;
 dbRoot.onclick({ target: { closest: (s) => (s === '[data-more]' ? { dataset: { more: 'rules' } } : null) } });
 const appendedRules = (dbList.html.match(/<details/g) || []).length;
@@ -180,7 +181,7 @@ check('справочник: «Показать ещё» догружает по
 check('справочник: счётчик показывает прогресс ленты', dbSentinel.innerHTML.includes('Показано 60 из 267'), dbSentinel.innerHTML);
 clickDbTab('items');
 dbRes.innerHTML = '';
-dbRoot.onchange({ target: { dataset: { k: 'organization' }, value: 'Хиллз' } });
+dbRoot.onchange({ target: { dataset: { addK: 'organization' }, value: 'Хиллз' } });
 const hillz = d.items.filter((i) => i.organization === 'Хиллз').length;
 check('база: фильтр по организации работает', dbRes.innerHTML.includes(`Найдено: ${hillz}`), hillz);
 check('база: в описании нет порядкового номера строки', !/<div class="body">\s*\d/.test(dbRes.innerHTML), dbRes.innerHTML.match(/<div class="body">\s*\d/)?.[0]);
@@ -260,7 +261,7 @@ check('база: деталь делится ссылкой на предмет'
 databases.setRoute('items');
 const deepCat = d.items[0].category;
 dbRoot.oninput({ target: { dataset: { k: 'q' }, value: 'тест' } });
-dbRoot.onchange({ target: { dataset: { k: 'category' }, value: deepCat } });
+dbRoot.onchange({ target: { dataset: { addK: 'category' }, value: deepCat } });
 dbRoot.onchange({ target: { dataset: { sort: 'items' }, value: 'cost' } });
 const filteredRoute = databases.currentRoute();
 check('база: фильтры и сортировка попадают в адрес', filteredRoute.includes('q=') && filteredRoute.includes('category=') && filteredRoute.includes('sort=cost'), filteredRoute);
@@ -268,7 +269,22 @@ databases.setRoute('cards');
 databases.setRoute(filteredRoute);
 const restoredDb = databases.render(ctx);
 check('база: ссылка восстанавливает фильтры', restoredDb.includes('value="тест"')
-  && restoredDb.includes(`value="${esc(deepCat)}" selected`) && restoredDb.includes('<option value="cost" selected>'));
+  && restoredDb.includes(`data-value="${esc(deepCat)}"`) && restoredDb.includes('<option value="cost" selected>'));
+databases.setRoute('items');
+
+// Несколько значений в одном фильтре: ИЛИ внутри, И между фильтрами.
+databases.setRoute('items?rar=Обычный&rar=Редкий');
+const multiParams = new URLSearchParams(databases.currentRoute().split('?')[1]);
+const expectedMulti = d.items.filter((i) => i.rarity === 'Обычный' || i.rarity === 'Редкий').length;
+check('фильтры: несколько значений в адресе', multiParams.getAll('rar').length === 2
+  && multiParams.getAll('rar').includes('Обычный') && multiParams.getAll('rar').includes('Редкий'));
+check('фильтры: ИЛИ внутри одного фильтра', databases.render(ctx).includes(`Найдено: ${num(expectedMulti)}`), `${expectedMulti}`);
+const multiCat = d.items.find((i) => i.rarity === 'Редкий')?.category;
+databases.setRoute(`items?rar=Обычный&rar=Редкий&category=${encodeURIComponent(multiCat)}`);
+const expectedAnd = d.items.filter((i) => (i.rarity === 'Обычный' || i.rarity === 'Редкий') && i.category === multiCat).length;
+check('фильтры: И между фильтрами', databases.render(ctx).includes(`Найдено: ${num(expectedAnd)}`), `${expectedAnd}`);
+databases.setRoute('items?rar=Обычный');
+check('фильтры: старая ссылка с одним значением', databases.render(ctx).includes(`Найдено: ${num(d.items.filter((i) => i.rarity === 'Обычный').length)}`));
 databases.setRoute('items');
 
 // Красивые пермалинки и OG-страницы.
@@ -933,6 +949,56 @@ try {
   globalThis.fetch = originalFetch;
   if (originalLocalStorage === undefined) delete globalThis.localStorage;
   else globalThis.localStorage = originalLocalStorage;
+}
+
+// Версия карточки: старые v1 принимаются и переводятся в текущую схему.
+check('карточка: версия 2', blankChar().v === 2 && CHAR_VERSION === 2);
+check('карточка: v1 нормализуется в v2', normChar({ ...blankChar(), v: 1, race: '0x002' }).v === 2);
+const oldCode = `INF1.${Buffer.from(JSON.stringify({ ...blankChar(), v: 1 })).toString('base64url')}`;
+check('код сборки: старый v1 принимается', codeToChar(oldCode).v === 2);
+const futureCode = `INF1.${Buffer.from(JSON.stringify({ ...blankChar(), v: 99 })).toString('base64url')}`;
+check('код сборки: неизвестная версия отклоняется', (() => {
+  try { codeToChar(futureCode); return false; } catch { return true; }
+})());
+
+const realLocalStorage = globalThis.localStorage;
+const mem = new Map();
+globalThis.localStorage = {
+  getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+  setItem: (k, v) => { mem.set(k, String(v)); },
+  removeItem: (k) => { mem.delete(k); },
+};
+try {
+  // Избранное.
+  check('избранное: переключение и счётчик', toggleFavorite('items', '0x0001') && isFavorite('items', '0x0001')
+    && favoriteCount() === 1 && favoriteKey('cards', '0x0002') === 'cards:0x0002'
+    && !toggleFavorite('items', '0x0001') && favoriteCount() === 0);
+  const favRow = databases.itemRow(d.items[0], '', { fav: { kind: 'items', id: d.items[0].id } });
+  check('избранное: звезда в строке базы', favRow.includes('class="row-fav') && favRow.includes('data-fav="items:'));
+
+  // Чистка ссылок на удалённые из базы записи и откат.
+  const fake = {
+    data: { items: [{ id: '0x0001' }], cards: [], skills: [], abilities: [], traits: [], essences: [], races: [], beasts: [] },
+    char: {
+      ...blankChar(), pockets: [{ id: '0x0001', qty: 1 }, { id: '0x0999', qty: 2 }],
+      equipment: ['0x0999'], implants: ['0x0001'],
+      statsToggles: { sources: { 'weapon:0x0999': true, 'weapon:0x0001': true }, effects: {} },
+    },
+  };
+  const before = JSON.stringify(fake.char);
+  const pruned = pruneMissing(fake);
+  check('чистка: исчезнувшие ссылки убраны', !!pruned && pruned.total >= 3 && fake.char.pockets.length === 1
+    && fake.char.equipment.length === 0 && !('weapon:0x0999' in fake.char.statsToggles.sources)
+    && pruned.text.includes('хранилище: 1'));
+  pruned.undo();
+  check('чистка: откат восстанавливает карточку', JSON.stringify(fake.char) === before);
+
+  const archivedPage = renderArchived('items', '0x00c9', 'Удалённый предмет', { url: 'https://example.test/Infusion', basePath: '/Infusion/' });
+  check('архив: страница удалённой записи', archivedPage.includes('Удалённый предмет')
+    && archivedPage.includes('/Infusion/#db/items') && archivedPage.includes('name="robots" content="noindex"'));
+} finally {
+  if (realLocalStorage === undefined) delete globalThis.localStorage;
+  else globalThis.localStorage = realLocalStorage;
 }
 
 console.log(fail ? `Ошибок: ${fail}` : 'Всё в порядке');

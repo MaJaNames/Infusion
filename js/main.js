@@ -1,9 +1,10 @@
 import { loadData, getSourcePreference, setSourcePreference, SOURCE_LIVE, SOURCE_SNAPSHOT } from './core/data-source.js';
 import { indexData } from './core/util.js';
 import { loadChar, saveChar } from './core/storage.js';
-import { applyTheme } from './core/theme.js';
+import { applyTheme, watchSystemTheme } from './core/theme.js';
 import { helpBlock } from './core/help.js';
 import { showToast } from './core/toast.js';
+import { pruneMissing } from './core/prune.js';
 import { startRealtime, stopRealtime } from './core/realtime.js';
 import * as databases from './views/databases.js';
 import * as character from './views/character.js';
@@ -27,6 +28,28 @@ function setSaved(saved) {
   el.textContent = saved ? 'Сохранено' : 'Есть изменения';
   el.classList.toggle('saved', saved);
   el.classList.toggle('dirty', !saved);
+}
+
+// Бейдж в шапке: откуда данные и версия снимка.
+function updateDataState() {
+  const el = $('data-state');
+  if (!el || !ctx.data) return;
+  const d = ctx.data;
+  const mode = d.sourceFallback ? 'Кэш' : d.sourceMode === SOURCE_LIVE ? 'Онлайн' : 'Снимок';
+  const date = String(d.version || '').slice(0, 10);
+  el.textContent = date ? `${mode} · ${date}` : mode;
+  el.title = String(d.source || '');
+  el.classList.toggle('fallback', !!d.sourceFallback);
+}
+
+// Ссылки на исчезнувшие записи чистим только по свежим данным, не по кэшу.
+function pruneAndNotify() {
+  if (ctx.data?.sourceFallback) return;
+  const res = pruneMissing(ctx);
+  if (!res) return;
+  showToast(`База изменилась: убраны ссылки на исчезнувшие записи (${res.text}).`, {
+    label: 'Отменить', onAction: res.undo, duration: 12000,
+  });
 }
 
 function isEditable(el) {
@@ -85,7 +108,7 @@ const ctx = {
   markSaved: () => setSaved(true),
   markDirty: () => setSaved(false),
   rerender: () => draw(false),
-  setData: (d) => { ctx.data = indexData(d); draw(true); },
+  setData: (d) => { ctx.data = indexData(d); pruneAndNotify(); draw(true); updateDataState(); },
   route: (sub) => setHash(CURRENT, sub),
   sourceChanged: () => syncLiveWatch(),
 };
@@ -123,7 +146,9 @@ function applyPendingData() {
   const data = pendingData;
   pendingData = null;
   ctx.data = indexData(data);
+  pruneAndNotify();
   draw(false);
+  updateDataState();
   showToast('База обновлена из Supabase.');
 }
 
@@ -200,6 +225,7 @@ function chooseSource() {
 
 async function boot() {
   applyTheme();
+  watchSystemTheme();
   // Ввод в поля карточки помечает состояние как изменённое; обработчик раздела сразу сохранит его.
   // Поиск, фильтры и прочие элементы интерфейса на индикатор не влияют.
   const marksDirty = (el) => el?.dataset?.p !== undefined;
@@ -211,6 +237,8 @@ async function boot() {
     setSourcePreference(source);
   }
   try { ctx.data = indexData(await loadData({ source })); } catch (e) { $('app').innerHTML = `<div class="empty">Не удалось загрузить базу: ${e.message}</div>`; return; }
+  updateDataState();
+  pruneAndNotify();
   draw(true);
   addEventListener('hashchange', () => draw(true));
   startLiveRefresh();
