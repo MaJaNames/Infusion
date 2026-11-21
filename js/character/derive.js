@@ -1,7 +1,7 @@
 // Расчёты Билдостроя. Любое значение можно перекрыть вручную через character.overrides.
 import { RULES, shardCost, skillAvailable } from './rules.js';
 
-const GEAR = ['cl', 'armor', 'helm', 'exo', 'synth', 'acs', 'tr'];
+const GEAR = ['cl', 'armor', 'helm', 'exo', 'synt', 'acs', 'tr'];
 const norm = (t) => String(t || '').replace(/^\[|\]$/g, '').toLowerCase();
 const flat = (s) => String(s).replace(/\s+/g, '');
 const val = (auto, o) => ({ value: o ?? auto, auto, overridden: o !== null && o !== undefined });
