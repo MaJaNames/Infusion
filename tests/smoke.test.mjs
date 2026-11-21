@@ -354,6 +354,11 @@ const legacyPage = renderLegacyRedirect(ogItem, { url: 'https://example.test/Inf
 check('ID: страница-редирект со старой ссылки', legacyPage.includes(`https://example.test/Infusion/p/db/items/${ogItem.id}/`)
   && legacyPage.includes(`/Infusion/#db/items/${ogItem.id}`) && legacyPage.includes('name="robots" content="noindex, follow"'));
 
+// SQLGenerator — автономная страница: нечёткий поиск в редакторе записей.
+const sqlGenHtml = readFileSync(new URL('../SQLGenerator/index.html', import.meta.url), 'utf8');
+check('SQLGenerator: встроенный fuzzy-поиск', sqlGenHtml.includes('const sgFuzzy = (function ()')
+  && sqlGenHtml.includes('sgFuzzy.fuzzyScore(q,') && sqlGenHtml.includes('.sort((a, b) => b.score - a.score)'));
+
 // Код сборки: base64url от JSON карточки.
 const charCode = charToCode(c);
 check('код сборки: префикс INF1 и base64url', charCode.startsWith('INF1.') && !/[+/=]/.test(charCode.slice(5)));
