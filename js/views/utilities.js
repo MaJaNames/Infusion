@@ -1,9 +1,10 @@
 import * as shop from '../modules/autoshop/view.js';
 import * as robots from '../modules/robots/view.js';
+import * as broker from '../modules/broker/view.js';
 import { esc, num } from '../core/util.js';
 import { probability, percent, MODES, targetFromVer, verFromTarget } from '../core/probability.js';
 
-const TABS = [['nomad', 'Автомастерская'], ['robots', 'Мастерская техники'], ['calc', 'Калькулятор вероятностей']];
+const TABS = [['nomad', 'Автомастерская'], ['robots', 'Мастерская техники'], ['calc', 'Калькулятор вероятностей'], ['broker', 'Посредник']];
 const TAB_IDS = new Set(TABS.map(([id]) => id));
 const S = {
   tab: 'nomad',
@@ -105,14 +106,19 @@ function calcPanel(ctx) {
 }
 
 export function render(ctx) {
+  const panel = S.tab === 'nomad' ? shop.render(ctx)
+    : S.tab === 'robots' ? robots.render(ctx)
+      : S.tab === 'broker' ? broker.render(ctx)
+        : calcPanel(ctx);
   return `<div class="tabs util-tabs">${TABS.map(([id, t]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${t}</button>`).join('')}</div>
     <select class="tabs-select" data-tab-select="1" aria-label="Раздел утилит">${TABS.map(([id, t]) => `<option value="${id}"${S.tab === id ? ' selected' : ''}>${t}</option>`).join('')}</select>
-    ${S.tab === 'nomad' ? shop.render(ctx) : S.tab === 'robots' ? robots.render(ctx) : calcPanel(ctx)}`;
+    ${panel}`;
 }
 
 export function bind(root, ctx) {
   if (S.tab === 'nomad') shop.bind(root, ctx);
   else if (S.tab === 'robots') robots.bind(root, ctx);
+  else if (S.tab === 'broker') broker.bind(root, ctx);
   const innerInput = root.oninput;
   root.oninput = (e) => {
     if (e.target.dataset.calc !== undefined) {
@@ -167,10 +173,21 @@ export function bind(root, ctx) {
 }
 
 // Подссылки вида #util/calc открывают нужную вкладку утилит.
+// У «Посредника» второй сегмент — код предложения: #util/broker/offer/BRK1.…
 export function setRoute(sub) {
   // Пустой подраздел не сбрасывает выбор: при возврате на вкладку остаётся последняя подвкладка.
-  if (TAB_IDS.has(sub)) S.tab = sub;
+  if (!sub) return;
+  const raw = String(sub);
+  const match = raw.match(/^([^/?]+)(?:[/?](.*))?$/);
+  if (!match) return;
+  const head = match[1], rest = match[2] || '';
+  if (head === 'broker') {
+    S.tab = 'broker';
+    broker.setRoute(rest);
+    return;
+  }
+  if (TAB_IDS.has(raw)) S.tab = raw;
 }
 export function currentRoute() {
-  return S.tab;
+  return S.tab === 'broker' ? broker.currentRoute() : S.tab;
 }

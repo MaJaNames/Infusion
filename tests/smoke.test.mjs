@@ -25,6 +25,7 @@ import { summarize } from '../js/modules/autoshop/aggregate.js';
 import { G, importGarage, normGarage, currentVehicle, blankBuild } from '../js/modules/autoshop/store.js';
 import * as robotsView from '../js/modules/robots/view.js';
 import { R as robotStore, normRobot, importRobots } from '../js/modules/robots/store.js';
+import { B as brokerStore, blankOffer, blankPicks, normOffer, normBroker, isCultItem, showcaseRows, catalogRows, totals, discountFor, autoPrice, unitPrice, encodeOffer, decodeOffer, encodeOrder, decodeOrder } from '../js/modules/broker/store.js';
 import { robotRequirement, availableCount, robotStats, robotMissing, moduleChecked, moduleIsActive, moduleEnabled } from '../js/modules/robots/parts.js';
 
 const d = indexData(JSON.parse(readFileSync(new URL('../data/data.json', import.meta.url), 'utf8')));
@@ -260,6 +261,161 @@ calcRoot.oninput({ target: { dataset: { calc: 'charMode' }, type: 'checkbox', ch
 const plainCalcHtml = utilities.render(ctx);
 check('утилиты: без режима персонажа карточки навыка нет', !plainCalcHtml.includes('data-skill-card') && !plainCalcHtml.includes('data-calc="skillPick"'));
 check('подссылки: #util/calc', utilities.currentRoute() === 'calc');
+
+// Посредник v2: ассортимент из инвентаря, скидки по видам, своя цена,
+// клиентская витрина и заказ любого не-культового предмета из базы.
+const cultItem = d.items.find((it) => isCultItem(it));
+const normalItems = d.items.filter((it) => !isCultItem(it));
+const brokerFood = normalItems.find((it) => it.category === 'Расходник');
+const brokerWeapon = normalItems.find((it) => it.category === 'Оружие');
+const brokerClothes = normalItems.find((it) => it.category === 'Одежда');
+check('посредник: культовые предметы отсекаются', !!cultItem && !isCultItem(brokerFood) && !isCultItem(brokerWeapon) && !isCultItem(brokerClothes));
+check('посредник: старый черновик не наследуется', normBroker({ v: 1, offer: { items: [{ id: brokerFood.id, qty: 2 }] } }).offer.showcase.length === 0);
+const brokerOffer = normOffer({
+  title: 'Лавка', note: 'Тест',
+  pricing: {
+    showcase: { general: 10, byCategory: { 'Расходник': 20, 'Оружие': 0 } },
+    order: { general: 35, byCategory: { 'Расходник': 35 } },
+  },
+  showcase: [
+    { id: brokerFood.id, qty: 3, price: null },
+    { id: brokerWeapon.id, qty: 2, price: 777 },
+    { id: cultItem.id, qty: 5 },
+  ],
+});
+const shopRows = showcaseRows(brokerOffer, d.itemMap);
+const foodUnit = unitPrice(brokerFood.cost, 20);
+const foodOrderUnit = unitPrice(brokerFood.cost, 35);
+check('посредник: скидка вида и явный ноль важнее общей', shopRows.length === 2
+  && shopRows.find((row) => row.id === brokerFood.id)?.price === foodUnit
+  && discountFor(brokerOffer, 'Оружие') === 0
+  && shopRows.find((row) => row.id === brokerWeapon.id)?.price === 777);
+check('посредник: ассортимент и заказ считаются по разным скидкам',
+  discountFor(brokerOffer, 'Оружие', 'order') === 35
+  && foodOrderUnit !== foodUnit
+  && autoPrice(brokerClothes, brokerOffer, 'showcase') === unitPrice(brokerClothes.cost, 10)
+  && autoPrice(brokerClothes, brokerOffer, 'order') === unitPrice(brokerClothes.cost, 35));
+check('посредник: старый набор скидок копируется в оба режима',
+  normOffer({ general: 70, byCategory: { 'Оружие': 50 }, showcase: [] }).pricing.order.general === 70);
+check('посредник: своя цена помечена и заменяет скидку', shopRows.find((row) => row.id === brokerWeapon.id)?.custom === true);
+const brokerCatalog = catalogRows(brokerOffer, normalItems);
+check('посредник: заказ из базы считается по скидкам заказа', brokerCatalog.find((row) => row.id === brokerFood.id)?.price === foodOrderUnit
+  && brokerCatalog.find((row) => row.id === brokerClothes.id)?.price === autoPrice(brokerClothes, brokerOffer, 'order'));
+const shopTotals = totals(shopRows, (row) => row.limit);
+check('посредник: итог ассортимента по выставленному количеству', shopTotals.qty === 5
+  && shopTotals.total === foodUnit * 3 + 777 * 2
+  && shopTotals.base === brokerFood.cost * 3 + brokerWeapon.cost * 2);
+check('посредник: цена за штуку округляется', unitPrice(100, 20) === 80 && unitPrice(99, 10) === 89);
+const offerCode = encodeOffer({
+  ...brokerOffer,
+  showcase: brokerOffer.showcase.filter((row) => !isCultItem(d.itemMap.get(row.id))),
+});
+const decodedOffer = decodeOffer(offerCode);
+check('посредник: код ссылки переживает обмен', decodedOffer.title === 'Лавка'
+  && decodedOffer.showcase.length === 2 && decodedOffer.showcase[1].price === 777
+  && decodedOffer.pricing.showcase.byCategory['Оружие'] === 0
+  && decodedOffer.pricing.order.general === 35
+  && decodedOffer.pricing.order.byCategory['Расходник'] === 35);
+const brokerPicks = { showcase: { [brokerFood.id]: 2 }, order: { [brokerClothes.id]: 1 } };
+const orderCode = encodeOrder(brokerPicks, 'Покупатель');
+const decodedOrder = decodeOrder(orderCode);
+check('посредник: код заказа переживает обмен', decodedOrder.note === 'Покупатель'
+  && decodedOrder.picks.showcase[brokerFood.id] === 2 && decodedOrder.picks.order[brokerClothes.id] === 1);
+check('посредник: код читается из текста сообщения', decodeOffer(`Ссылка: ${offerCode} — до встречи`).title === 'Лавка'
+  && decodeOrder(`Заказ\n${orderCode}\nспасибо`).picks.order[brokerClothes.id] === 1);
+let oldLinkError = '';
+let oldOrderError = '';
+try { decodeOffer('BRK1.eyJ2IjoxLCJpIjpbXX0'); } catch (err) { oldLinkError = err.message; }
+try { decodeOrder('ORD1.eyJ2IjoxLCJpIjpbXX0'); } catch (err) { oldOrderError = err.message; }
+check('посредник: старые ссылки и коды отклоняются', /стар/.test(oldLinkError) && /стар/.test(oldOrderError));
+const brokerChar = { ...c, pockets: [
+  { id: brokerFood.id, qty: 4 }, { id: brokerWeapon.id, qty: 2 },
+  { id: brokerClothes.id, qty: 1 }, { id: cultItem.id, qty: 9 },
+] };
+const oldBrokerChar = ctx.char;
+ctx.char = brokerChar;
+brokerStore.offer = blankOffer();
+brokerStore.picks = blankPicks();
+brokerStore.note = '';
+brokerStore.client = false;
+brokerStore.tab = 'showcase';
+utilities.setRoute('broker');
+const brokerHtml = utilities.render(ctx);
+check('посредник: витрина продавца с инвентарём и двумя колонками скидок', brokerHtml.includes('Ассортимент')
+  && brokerHtml.includes('Витрина, %') && brokerHtml.includes('Заказ, %')
+  && brokerHtml.includes('data-broker-mode="showcase"') && brokerHtml.includes('data-broker-mode="order"')
+  && brokerHtml.includes('data-broker-pick-q') && brokerHtml.includes('data-broker-share')
+  && brokerHtml.includes('data-broker-showcase'));
+check('посредник: культовые не попадают в выбор из инвентаря', !brokerHtml.includes(`data-broker-pick-row="${cultItem.id}"`)
+  && !brokerHtml.includes(`data-broker-add="${cultItem.id}"`));
+
+const hadBrokerLs = Object.prototype.hasOwnProperty.call(globalThis, 'localStorage');
+const savedBrokerLs = globalThis.localStorage;
+const brokerMem = new Map();
+globalThis.localStorage = {
+  getItem: (key) => (brokerMem.has(key) ? brokerMem.get(key) : null),
+  setItem: (key, value) => brokerMem.set(key, String(value)),
+  removeItem: (key) => brokerMem.delete(key),
+  clear: () => brokerMem.clear(),
+};
+const brokerRoot = { querySelector: () => null, querySelectorAll: () => [] };
+utilities.bind(brokerRoot, ctx);
+const clickBroker = (selector, dataset) => brokerRoot.onclick({
+  target: { closest: (name) => (name === selector ? { dataset } : null) },
+});
+clickBroker('[data-broker-add]', { brokerAdd: brokerClothes.id });
+check('посредник: предмет из инвентаря добавляется со всем остатком',
+  brokerStore.offer.showcase.some((row) => row.id === brokerClothes.id && row.qty === 1));
+clickBroker('[data-broker-add]', { brokerAdd: brokerFood.id });
+check('посредник: добавленный предмет попадает в ассортимент', showcaseRows(brokerStore.offer, d.itemMap).length === 2);
+brokerRoot.oninput({ target: { dataset: { brokerPrice: brokerFood.id }, value: '250' } });
+check('посредник: своя цена сохраняется', brokerStore.offer.showcase.find((row) => row.id === brokerFood.id)?.price === 250);
+brokerRoot.oninput({ target: { dataset: { brokerPrice: brokerFood.id }, value: '' } });
+check('посредник: пустая своя цена возвращает авто', brokerStore.offer.showcase.find((row) => row.id === brokerFood.id)?.price === null);
+brokerRoot.onchange({ target: { dataset: { brokerShowQty: brokerFood.id }, value: '2' } });
+check('посредник: количество на витрине задаётся продавцом', brokerStore.offer.showcase.find((row) => row.id === brokerFood.id)?.qty === 2);
+brokerRoot.onchange({ target: { dataset: { brokerShowQty: brokerFood.id }, value: '99' } });
+check('посредник: количество не больше остатка в инвентаре', brokerStore.offer.showcase.find((row) => row.id === brokerFood.id)?.qty === 4);
+brokerRoot.oninput({ target: { dataset: { brokerGeneral: '', brokerMode: 'showcase' }, value: '70' } });
+brokerRoot.oninput({ target: { dataset: { brokerGeneral: '', brokerMode: 'order' }, value: '35' } });
+check('посредник: общие скидки витрины и заказа независимы',
+  brokerStore.offer.pricing.showcase.general === 70 && brokerStore.offer.pricing.order.general === 35);
+brokerRoot.oninput({ target: { dataset: { brokerCat: 'Расходник', brokerMode: 'showcase' }, value: '60' } });
+brokerRoot.oninput({ target: { dataset: { brokerCat: 'Расходник', brokerMode: 'order' }, value: '25' } });
+check('посредник: скидки вида тоже независимы',
+  brokerStore.offer.pricing.showcase.byCategory['Расходник'] === 60
+  && brokerStore.offer.pricing.order.byCategory['Расходник'] === 25);
+
+const clientCode = encodeOffer(brokerStore.offer);
+utilities.setRoute(`broker/offer/${encodeURIComponent(clientCode)}`);
+check('посредник: ссылка ведёт в режим клиента', utilities.currentRoute().startsWith('broker/offer/'));
+const clientHtml = utilities.render(ctx);
+check('посредник: у клиента витрина и заказ из базы', clientHtml.includes('data-broker-tab="showcase"')
+  && clientHtml.includes('data-broker-tab="order"') && clientHtml.includes('Витрина')
+  && clientHtml.includes('Заказ из базы') && clientHtml.includes('data-broker-check'));
+check('посредник: витрина показывает только ассортимент', clientHtml.includes(brokerFood.name)
+  && !clientHtml.includes(`data-broker-check="${cultItem.id}"`));
+clickBroker('[data-broker-tab]', { brokerTab: 'order' });
+const clientOrderHtml = utilities.render(ctx);
+const otherBaseItem = normalItems.find((it) => it.category === 'Расходник'
+  && ![brokerFood.id, brokerWeapon.id, brokerClothes.id].includes(it.id));
+check('посредник: заказ из базы — любой не-культовый предмет', clientOrderHtml.includes(`data-broker-check="${otherBaseItem.id}"`)
+  && clientOrderHtml.includes(`data-broker-check="${brokerFood.id}"`)
+  && !clientOrderHtml.includes(`data-broker-check="${cultItem.id}"`));
+brokerRoot.onchange({ target: { dataset: { brokerOrderQty: brokerWeapon.id, brokerFrom: 'order' }, value: '3' } });
+const savedClientOrder = JSON.parse(brokerMem.get('infusion.broker.order'));
+check('посредник: выбор клиента хранится отдельно от черновика', savedClientOrder.picks.order[brokerWeapon.id] === 3
+  && !savedClientOrder.picks.showcase[brokerWeapon.id]);
+utilities.setRoute('broker');
+check('посредник: возврат к черновику продавца', utilities.currentRoute() === 'broker');
+brokerStore.offer = blankOffer();
+brokerStore.picks = blankPicks();
+brokerStore.note = '';
+brokerStore.client = false;
+brokerStore.tab = 'showcase';
+ctx.char = oldBrokerChar;
+globalThis.localStorage = hadBrokerLs ? savedBrokerLs : undefined;
+
 utilities.setRoute('robots');
 utilities.setRoute('');
 check('утилиты: пустой подраздел сохраняет последнюю вкладку', utilities.currentRoute() === 'robots');

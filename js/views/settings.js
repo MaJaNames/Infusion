@@ -4,6 +4,7 @@ import { loadData, getSourcePreference, setSourcePreference, SOURCE_LIVE, SOURCE
 import { getTheme, setTheme } from '../core/theme.js';
 import { G, normGarage, saveGarage } from '../modules/autoshop/store.js';
 import { R, normRobots, saveRobots } from '../modules/robots/store.js';
+import { B as brokerStore, normBroker, saveBroker } from '../modules/broker/store.js';
 
 const THEMES = [['auto', 'Как в системе'], ['light', 'Светлая'], ['dark', 'Тёмная']];
 let FLASH = ''; // сообщение после перерисовки (например, об успешной загрузке бэкапа)
@@ -17,7 +18,7 @@ export function render(ctx) {
   return `<section class="panel"><h2>Все данные</h2>
       <div class="btns"><button data-a="export-all">Выгрузить все данные в .json</button><button data-a="import-all">Загрузить все данные из .json</button>
         <input type="file" accept="application/json,.json" data-backup-file hidden></div>
-      <p class="meta">Полная выгрузка пользовательских данных: персонаж, транспорт Кочевника, роботы Техника и тема оформления. Загрузка заменяет текущие данные содержимым файла. Загрузка и сброс персонажа — на вкладке «Персонаж».</p>
+      <p class="meta">Полная выгрузка пользовательских данных: персонаж, транспорт Кочевника, роботы Техника, предложение посредника и тема оформления. Загрузка заменяет текущие данные содержимым файла. Загрузка и сброс персонажа — на вкладке «Персонаж».</p>
       <p id="msg" class="meta">${esc(flash)}</p></section>
     <section class="panel"><h2>Оформление</h2><div class="btns">${THEMES.map(([v, t]) => `<button data-theme="${v}" class="${getTheme() === v ? 'on' : ''}">${t}</button>`).join('')}</div></section>
     <section class="panel"><h2>Источник базы</h2>
@@ -30,7 +31,7 @@ export function render(ctx) {
       <p class="meta">Снимок автоматически обновляется раз в сутки: стабильно, но данные не обновляются в реальном времени. Автообновление подгружает данные напрямую из СУБД: Всегда актуальные данные, но могут быть задержки, если с СУБД будут какие-то проблемы. В случае если СУБД недоступна: переключается на режим "Снимок"</p>
       ${d.sourceFallback ? `<p class="meta bad">Не удалось обновить базу: ${esc(d.sourceError || 'нет связи')}. Показаны сохранённые данные.</p>` : ''}</section>
     <section class="panel system"><h2>Системные</h2>
-      <p class="meta">Полная очистка локальных данных сайта: персонаж, гараж, роботы, тема, кэш базы и service worker. После этого страница перезагрузится.</p>
+      <p class="meta">Полная очистка локальных данных сайта: персонаж, гараж, роботы, предложение посредника, тема, кэш базы и service worker. После этого страница перезагрузится.</p>
       <div class="btns"><button class="danger" data-a="reset-cache">Сбросить кэш сайта</button></div></section>`;
 }
 
@@ -52,6 +53,11 @@ function restoreBackup(text, ctx) {
 
   Object.assign(R, normRobots(raw.robots));
   saveRobots(R);
+
+  if (raw.broker) {
+    Object.assign(brokerStore, normBroker(raw.broker));
+    saveBroker();
+  }
 
   if (raw.theme) setTheme(raw.theme);
   FLASH = `Данные загружены: ${char.name || 'персонаж без имени'}.`;
@@ -90,7 +96,7 @@ export function bind(root, ctx) {
     if (a === 'export-all') {
       downloadJson({
         v: 2, kind: 'infusion-backup', exportedAt: new Date().toISOString(),
-        char: ctx.char, garage: G, robots: R, theme: getTheme(),
+        char: ctx.char, garage: G, robots: R, broker: brokerStore, theme: getTheme(),
       }, 'infusion-backup.json');
       msg('Все данные выгружены.');
       return;
@@ -99,7 +105,7 @@ export function bind(root, ctx) {
       root.querySelector?.('[data-backup-file]')?.click();
       return;
     }
-    if (a === 'reset-cache' && (typeof confirm !== 'function' || confirm('Очистить весь кэш сайта: персонаж, гараж, роботов, тему и базу? Страница перезагрузится.'))) {
+    if (a === 'reset-cache' && (typeof confirm !== 'function' || confirm('Очистить весь кэш сайта: персонаж, гараж, роботов, предложение посредника, тему и базу? Страница перезагрузится.'))) {
       try { localStorage.clear(); } catch { /* память браузера недоступна */ }
       try {
         if (typeof caches !== 'undefined') {
