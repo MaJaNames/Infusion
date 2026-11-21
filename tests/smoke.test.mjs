@@ -80,13 +80,19 @@ const abilitySelect = invHtml.match(/<select class="grow ability-native"[\s\S]*?
 const abilityGroups = [...abilitySelect.matchAll(/<optgroup label="([^"]+)"/g)].map((m) => m[1]);
 check('способности: группы «Общие → класс → Мутации → другие классы»', abilityGroups.join(' → ') === 'Общие → Соло → Мутации → Другие классы', abilityGroups.join(' → '));
 check('инвентарь: мобильные подвкладки', invHtml.includes('data-itab-select'));
-check('хранилище: слот [K], база 20 и счётчик позиций', blankChar().storage === null && RULES.pocketLimit === 20 && invHtml.includes('data-p="storage"') && invHtml.includes('Позиций: 12 / 20'));
+check('хранилище: слот [K], база 20 и счётчик позиций', blankChar().storage === null && RULES.pocketLimit === 20 && invHtml.includes('data-p="storage"') && invHtml.includes('Позиций: 6 / 20'));
 const storageItem = d.items.find((i) => i.tag === 'K' && /вер\. 1$/.test(i.name));
 const pocketsWithK = [...c.pockets, { id: storageItem.id, qty: 1 }];
 const invHasK = character.render({ ...ctx, char: { ...c, pockets: pocketsWithK } });
 const invStorage = character.render({ ...ctx, char: { ...c, pockets: pocketsWithK, storage: storageItem.id } });
-check('хранилище: [K] вер. 1 даёт +30 мест', invStorage.includes('Позиций: 13 / 50') && invStorage.includes('Бонус: +30 мест'));
-check('хранилище: [K] без установки не даёт бонус', invHasK.includes('Позиций: 13 / 20'));
+check('хранилище: [K] вер. 1 даёт +30 мест', invStorage.includes('Позиций: 7 / 50') && invStorage.includes('Бонус: +30 мест'));
+check('хранилище: [K] без установки не даёт бонус', invHasK.includes('Позиций: 7 / 20'));
+const stackItem = d.items[0];
+const stackHtml = character.render({ ...ctx, char: { ...blankChar(), pockets: [{ id: stackItem.id, qty: 422 }] } });
+check('хранилище: 422 шт. — одна позиция, но в сумме все 422', stackHtml.includes('Позиций: 1 / 20')
+  && stackHtml.includes(`Сумма: ${num((stackItem.cost || 0) * 422)}`));
+const dupHtml = character.render({ ...ctx, char: { ...blankChar(), pockets: [{ id: stackItem.id, qty: 1 }, { id: stackItem.id, qty: 1 }] } });
+check('хранилище: дубликаты ID не увеличивают число позиций', dupHtml.includes('Позиций: 1 / 20'));
 check('хранилище: слот [K] берёт предметы из хранилища', invHtml.includes('Сначала добавьте [K] в хранилище') && invStorage.includes('[K] Хранилище вер. 1'));
 const pocketSelect = invHtml.match(/<select data-in="pockets"[\s\S]*?<\/select>/)?.[0] || '';
 check('хранилище: [K] добавляется через обычный список', pocketSelect.includes('[Acs]') && pocketSelect.includes('[K]') && pocketSelect.includes('Хранилище вер. 1'));

@@ -326,6 +326,7 @@ function inventorySummary(c, d) {
   const clinic = Array.isArray(c.clinicImplants) ? c.clinicImplants : [];
   // Установленные импланты не занимают место в хранилище, даже если остались в старом списке.
   const installed = new Map();
+  const counted = new Set();
   for (const id of c.implants) installed.set(id, (installed.get(id) || 0) + 1);
   for (const e of c.pockets) {
     const it = d.itemMap.get(e.id);
@@ -336,7 +337,8 @@ function inventorySummary(c, d) {
       qty -= used;
       installed.set(it.id, installed.get(it.id) - used);
     }
-    s.count += qty;
+    // Вместимость считает уникальные позиции: стопка из 422 щепок занимает 1 место.
+    if (qty > 0 && !counted.has(it.id)) { s.count += 1; counted.add(it.id); }
     s.cost += (it.cost || 0) * qty;
     s.sell += sellPrice(it) * qty;
   }
@@ -366,12 +368,13 @@ function inventorySummary(c, d) {
 }
 
 function inventoryTabs(c, race) {
-  const qty = (rows) => rows.reduce((a, e) => a + (Number(e.qty) || 0), 0);
+  // Счётчики подвкладок тоже показывают число уникальных позиций, а не сумму qty.
+  const positions = (rows) => new Set(rows.filter((e) => (Number(e.qty) || 0) > 0).map((e) => e.id)).size;
   return [
-    { id: 'pockets', label: 'Хранилище', ok: true, count: qty(c.pockets) },
+    { id: 'pockets', label: 'Хранилище', ok: true, count: positions(c.pockets) },
     { id: 'equipment', label: 'Экипировка', ok: true, count: c.equipment.length + (isKochevnik(c) && c.transport ? 1 : 0) },
     { id: 'implants', label: 'Импланты', ok: !!race?.implants_allowed, hint: 'только Поляриец и Новуссит', count: c.implants.length },
-    { id: 'repository', label: 'Репозиторий', ok: race?.name === 'Новуссит', hint: 'только Новуссит', count: qty(c.repository) },
+    { id: 'repository', label: 'Репозиторий', ok: race?.name === 'Новуссит', hint: 'только Новуссит', count: positions(c.repository) },
     { id: 'beasts', label: 'Способности Зверя', ok: race?.name === 'Хуманиец' && c.class === 'Зверь', hint: 'Хуманиец с классом Зверь', count: Array.isArray(c.beasts) ? c.beasts.length : 0 },
   ];
 }
