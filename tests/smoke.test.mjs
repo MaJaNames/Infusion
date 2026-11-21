@@ -1,6 +1,6 @@
 // node tests/smoke.test.mjs — рисует все вкладки на данных data.json и проверяет расчёты персонажа.
 import { readFileSync } from 'node:fs';
-import { indexData, optLabel, num, esc } from '../js/core/util.js';
+import { indexData, optLabel, num, esc, label, RARITY_SHORT } from '../js/core/util.js';
 import { fuzzyScore } from '../js/core/fuzzy.js';
 import { probability, targetFromVer, verFromTarget } from '../js/core/probability.js';
 import { blankChar, normChar, charToCode, codeToChar, CHAR_VERSION } from '../js/core/storage.js';
@@ -69,6 +69,16 @@ check('общая сумма щепок выведена', html2.includes('Ще�
 check('деталей техники', partsOf(d).length === 164, partsOf(d).length);
 const invHtml = character.render(ctx);
 check('инвентарь: подвкладки и сводка', ['Хранилище', 'Экипировка', 'Импланты', 'Репозиторий', 'Сумма:', 'Продажа:'].every((x) => invHtml.includes(x)));
+check('инвентарь: кнопка копирования списка', invHtml.includes('data-a="copy-inventory"'));
+const copyItem = d.items[0];
+const copyTextResult = character.inventoryText({
+  name: 'Тест', pockets: [{ id: copyItem.id, qty: 5 }, { id: copyItem.id, qty: 2 }],
+  equipment: [], implants: [], repository: [],
+}, d);
+const copyLine = `- ${label(copyItem)} [${RARITY_SHORT[copyItem.rarity] || '?'}]`;
+check('инвентарь: копирование — только название и редкость, без дублей', copyTextResult.startsWith('ИНВЕНТАРЬ · Тест')
+  && copyTextResult.includes('ХРАНИЛИЩЕ') && copyTextResult.includes(copyLine)
+  && copyTextResult.split(copyLine).length === 2 && !copyTextResult.includes('Кол-во'));
 check('инвентарь: сортировка по параметрам', invHtml.includes('data-sort="pockets"') && invHtml.includes('Количество') && invHtml.includes('Цена продажи'));
 check('инвентарь: сортировка по ID по умолчанию', invHtml.includes('<option value="id" selected>ID</option>'));
 check('инвентарь: добавление через dropdown', invHtml.includes('data-search="pockets"') && invHtml.includes('data-in="pockets"') && invHtml.includes('<optgroup') && !invHtml.includes('<datalist'));

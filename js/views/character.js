@@ -1,4 +1,4 @@
-import { esc, num, label, opts, set, fieldValue, RARITIES, RC, optLabel, money, copyText } from '../core/util.js';
+import { esc, num, label, opts, set, fieldValue, RARITIES, RC, RARITY_SHORT, optLabel, money, copyText } from '../core/util.js';
 import { derive, sellPrice, skillLimit } from '../character/derive.js';
 import {
   RULES, allowedClasses, RO_FACTIONS, RO_MIN, RO_MAX, RO_STATUS, RO_STATUS_LABEL,
@@ -540,6 +540,7 @@ function inventoryPanel(c, d, r, race) {
 
   return `<section class="panel inventory">
     <div class="inv-head"><h2>Инвентарь</h2>
+      <button type="button" class="btn" data-a="copy-inventory" title="Скопировать названия и редкости предметов и карт">Скопировать список</button>
       <div class="chips inv-summary">
         <span class="chip${sum.over ? ' bad' : ''}" title="Занято мест в хранилище / всего мест (базовые ${RULES.pocketLimit} + бонус [K])">Позиций: ${num(sum.count)} / ${num(sum.capacity)}</span>
         <span class="chip total" title="Сумма по номиналу: хранилище, импланты, репозиторий и транспорт. 1 Тали = ${RULES.taliToCredits} кредитов">Сумма: ${num(sum.cost)}</span>
@@ -552,6 +553,28 @@ function inventoryPanel(c, d, r, race) {
     ${hidden.length ? `<p class="meta inv-note">Скрыты разделы: ${hidden.map((t) => `<span title="${esc(t.hint)}">${esc(t.label)}</span>`).join(', ')}. Доступность зависит от расы и класса.</p>` : ''}
     ${body}
   </section>`;
+}
+
+// Текстовый список инвентаря: только названия и редкости, уникальные позиции.
+export function inventoryText(c, d) {
+  const rarity = (r) => RARITY_SHORT[r] || String(r || '?').slice(0, 1);
+  const lines = [`ИНВЕНТАРЬ · ${c.name || 'Без имени'}`];
+  const group = (title, ids, map) => {
+    const seen = new Set(), out = [];
+    for (const id of ids || []) {
+      if (!id || seen.has(id)) continue;
+      const it = map.get(id);
+      if (!it) continue;
+      seen.add(id);
+      out.push(`- ${label(it)} [${rarity(it.rarity)}]`);
+    }
+    if (out.length) lines.push('', title, ...out);
+  };
+  group('ХРАНИЛИЩЕ', (c.pockets || []).map((e) => e.id), d.itemMap);
+  group('ЭКИПИРОВКА', c.equipment, d.itemMap);
+  group('ИМПЛАНТЫ', c.implants, d.itemMap);
+  group('РЕПОЗИТОРИЙ', (c.repository || []).map((e) => e.id), d.cardMap);
+  return lines.length > 1 ? lines.join('\n') : `${lines[0]}\n\nПусто.`;
 }
 
 const statSigned = (v) => `${v > 0 ? '+' : ''}${num(v)}`;
@@ -1161,6 +1184,12 @@ export function bind(root, ctx) {
       return;
     }
     const action = e.target.closest('[data-a]')?.dataset.a;
+    if (action === 'copy-inventory') {
+      copyText(inventoryText(ctx.char, ctx.data)).then((ok) => {
+        showToast(ok ? 'Список инвентаря скопирован' : 'Не удалось скопировать список');
+      });
+      return;
+    }
     if (action === 'export-char') { exportChar(ctx.char); return; }
     if (action === 'copy-char-code') {
       copyText(charToCode(ctx.char)).then((ok) => {
