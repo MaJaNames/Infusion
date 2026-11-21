@@ -462,6 +462,26 @@ details.row.is-permalink>summary b{color:var(--acc)}
 .toast-close{padding:.1rem .35rem;border:0;background:none;color:var(--mute);line-height:1}
 .toast-close:hover{color:var(--ink)}
 
+/* Кнопка режима добавления в инвентарь (включает счётчики в строках базы). */
+.inv-mode{font-size:.85rem;padding:.4rem .7rem}
+.inv-mode.on{border-color:var(--acc);color:var(--acc);background:var(--bg)}
+
+/* Мобильная раскладка: новые элементы не должны растягивать строки и шапку. */
+:root[data-ui=mobile] .data-state{font-size:.7rem;max-width:7.5rem;overflow:hidden;text-overflow:ellipsis}
+:root[data-ui=mobile] .db-toolbar{flex-wrap:wrap}
+:root[data-ui=mobile] .inv-mode{flex:0 0 auto;font-size:.8rem;padding:.35rem .55rem}
+:root[data-ui=mobile] .db-multi{width:100%}
+:root[data-ui=mobile] .db-multi-values{max-width:100%}
+:root[data-ui=mobile] .chip-filter{min-height:1.7rem;padding:.1rem .5rem;font-size:.75rem}
+:root[data-ui=mobile] .row-side{gap:.35rem;max-width:100%}
+:root[data-ui=mobile] .row-side>.price{width:5.6rem}
+:root[data-ui=mobile] .row-inv{width:4.2rem}
+:root[data-ui=mobile] .row-fav,
+:root[data-ui=mobile] .row-share,
+:root[data-ui=mobile] .inv-btn{min-height:1.8rem;padding:.1rem .2rem}
+:root[data-ui=mobile] .toasts{right:max(.5rem,env(safe-area-inset-right));bottom:max(.5rem,env(safe-area-inset-bottom));left:max(.5rem,env(safe-area-inset-left));max-width:none}
+:root[data-ui=mobile] .toast{font-size:.85rem;padding:.5rem .6rem}
+
 /* Печать карточки персонажа: только лист персонажа, без инвентаря. */
 .print-sheet{display:none}
 @media print{

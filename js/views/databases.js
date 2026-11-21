@@ -26,6 +26,8 @@ const S = {
   favOnly: { items: false, cards: false, parts: false, rules: false },
   // Drawer фильтров должен оставаться открытым после перерисовки при добавлении значения.
   filtersOpen: false,
+  // Режим добавления: счётчики скрыты по умолчанию, клик по строке добавляет предмет.
+  invMode: false,
   // Запись, открытая по прямой ссылке (#db/items/0x0c9).
   openId: null,
   scrollToOpen: false,
@@ -292,12 +294,13 @@ const favKeep = (kind, tab, list, idOf = (x) => x.id) => (S.favOnly[tab] ? list.
 // Собирает отфильтрованный и отсортированный список для текущей вкладки.
 function collect(d, c) {
   const q = S.q.trim(), f = S.filters[S.tab] || {};
+  const showInv = S.invMode && (S.tab === 'items' || S.tab === 'parts');
   const isOpen = (key) => !!S.openId && String(S.openId) === String(key);
   let rows, draw, sortKind = null, scores = null, ord = null;
   if (S.tab === 'items') {
     ({ rows, scores } = fuzzyFilter(favKeep('items', 'items', d.items.filter((i) => matches({ rar: i.rarity, category: i.category, organization: i.organization, iconic: i.iconic ? '1' : '0' }, f))),
       q, (i) => `${label(i)} ${i.description} ${i.category} ${i.organization} ${i.tag}`));
-    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null, openKey: `items:${it.id}`, open: isOpen(it.id), permalink: isOpen(it.id), share: permalinkPath('items', it.id), fav: { kind: 'items', id: it.id }, inv: { id: it.id, name: it.name, qty: inPockets(c, it.id) } });
+    draw = (it, controls, o = {}) => itemRow(it, controls, { ...o, id: S.showIds ? it.id : null, openKey: `items:${it.id}`, open: isOpen(it.id), permalink: isOpen(it.id), share: permalinkPath('items', it.id), fav: { kind: 'items', id: it.id }, inv: showInv ? { id: it.id, name: it.name, qty: inPockets(c, it.id) } : null });
     sortKind = 'items';
     ord = new Map(d.items.map((x, i) => [x, i + 1]));
   } else if (S.tab === 'cards') {
@@ -309,7 +312,7 @@ function collect(d, c) {
   } else if (S.tab === 'parts') {
     ({ rows, scores } = fuzzyFilter(favKeep('items', 'parts', partsOf(d).filter((p) => matches({ rar: p.item.rarity, kind: p.stats.kind, organization: p.item.organization }, f)), (p) => p.item.id),
       q, (p) => `${label(p.item)} ${p.item.description} ${p.stats.unique || ''}`));
-    draw = (p, controls, o = {}) => partRow(p, { ...o, id: S.showIds ? p.item.id : null, openKey: `parts:${p.item.id}`, open: isOpen(p.item.id), permalink: isOpen(p.item.id), share: permalinkPath('items', p.item.id), shareTitle: 'Скопировать ссылку на предмет', fav: { kind: 'items', id: p.item.id }, inv: { id: p.item.id, name: p.item.name, qty: inPockets(c, p.item.id) } });
+    draw = (p, controls, o = {}) => partRow(p, { ...o, id: S.showIds ? p.item.id : null, openKey: `parts:${p.item.id}`, open: isOpen(p.item.id), permalink: isOpen(p.item.id), share: permalinkPath('items', p.item.id), shareTitle: 'Скопировать ссылку на предмет', fav: { kind: 'items', id: p.item.id }, inv: showInv ? { id: p.item.id, name: p.item.name, qty: inPockets(c, p.item.id) } : null });
     sortKind = 'parts';
   } else {
     ({ rows, scores } = fuzzyFilter(favKeep('rules', 'rules', rulesRows(d).filter((r) => matches({ group: r.group, sub: r.sub, rar: r.rarity }, f))),
@@ -374,7 +377,7 @@ export function render(ctx) {
       </div>`;
   return `<div class="tabs db-tabs">${TABS.map(([id, t]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${t}</button>`).join('')}</div>
     <select class="tabs-select" data-tab-select="1" aria-label="Раздел базы данных">${TABS.map(([id, t]) => `<option value="${id}"${S.tab === id ? ' selected' : ''}>${t}</option>`).join('')}</select>
-    <div class="toolbar db-toolbar"><input type="search" data-k="q" placeholder="Поиск" value="${esc(S.q)}"><button type="button" class="filters-btn" data-filters-open aria-expanded="false">Фильтры</button>
+    <div class="toolbar db-toolbar"><input type="search" data-k="q" placeholder="Поиск" value="${esc(S.q)}"><button type="button" class="inv-mode${S.invMode ? ' on' : ''}" data-inv-mode aria-pressed="${S.invMode}" title="Показывает счётчик в строках; клик по строке тоже добавляет 1 шт.">＋ В инвентарь</button><button type="button" class="filters-btn" data-filters-open aria-expanded="false">Фильтры</button>
       <div class="db-filters" data-filters-panel>
         <div class="filters-head"><b>Фильтры и сортировка</b><button type="button" class="x" data-filters-close title="Закрыть">✕</button></div>
         ${filterDefs(d, S.tab).map((f) => multi(f.k, f.label, f.options, cur[f.k])).join('')}${sortBar(S.tab)}
@@ -469,25 +472,31 @@ export function bind(root, ctx) {
     }
     if (e.target.dataset.tabSelect !== undefined) setTab(e.target.value);
   };
+  // Общий обработчик: кнопки −/+ и клик по строке, когда включён режим добавления.
+  const changeQty = (id, name, delta) => {
+    const c = ctx.char;
+    if (!c || !delta) return;
+    if (!Array.isArray(c.pockets)) c.pockets = [];
+    const i = c.pockets.findIndex((x) => x.id === id);
+    const was = i >= 0 ? Number(c.pockets[i].qty) || 0 : 0;
+    const next = Math.max(0, was + delta);
+    if (i >= 0) {
+      if (next === 0) c.pockets.splice(i, 1);
+      else c.pockets[i].qty = next;
+    } else if (next > 0) c.pockets.push({ id, qty: next });
+    ctx.save?.();
+    res();
+    showToast(`Инвентарь: ${name || id} — ${num(next)} шт.`);
+  };
+
   root.onclick = (e) => {
+    const modeBtn = e.target.closest('[data-inv-mode]');
+    if (modeBtn) { S.invMode = !S.invMode; ctx.rerender(); return; }
     const inv = e.target.closest('[data-inv]');
     if (inv) {
       e.preventDefault();
       e.stopPropagation();
-      const id = inv.dataset.inv, delta = Number(inv.dataset.delta) || 0;
-      const c = ctx.char;
-      if (!c || !delta) return;
-      if (!Array.isArray(c.pockets)) c.pockets = [];
-      const i = c.pockets.findIndex((x) => x.id === id);
-      const was = i >= 0 ? Number(c.pockets[i].qty) || 0 : 0;
-      const next = Math.max(0, was + delta);
-      if (i >= 0) {
-        if (next === 0) c.pockets.splice(i, 1);
-        else c.pockets[i].qty = next;
-      } else if (next > 0) c.pockets.push({ id, qty: next });
-      ctx.save?.();
-      res();
-      showToast(`Инвентарь: ${inv.dataset.name || id} — ${num(next)} шт.`);
+      changeQty(inv.dataset.inv, inv.dataset.name, Number(inv.dataset.delta));
       return;
     }
     const del = e.target.closest('[data-filter-del]');
@@ -535,6 +544,20 @@ export function bind(root, ctx) {
       dir.title = title;
       dir.setAttribute('aria-label', `Направление сортировки: ${next > 0 ? 'по возрастанию' : 'по убыванию'}`);
       res(); syncRoute(); return;
+    }
+    if (S.invMode && e.target.closest('.row summary')) {
+      const rowEl = e.target.closest('.row');
+      const key = String(rowEl?.dataset.row || '');
+      const id = /^(items|parts):/.test(key) ? key.slice(key.indexOf(':') + 1) : '';
+      if (id) {
+        e.preventDefault();
+        e.stopPropagation();
+        const item = S.tab === 'parts'
+          ? partsOf(ctx.data).find((p) => p.item.id === id)?.item
+          : ctx.data.items.find((x) => x.id === id);
+        changeQty(id, item?.name || id, 1);
+        return;
+      }
     }
     if (e.target.closest('[data-more]')) loadMore();
   };

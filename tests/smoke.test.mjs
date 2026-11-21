@@ -997,24 +997,35 @@ try {
   check('архив: страница удалённой записи', archivedPage.includes('Удалённый предмет')
     && archivedPage.includes('/Infusion/#db/items') && archivedPage.includes('name="robots" content="noindex"'));
 
-  // Счётчик «в инвентарь» прямо из строки базы.
+  // Режим добавления: счётчики скрыты, пока режим не включён кнопкой на панели.
+  databases.setRoute('items');
   let saves = 0;
   const invCtx = { ...ctx, char: { ...blankChar(), pockets: [] }, save() { saves += 1; } };
   const invRoot = { addEventListener() {}, querySelector: (s) => (s === '#res' ? { innerHTML: '', querySelector: () => null } : null) };
   databases.bind(invRoot, invCtx);
+  check('режим добавления: по умолчанию счётчики скрыты', !databases.render(invCtx).includes('data-inv=')
+    && databases.render(invCtx).includes('data-inv-mode'));
+  invRoot.onclick({ target: { closest: (s) => (s === '[data-inv-mode]' ? {} : null) } });
+  check('режим добавления: кнопка показывает счётчики', databases.render(invCtx).includes('data-inv="0x0001"'));
+  invRoot.onclick({
+    target: { closest: (s) => (s === '.row summary' ? {} : s === '.row' ? { dataset: { row: 'items:0x0002' } } : null) },
+    preventDefault() {}, stopPropagation() {},
+  });
+  check('режим добавления: клик по строке добавляет 1 шт.', invCtx.char.pockets.some((e) => e.id === '0x0002' && e.qty === 1) && saves === 1);
   const clickInv = (delta) => invRoot.onclick({
     target: { closest: (s) => (s === '[data-inv]' ? { dataset: { inv: '0x0001', name: 'Тест', delta } } : null) },
     preventDefault() {}, stopPropagation() {},
   });
   const pocket = () => invCtx.char.pockets.find((e) => e.id === '0x0001')?.qty || 0;
   clickInv('1'); clickInv('1');
-  check('инвентарь: кнопка добавляет по 1 шт. и сохраняет', pocket() === 2 && saves === 2);
+  check('инвентарь: кнопка добавляет по 1 шт. и сохраняет', pocket() === 2 && saves === 3);
   check('инвентарь: кнопка видна в строке с количеством', databases.render(invCtx).includes('data-inv="0x0001"')
     && databases.render(invCtx).includes('class="inv-qty">2<'));
   clickInv('-1');
-  check('инвентарь: кнопка уменьшает количество', pocket() === 1 && saves === 3);
+  check('инвентарь: кнопка уменьшает количество', pocket() === 1 && saves === 4);
   clickInv('-1'); clickInv('-1');
-  check('инвентарь: на нуле запись удаляется и не уходит в минус', pocket() === 0 && invCtx.char.pockets.length === 0);
+  check('инвентарь: на нуле запись удаляется и не уходит в минус', pocket() === 0
+    && !invCtx.char.pockets.some((e) => e.id === '0x0001'));
 } finally {
   if (realLocalStorage === undefined) delete globalThis.localStorage;
   else globalThis.localStorage = realLocalStorage;
