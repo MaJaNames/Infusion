@@ -3,7 +3,7 @@
 import {
   GROUPS, GROUP_MAP, TONES, TONE_MAP, UI_KEY,
   blankGraph, graphStats, loadGraph, saveGraph, serializeGraph, parseGraph,
-  newNode, newLink, sampleGraph,
+  newNode, newLink, CENTER_GROUP, sampleGraph, linksBetween, factionPalette, normFaction,
 } from './store.js';
 import { GraphView } from './graph.js';
 import {
@@ -376,8 +376,27 @@ function byId(id) {
   return graphData.nodes.find((node) => node.id === id);
 }
 
+function endpointDot(id) {
+  const item = byId(id);
+  return item ? `<span class="group-dot g-${item.group}"></span>` : '<span class="group-dot"></span>';
+}
+
+// Подзаголовок карточки: категория, фракция и служебные пометки.
+function nodeSubtitle(node) {
+  const groupName = (GROUP_MAP.get(node.group) || GROUP_MAP.get('other')).name;
+  const faction = normFaction(node.faction);
+  return `${groupName}${faction ? ` · ${faction}` : ''}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}`;
+}
+
 function groupOptions(active) {
   return GROUPS.map((group) => `<option value="${group.id}"${group.id === active ? ' selected' : ''}>${group.name}</option>`).join('');
+}
+
+function factionNames(current = '') {
+  const names = [...new Set(graphData.nodes.map((node) => normFaction(node.faction)).filter(Boolean))];
+  const own = normFaction(current);
+  if (own && !names.includes(own)) names.push(own);
+  return names.sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 function toneOptions(active) {
@@ -453,6 +472,7 @@ function renderSidebar() {
 
 function renderOverview() {
   const stats = graphStats(graphData);
+  const palette = factionPalette(graphData.nodes);
   const legend = GROUPS.map((group) => `
     <label class="legend-row${ui.hidden.includes(group.id) ? ' off' : ''}">
       <input type="checkbox" data-group="${group.id}" ${ui.hidden.includes(group.id) ? '' : 'checked'}>
@@ -461,19 +481,30 @@ function renderOverview() {
       <span class="legend-count">${stats.groups[group.id] || 0}</span>
     </label>`).join('');
 
+  const factionRows = factionNames().map((name) => {
+    const count = graphData.nodes.filter((node) => normFaction(node.faction) === name).length;
+    return `<button class="result-row" type="button" data-faction="${esc(name)}" title="Показать фракцию на карте">
+      <span class="faction-dot" style="--zc:${esc(palette.get(name) || 'var(--mute)')}"></span>
+      <span class="result-name">${esc(name)}</span>
+      <span class="legend-count">${count}</span>
+    </button>`;
+  }).join('');
+
   const query = ui.query.trim().toLowerCase();
   const results = query
-    ? graphData.nodes.filter((node) => [node.label, ...(node.tags || []), node.notes || ''].join(' ').toLowerCase().includes(query)).slice(0, 40)
+    ? graphData.nodes
+      .filter((node) => [node.label, ...(node.tags || []), node.notes || ''].join(' ').toLowerCase().includes(query))
+      .slice(0, 40)
     : [];
 
   const resultList = query
     ? `<div class="search-results">
         <p class="muted small">${results.length ? `Найдено: ${results.length}` : 'Ничего не найдено'}</p>
-        ${results.map((node) => `
-          <button class="result-row" type="button" data-node="${esc(node.id)}">
-            <span class="group-dot g-${node.group}"></span>
-            <span class="result-name">${esc(node.label)}</span>
-            ${node.dead ? '<span class="badge-dead">недоступен</span>' : ''}
+        ${results.map((item) => `
+          <button class="result-row" type="button" data-node="${esc(item.id)}">
+            ${endpointDot(item.id)}
+            <span class="result-name">${esc(item.label)}</span>
+            ${item.dead ? '<span class="badge-dead">недоступен</span>' : ''}
           </button>`).join('')}
       </div>`
     : '';
@@ -482,15 +513,17 @@ function renderOverview() {
     <div class="side-head">
       <div class="side-head-text">
         <h2>Обзор</h2>
-        <span class="muted">${stats.nodes} персонажей · ${stats.links} связей</span>
+        <span class="muted">${stats.nodes} нод · ${stats.centers} организаций · ${stats.links} связей</span>
       </div>
     </div>
     <div class="stats-row">
-      <div class="stat"><b>${stats.nodes}</b><span>персонажей</span></div>
+      <div class="stat"><b>${stats.nodes}</b><span>нод</span></div>
+      <div class="stat"><b>${stats.centers}</b><span>организаций</span></div>
       <div class="stat"><b>${stats.links}</b><span>связей</span></div>
-      <div class="stat"><b>${stats.dead}</b><span>недоступных</span></div>
     </div>
     ${resultList}
+    ${factionRows ? `<h3 class="side-sub">Фракции <span class="muted small">клик — показать на карте</span></h3>
+    <div class="search-results">${factionRows}</div>` : ''}
     <h3 class="side-sub">Категории <span class="muted small">клик — показать/скрыть</span></h3>
     <div class="legend">${legend}</div>
     <h3 class="side-sub">Отображение</h3>
@@ -502,18 +535,21 @@ function renderOverview() {
       <input type="checkbox" id="toggle-edge-labels" ${ui.edgeLabels ? 'checked' : ''}>
       <span>Подписи всех связей</span>
     </label>
+    <p class="hint hint-tight">Раскладка работает как в Obsidian: пружины по связям и короткое отталкивание. Блибы фракций — только оформление, на позиции они не влияют. Перетаскивание замораживает раскладку: двигается только взятая нода.</p>
     <details class="help-box">
       <summary>Как пользоваться</summary>
       <ul>
-        <li>Колесо — масштаб, перетаскивание фона — сдвиг. Двойной клик по персонажу центрирует его.</li>
-        <li>Перетаскивание персонажа двигает его, не закрепляя: раскладка остаётся живой. Закрепить или открепить можно в карточке персонажа.</li>
+        <li>Колесо — масштаб, перетаскивание фона — сдвиг. Двойной клик по ноде центрирует её.</li>
+        <li>Перетаскивание ноды двигает только её и на время замораживает раскладку: остальные ноды не сдвигаются. Закрепить или открепить можно в карточке, «Раскладка» пересчитает только свободные ноды.</li>
         <li>Клик по связи открывает её подпись, тип и заметку.</li>
-        <li><code>[[Имя]]</code> в заметке рисует пунктирную связь с этим персонажем.</li>
+        <li>Организация — нода категории «Организация» (первичный центр). Её фракция совпадает с названием; у остальных нод фракция выбирается в карточке. Блибы — только визуальная группировка, они не хранятся в данных и ни на что не влияют.</li>
+        <li><code>[[Имя]]</code> в заметке рисует пунктирную связь с персонажем или организацией.</li>
         <li>Всё автоматически сохраняется в браузере. JSON-файл — резервная копия или общий файл для нескольких устройств.</li>
       </ul>
     </details>
     <div class="side-actions">
       <button class="btn primary wide" type="button" data-act="add">+ Добавить персонажа</button>
+      <button class="btn wide" type="button" data-act="add-center">+ Добавить организацию</button>
     </div>
     <div class="side-section data-section">
       <h3 class="side-sub">Данные</h3>
@@ -550,17 +586,30 @@ function bindOverview() {
     graph.setEdgeLabels(ui.edgeLabels);
     saveUi();
   });
-
   sidebarBody.querySelectorAll('[data-node]').forEach((button) => {
     button.addEventListener('click', () => selectNode(button.dataset.node, { focus: true }));
   });
+  sidebarBody.querySelectorAll('[data-faction]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const name = button.dataset.faction;
+      const ids = graphData.nodes
+        .filter((node) => normFaction(node.faction) === name)
+        .map((node) => node.id);
+      graph.focusNodes(ids);
+    });
+  });
   sidebarBody.querySelector('[data-act="add"]')?.addEventListener('click', addNode);
+  sidebarBody.querySelector('[data-act="add-center"]')?.addEventListener('click', addCenter);
   sidebarBody.querySelector('[data-act="sample"]')?.addEventListener('click', loadSample);
   sidebarBody.querySelector('[data-act="clear"]')?.addEventListener('click', clearGraph);
 }
 
 function renderNode(node) {
   const group = GROUP_MAP.get(node.group) || GROUP_MAP.get('other');
+  const isCenter = node.group === CENTER_GROUP;
+  const factionOptions = factionNames(node.faction)
+    .map((name) => `<option value="${esc(name)}"${name === normFaction(node.faction) ? ' selected' : ''}>${esc(name)}</option>`)
+    .join('');
   const links = graphData.links.filter((link) => link.source === node.id || link.target === node.id);
   const edgeItems = links.map((link) => {
     const otherId = link.source === node.id ? link.target : link.source;
@@ -583,7 +632,7 @@ function renderNode(node) {
       <span class="group-dot lg g-${group.id}"></span>
       <div class="side-head-text">
         <h2>${esc(node.label || 'Без имени')}</h2>
-        <span class="muted">${group.name}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}</span>
+        <span class="muted">${esc(nodeSubtitle(node))}</span>
       </div>
       <button class="icon-btn" type="button" data-act="close" title="Закрыть">×</button>
     </div>
@@ -594,6 +643,18 @@ function renderNode(node) {
       <label class="field">Категория
         <select id="n-group">${groupOptions(node.group)}</select>
       </label>
+      ${isCenter ? '<p class="hint hint-tight">Фракция организации совпадает с её названием — переименование обновит и фракцию.</p>' : `
+      <label class="field">Фракция
+        <select id="n-faction">
+          <option value="">— без фракции —</option>
+          ${factionOptions}
+          <option value="__new">＋ Новая фракция…</option>
+        </select>
+      </label>
+      <div id="n-faction-new" class="faction-new" hidden>
+        <input id="n-faction-input" maxlength="80" placeholder="Название фракции" autocomplete="off">
+        <button class="btn small" type="button" data-act="faction-add">Добавить</button>
+      </div>`}
       <label class="check-row">
         <input type="checkbox" id="n-dead" ${node.dead ? 'checked' : ''}>
         <span>Недоступен</span>
@@ -606,7 +667,7 @@ function renderNode(node) {
         <textarea id="n-notes" rows="8" placeholder="Свободный текст. Ссылка [[Имя]] добавит пунктирную связь.">${esc(node.notes)}</textarea>
       </label>
       <div id="n-preview" class="note-preview" hidden></div>
-      <p class="hint">Ссылки вида <code>[[Имя]]</code> рисуются пунктиром, если такой персонаж есть на карте.</p>
+      <p class="hint">Ссылки вида <code>[[Имя]]</code> рисуются пунктиром, если такой персонаж или организация есть на карте.</p>
     </div>
     <h3 class="side-sub">Связи <span class="count">${links.length}</span></h3>
     ${links.length ? `<ul class="edge-list">${edgeItems}</ul>` : '<p class="empty-note">Связей пока нет.</p>'}
@@ -614,13 +675,33 @@ function renderNode(node) {
     <div class="side-actions">
       <button class="btn ghost" type="button" data-act="pin" aria-pressed="${node.fixed ? 'true' : 'false'}">${node.fixed ? 'Открепить' : 'Закрепить на карте'}</button>
       <button class="btn ghost" type="button" data-act="focus">Показать на карте</button>
-      <button class="btn ghost danger" type="button" data-act="delete">Удалить персонажа</button>
+      <button class="btn ghost danger" type="button" data-act="delete">Удалить с карты</button>
     </div>`;
 
   const labelInput = $('#n-label');
   const notesInput = $('#n-notes');
+  const syncSubtitle = () => {
+    const sub = sidebarBody.querySelector('.side-head .muted');
+    if (!sub) return;
+    sub.textContent = nodeSubtitle(node);
+  };
   labelInput?.addEventListener('input', () => {
+    const previousFaction = normFaction(node.faction);
     node.label = labelInput.value.slice(0, 120);
+    // У организации фракция — это её название, поэтому переименование
+    // переносит участников в новую фракцию.
+    if (isCenter) {
+      const nextFaction = normFaction(node.label);
+      if (nextFaction) {
+        node.faction = nextFaction;
+        if (previousFaction && previousFaction !== nextFaction) {
+          for (const other of graphData.nodes) {
+            if (other !== node && normFaction(other.faction) === previousFaction) other.faction = nextFaction;
+          }
+        }
+      }
+      syncSubtitle();
+    }
     const heading = sidebarBody.querySelector('.side-head h2');
     if (heading) heading.textContent = node.label || 'Без имени';
     scheduleGraphRefresh();
@@ -628,14 +709,50 @@ function renderNode(node) {
   });
   $('#n-group')?.addEventListener('change', (event) => {
     node.group = GROUP_MAP.has(event.target.value) ? event.target.value : 'other';
+    if (node.group === CENTER_GROUP) {
+      const nextFaction = normFaction(node.label);
+      if (nextFaction) node.faction = nextFaction;
+    }
     graph.refresh();
     renderSidebar();
     markDirty();
   });
+  const applyFaction = () => {
+    const input = $('#n-faction-input');
+    const value = normFaction(input?.value);
+    if (!value) {
+      toast('«Без фракции» — это не фракция, оставьте поле пустым');
+      input?.focus();
+      return;
+    }
+    node.faction = value;
+    graph.refresh();
+    renderSidebar();
+    markDirty();
+  };
+  $('#n-faction')?.addEventListener('change', (event) => {
+    if (event.target.value === '__new') {
+      const wrap = $('#n-faction-new');
+      if (wrap) wrap.hidden = false;
+      $('#n-faction-input')?.focus();
+      event.target.value = normFaction(node.faction);
+      return;
+    }
+    node.faction = normFaction(event.target.value);
+    graph.refresh();
+    renderSidebar();
+    markDirty();
+  });
+  sidebarBody.querySelector('[data-act="faction-add"]')?.addEventListener('click', applyFaction);
+  $('#n-faction-input')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyFaction();
+    }
+  });
   $('#n-dead')?.addEventListener('change', (event) => {
     node.dead = event.target.checked;
-    const sub = sidebarBody.querySelector('.side-head .muted');
-    if (sub) sub.textContent = `${(GROUP_MAP.get(node.group) || GROUP_MAP.get('other')).name}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}`;
+    syncSubtitle();
     graph.refresh();
     markDirty();
   });
@@ -677,6 +794,7 @@ function renderLink(link) {
   const source = byId(link.source);
   const target = byId(link.target);
   if (!source || !target) return clearSelection();
+  const pairCount = linksBetween(graphData, link.source, link.target).length;
 
   sidebarBody.innerHTML = `
     <div class="side-head">
@@ -688,8 +806,10 @@ function renderLink(link) {
       <button class="icon-btn" type="button" data-act="close" title="Закрыть">×</button>
     </div>
     <div class="relation-card">
+      ${endpointDot(source.id)}
       <button type="button" class="relation-name" data-goto="${esc(source.id)}">${esc(source.label)}</button>
       <span class="relation-arrow">${link.directed ? '→' : '↔'}</span>
+      ${endpointDot(target.id)}
       <button type="button" class="relation-name" data-goto="${esc(target.id)}">${esc(target.label)}</button>
     </div>
     <div class="form">
@@ -707,7 +827,9 @@ function renderLink(link) {
         <textarea id="l-notes" rows="5" placeholder="Обстоятельства знакомства, долг, история отношений…">${esc(link.notes)}</textarea>
       </label>
     </div>
+    ${pairCount > 1 ? `<p class="hint">Между этими концами ${pairCount} связей. Повторное «Связать» добавляет ещё одну.</p>` : ''}
     <div class="side-actions">
+      <button class="btn ghost" type="button" data-act="reverse" title="Поменять источник и цель местами">⇄ Поменять направление</button>
       <button class="btn ghost" type="button" data-act="focus">Показать на карте</button>
       <button class="btn ghost danger" type="button" data-act="delete">Удалить связь</button>
     </div>`;
@@ -734,6 +856,12 @@ function renderLink(link) {
   });
 
   sidebarBody.querySelector('[data-act="close"]')?.addEventListener('click', () => clearSelection());
+  sidebarBody.querySelector('[data-act="reverse"]')?.addEventListener('click', () => {
+    [link.source, link.target] = [link.target, link.source];
+    markDirty();
+    graph.refresh();
+    renderSidebar();
+  });
   sidebarBody.querySelector('[data-act="focus"]')?.addEventListener('click', () => graph.focusNode(link.source));
   sidebarBody.querySelector('[data-act="delete"]')?.addEventListener('click', () => deleteLink(link.id));
   sidebarBody.querySelectorAll('[data-goto]').forEach((button) => {
@@ -767,14 +895,31 @@ function clearSelection() {
   closePanel();
 }
 
+function addCenter() {
+  const center = graph.screenCenter();
+  const label = 'Новая организация';
+  const node = newNode({ label, group: CENTER_GROUP, faction: label, x: center.x, y: center.y });
+  graphData.nodes.push(node);
+  markDirty();
+  graph.refresh();
+  selectNode(node.id);
+  requestAnimationFrame(() => {
+    const input = $('#n-label');
+    input?.focus();
+    input?.select();
+  });
+}
+
 function startLinkMode(sourceId = null) {
-  if (!graphData.nodes.length) {
-    toast('Сначала добавьте персонажа');
+  if (graphData.nodes.length < 2) {
+    toast('Сначала добавьте ещё одну ноду');
     return;
   }
+  const source = sourceId ? byId(sourceId) : null;
+  if (sourceId && !source) return;
   linkMode = { source: sourceId || null };
   updateLinkModeUi();
-  if (sourceId) selectNode(sourceId);
+  if (source) selectNode(sourceId);
 }
 
 function cancelLinkMode() {
@@ -800,7 +945,7 @@ function updateLinkModeUi() {
   banner.hidden = false;
   banner.innerHTML = `
     <span class="banner-icon">${source ? '2' : '1'}</span>
-    <span>${source ? `Соединяем с «${esc(source.label)}» — выберите второго персонажа` : 'Выберите первого персонажа'}</span>
+    <span>${source ? `Соединяем с «${esc(source.label)}» — выберите вторую ноду` : 'Выберите первую ноду'}</span>
     <button type="button" class="btn small" data-cancel-link>Отмена</button>`;
   banner.querySelector('[data-cancel-link]')?.addEventListener('click', cancelLinkMode);
 }
@@ -817,7 +962,7 @@ function handleNodeClick(id) {
     return;
   }
   if (linkMode.source === id) {
-    toast('Выберите другого персонажа');
+    toast('Выберите другую ноду');
     return;
   }
   createLink(linkMode.source, id);
@@ -832,9 +977,7 @@ function handlePinChange(id, pinned) {
     button.setAttribute('aria-pressed', String(pinned));
   }
   const sub = sidebarBody.querySelector('.side-head .muted');
-  if (sub && node) {
-    sub.textContent = `${(GROUP_MAP.get(node.group) || GROUP_MAP.get('other')).name}${node.dead ? ' · недоступен' : ''}${node.fixed ? ' · закреплён' : ''}`;
-  }
+  if (sub && node) sub.textContent = nodeSubtitle(node);
 }
 
 /* ---------- операции с данными ---------- */
@@ -859,16 +1002,9 @@ function addNode() {
 }
 
 function createLink(sourceId, targetId) {
-  const existing = graphData.links.find((link) => (
-    (link.source === sourceId && link.target === targetId)
-    || (link.source === targetId && link.target === sourceId)
-  ));
-  if (existing) {
-    cancelLinkMode();
-    selectLink(existing.id);
-    toast('Связь уже есть — открыли её');
-    return;
-  }
+  // Одна пара может иметь несколько связей: например, «подчиняется» и
+  // «покровительствует». Раньше вторая стрелка просто открывала первую.
+  const already = linksBetween(graphData, sourceId, targetId).length;
   const link = newLink({ source: sourceId, target: targetId });
   graphData.links.push(link);
   cancelLinkMode();
@@ -876,6 +1012,7 @@ function createLink(sourceId, targetId) {
   graph.refresh();
   graph.reheat(0.4);
   selectLink(link.id);
+  if (already) toast(`Между этой парой уже ${already + 1} связи — задайте каждой свою подпись`);
   requestAnimationFrame(() => $('#l-label')?.focus());
 }
 
@@ -885,7 +1022,7 @@ async function deleteNode(id) {
   const count = graphData.links.filter((link) => link.source === id || link.target === id).length;
   const ok = await ask({
     title: `Удалить «${node.label || 'Без имени'}»?`,
-    text: count ? `Вместе с персонажем удалятся его связи: ${count}.` : 'Персонаж будет удалён с карты.',
+    text: count ? `Вместе с нодой удалятся её связи: ${count}.` : 'Нода будет удалена с карты.',
     ok: 'Удалить',
   });
   if (!ok) return;
@@ -901,7 +1038,7 @@ async function deleteNode(id) {
   graph.reheat(0.25);
   renderSidebar();
   updateEmptyState();
-  toast('Персонаж удалён');
+  toast('Удалено с карты');
 }
 
 async function deleteLink(id) {
@@ -974,7 +1111,7 @@ async function clearGraph() {
 
 function autoLayout() {
   if (!graphData.nodes.length) return;
-  for (const node of graphData.nodes) node.fixed = false;
+  // Закреплённые ноды остаются на местах: пересчитываем только свободные.
   graph.refresh();
   graph.startSim(1);
   pendingFit = true;
@@ -1130,6 +1267,9 @@ function init() {
     if (event.code === 'KeyN') {
       event.preventDefault();
       addNode();
+    } else if (event.code === 'KeyZ') {
+      event.preventDefault();
+      addCenter();
     } else if (event.code === 'KeyF') {
       event.preventDefault();
       graph.fit();

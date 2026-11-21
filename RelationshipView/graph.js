@@ -1,7 +1,7 @@
 // Лёгкий SVG-граф без внешних библиотек: силовая раскладка, панорамирование,
 // масштаб, перетаскивание узлов, поиск и пунктирные связи из [[упоминаний]].
 
-import { TONES, VIEW_KEY, mentionPairs } from './store.js';
+import { TONES, VIEW_KEY, mentionPairs, factionPalette, normFaction } from './store.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const TONE_IDS = TONES.map((tone) => tone.id);
@@ -39,6 +39,89 @@ function labelLines(label, max = 18) {
   return lines.map(cut);
 }
 
+// Оболочка-блиб: выпуклая обертка вокруг участников с запасом и сглаживанием,
+// чтобы форма была живой, но не дёргалась при каждом шаге раскладки.
+function convexHull(points) {
+  const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower = [];
+  for (const point of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+    lower.push(point);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i -= 1) {
+    const point = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+    upper.push(point);
+  }
+  return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+
+// Точки на окружности ноды: из них вместе с прямоугольником подписи
+// собирается оболочка блиба.
+function circlePoints(cx, cy, r, segments = 24) {
+  const points = [];
+  for (let i = 0; i < segments; i += 1) {
+    const angle = (i / segments) * Math.PI * 2;
+    points.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+  }
+  return points;
+}
+
+// Прямоугольник подписи ноды: блиб должен накрывать и текст, иначе он
+// вылезает за край. Ширина оценивается по 11px шрифту.
+function labelPoints(node, sim) {
+  const lines = labelLines(node.label);
+  const width = Math.max(24, Math.max(...lines.map((line) => line.length)) * 6.1) + 8;
+  const top = sim.r + 4;
+  const bottom = sim.r + 18 + Math.max(0, lines.length - 1) * 13;
+  const x1 = sim.x - width / 2;
+  const x2 = sim.x + width / 2;
+  return [
+    { x: x1, y: sim.y + top },
+    { x: x2, y: sim.y + top },
+    { x: x2, y: sim.y + bottom },
+    { x: x1, y: sim.y + bottom },
+  ];
+}
+
+// Надуваем выпуклую оболочку на radius: стороны сдвигаются наружу, а в углах
+// ставятся дуги. В отличие от сглаживания через середины, такая кривая
+// гарантированно содержит все исходные точки — ноды не выходят за край.
+function inflateHullPath(hull, radius) {
+  const count = hull.length;
+  if (count < 3) return { path: '', points: [] };
+  const normals = hull.map((point, index) => {
+    const next = hull[(index + 1) % count];
+    const dx = next.x - point.x;
+    const dy = next.y - point.y;
+    const length = Math.hypot(dx, dy) || 1;
+    return { x: dy / length, y: -dx / length };
+  });
+  const points = [];
+  let path = '';
+  for (let i = 0; i < count; i += 1) {
+    const vertex = hull[i];
+    const previous = normals[(i - 1 + count) % count];
+    const next = normals[i];
+    const from = { x: vertex.x + previous.x * radius, y: vertex.y + previous.y * radius };
+    const to = { x: vertex.x + next.x * radius, y: vertex.y + next.y * radius };
+    points.push(from, to);
+    path += `${i === 0 ? 'M' : ' L'}${round(from.x)},${round(from.y)}`;
+    path += ` A${radius},${radius} 0 0 1 ${round(to.x)},${round(to.y)}`;
+  }
+  return { path: `${path} Z`, points };
+}
+
+function ellipsePath(cx, cy, rx, ry) {
+  const x = round(cx);
+  const y = round(cy);
+  const a = round(rx);
+  const b = round(ry);
+  return `M${x - a},${y} A${a},${b} 0 1 0 ${x + a},${y} A${a},${b} 0 1 0 ${x - a},${y} Z`;
+}
+
 export class GraphView {
   constructor(host, callbacks = {}) {
     this.host = host;
@@ -46,6 +129,9 @@ export class GraphView {
     this.data = { nodes: [], links: [] };
     this.sim = new Map();
     this.nodeEls = new Map();
+    this.clusterEls = new Map();
+    this.clusters = [];
+    this.clusterKey = '';
     this.linkEls = new Map();
     this.view = { x: 0, y: 0, k: 1 };
     this.query = '';
@@ -56,7 +142,7 @@ export class GraphView {
     this.alpha = 0;
     this.alphaTarget = 0;
     this.alphaMin = 0.001;
-    this.alphaDecay = 0.03;
+    this.alphaDecay = 0.045;
     this.raf = null;
     this.lastEmit = 0;
     this.pointers = new Map();
@@ -94,15 +180,15 @@ export class GraphView {
     for (const tone of TONE_IDS) {
       const marker = el('marker', {
         id: `arrow-${tone}`,
-        viewBox: '0 -5 10 10',
-        refX: 9,
+        viewBox: '0 -7 14 14',
+        refX: 12,
         refY: 0,
-        markerWidth: 5.5,
-        markerHeight: 5.5,
+        markerWidth: 9,
+        markerHeight: 9,
         orient: 'auto-start-reverse',
         markerUnits: 'userSpaceOnUse',
       });
-      marker.appendChild(el('path', { d: 'M0,-4 L9,0 L0,4 Z', class: `marker marker-${tone}` }));
+      marker.appendChild(el('path', { d: 'M0,-6 L12,0 L0,6 Z', class: `marker marker-${tone}` }));
       defs.appendChild(marker);
     }
 
@@ -112,10 +198,11 @@ export class GraphView {
     this.grid = el('rect', {
       x: -12000, y: -12000, width: 24000, height: 24000, fill: 'url(#dot-grid)', class: 'grid-rect',
     });
+    this.clusterLayer = el('g', { class: 'clusters' });
     this.mentionLayer = el('g', { class: 'mentions' });
     this.linkLayer = el('g', { class: 'links' });
     this.nodeLayer = el('g', { class: 'nodes' });
-    this.viewport.append(this.grid, this.mentionLayer, this.linkLayer, this.nodeLayer);
+    this.viewport.append(this.grid, this.clusterLayer, this.mentionLayer, this.linkLayer, this.nodeLayer);
     this.svg.appendChild(this.viewport);
 
     this.host.prepend(this.svg);
@@ -139,7 +226,7 @@ export class GraphView {
       alive.add(node.id);
       let sim = this.sim.get(node.id);
       if (!sim) {
-        sim = { x: null, y: null, vx: 0, vy: 0, fixed: false, r: 10, degree: 0 };
+        sim = { id: node.id, x: null, y: null, vx: 0, vy: 0, fixed: false, r: 10, degree: 0 };
         this.sim.set(node.id, sim);
       }
       sim.fixed = Boolean(node.fixed);
@@ -174,11 +261,17 @@ export class GraphView {
   refresh() {
     if (!this.data) return;
     this.buildSim();
-    for (const layer of [this.mentionLayer, this.linkLayer, this.nodeLayer]) layer.replaceChildren();
+    for (const layer of [this.clusterLayer, this.mentionLayer, this.linkLayer, this.nodeLayer]) layer.replaceChildren();
     this.nodeEls.clear();
+    this.clusterEls.clear();
     this.linkEls.clear();
 
     const byId = new Map(this.data.nodes.map((node) => [node.id, node]));
+
+    this.clusterKey = '';
+    this.computeClusters();
+    this.clusterKey = this.clusters.map((cluster) => cluster.key).join('~');
+    this.rebuildClusters();
 
     if (this.showMentions) {
       for (const pair of mentionPairs(this.data)) {
@@ -191,11 +284,12 @@ export class GraphView {
       }
     }
 
+    const bends = this.computeBends();
     for (const link of this.data.links) {
       const source = byId.get(link.source);
       const target = byId.get(link.target);
       if (!source || !target) continue;
-      const entry = this.createLink(link);
+      const entry = this.createLink(link, bends.get(link.id) || 0);
       this.linkLayer.appendChild(entry.group);
       this.linkEls.set(link.id, entry);
     }
@@ -215,7 +309,161 @@ export class GraphView {
 
   radiusOf(node, degree) {
     if (node.group === 'self') return 15;
+    if (node.group === 'org') return 18;
     return 9 + Math.min(8, Math.log2(degree + 1) * 2.6);
+  }
+
+  // Блиб — визуальная микро-зона. Ноды одной фракции сливаются, только если
+  // стоят достаточно близко: иначе одна фракция даёт несколько локальных
+  // блибов, и огромная оболочка не накрывает полкарты. Ноды без фракции
+  // собираются в безымянные блибы по близости и связям.
+  computeClusters() {
+    for (const node of this.data.nodes) {
+      const sim = this.sim.get(node.id);
+      if (sim) sim.r = this.radiusOf(node, sim.degree);
+    }
+    const points = this.data.nodes
+      .map((node) => ({ node, sim: this.sim.get(node.id) }))
+      .filter((item) => item.sim && Number.isFinite(item.sim.x) && !this.hidden.has(item.node.group));
+    if (!points.length) {
+      this.clusters = [];
+      return;
+    }
+
+    const parent = points.map((_, index) => index);
+    const find = (a) => {
+      while (parent[a] !== a) {
+        parent[a] = parent[parent[a]];
+        a = parent[a];
+      }
+      return a;
+    };
+    const union = (a, b) => { parent[find(a)] = find(b); };
+
+    // Блиб — только у настоящей фракции. Ноды без фракции не получают
+    // серой окантовки: это были бы «фракции поневоле».
+    const FACTION_GAP = 210;
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        const a = points[i];
+        const b = points[j];
+        const fa = normFaction(a.node.faction);
+        const fb = normFaction(b.node.faction);
+        if (!fa || fa !== fb) continue;
+        const distance = Math.hypot(a.sim.x - b.sim.x, a.sim.y - b.sim.y);
+        if (distance < a.sim.r + b.sim.r + FACTION_GAP) union(i, j);
+      }
+    }
+
+    const components = new Map();
+    points.forEach((item, index) => {
+      const root = find(index);
+      if (!components.has(root)) components.set(root, []);
+      components.get(root).push(item);
+    });
+
+    const palette = factionPalette(this.data.nodes);
+    this.clusters = [...components.values()]
+      .filter((items) => normFaction(items[0].node.faction))
+      .map((items, index) => {
+        const faction = normFaction(items[0].node.faction);
+        const center = items.find((item) => item.node.group === 'org')?.node || null;
+        const samples = [];
+        for (const item of items) {
+          samples.push(...circlePoints(item.sim.x, item.sim.y, item.sim.r + 5, 20));
+          samples.push(...labelPoints(item.node, item.sim));
+        }
+        const hull = convexHull(samples);
+        const inflated = inflateHullPath(hull, 14);
+        let path = inflated.path;
+        let edge = inflated.points;
+        if (!path || !edge.length) {
+          const sim = items[0].sim;
+          const radius = sim.r + 30;
+          path = ellipsePath(sim.x, sim.y, radius, radius);
+          edge = [
+            { x: sim.x - radius, y: sim.y - radius },
+            { x: sim.x + radius, y: sim.y + radius },
+          ];
+        }
+        const xs = edge.map((point) => point.x);
+        const ys = edge.map((point) => point.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const rx = Math.max(30, (maxX - minX) / 2);
+        const ry = Math.max(26, (maxY - minY) / 2);
+        const members = items.map((item) => item.node.id).sort();
+        // Если в блибе есть нода-центр с тем же названием, её подпись уже
+        // стоит на карте — второй такой же заголовок не нужен.
+        const centerNames = Boolean(center) && center.label.trim() === faction;
+        return {
+          id: `cluster-${index}`,
+          key: members.join('|'),
+          members,
+          path,
+          cx,
+          cy,
+          rx,
+          ry,
+          faction,
+          color: palette.get(faction) || '',
+          label: faction && !centerNames ? faction : '',
+          count: items.length,
+          center: Boolean(center),
+        };
+      });
+  }
+
+  rebuildClusters() {
+    this.clusterLayer.replaceChildren();
+    this.clusterEls.clear();
+    for (const cluster of this.clusters) {
+      const entry = this.createCluster(cluster);
+      this.clusterLayer.appendChild(entry.group);
+      this.clusterEls.set(cluster.id, entry);
+    }
+  }
+
+  createCluster(cluster) {
+    const group = el('g', { class: `cluster${cluster.faction ? ' named' : ''}`, 'data-id': cluster.id });
+    group.style.setProperty('--zc', cluster.color || 'var(--mute)');
+    const hull = el('path', { class: 'cluster-hull' });
+    hull.setAttribute('d', cluster.path);
+    const label = el('text', { class: 'cluster-label', 'text-anchor': 'middle' });
+    label.textContent = cluster.label;
+    group.append(hull, label);
+    return { group, hull, label, cluster };
+  }
+
+  // Параллельные связи между одной парой разводим по дугам, иначе вторая
+  // стрелка рисуется поверх первой и её не видно. Смещение считается
+  // относительно собственного направления каждой связи: встречные дуги
+  // расходятся в разные стороны, односторонние — веером.
+  computeBends() {
+    const groups = new Map();
+    for (const link of this.data.links) {
+      const key = [link.source, link.target].sort().join('\u0000');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(link);
+    }
+    const bends = new Map();
+    for (const list of groups.values()) {
+      const first = list[0].source < list[0].target ? list[0].source : list[0].target;
+      const forward = list.filter((link) => link.source === first);
+      const backward = list.filter((link) => link.target === first);
+      const twoWay = forward.length > 0 && backward.length > 0;
+      for (const group of [forward, backward]) {
+        group.forEach((link, index) => {
+          const spread = (index - (group.length - 1) / 2) * 30;
+          bends.set(link.id, spread + (twoWay ? 20 : 0));
+        });
+      }
+    }
+    return bends;
   }
 
   createNode(node, sim) {
@@ -269,10 +517,10 @@ export class GraphView {
     return group;
   }
 
-  createLink(link) {
+  createLink(link, bend = 0) {
     const group = el('g', { class: `link t-${link.tone}${link.directed ? ' directed' : ''}`, 'data-id': link.id });
-    const hit = el('line', { class: 'link-hit' });
-    const line = el('line', {
+    const hit = el('path', { class: 'link-hit' });
+    const line = el('path', {
       class: 'link-line',
       ...(link.directed ? { 'marker-end': `url(#arrow-${link.tone})` } : {}),
     });
@@ -285,13 +533,38 @@ export class GraphView {
       event.stopPropagation();
       this.cbs.onLinkClick?.(link.id);
     });
-    return { group, hit, line, label, link };
+    return { group, hit, line, label, link, bend };
   }
 
   /* ---------- отрисовка ---------- */
 
+  endpointPos(id) {
+    const sim = this.sim.get(id);
+    if (!sim || !Number.isFinite(sim.x)) return null;
+    return { x: sim.x, y: sim.y, r: sim.r || 10 };
+  }
+
   renderPositions() {
     if (!this.data) return;
+    this.computeClusters();
+    const key = this.clusters.map((cluster) => cluster.key).join('~');
+    if (key !== this.clusterKey) {
+      this.clusterKey = key;
+      this.rebuildClusters();
+    }
+
+    for (const cluster of this.clusters) {
+      const entry = this.clusterEls.get(cluster.id);
+      if (!entry) continue;
+      entry.hull.setAttribute('d', cluster.path);
+      entry.label.textContent = cluster.label;
+      entry.label.setAttribute('x', round(cluster.cx));
+      entry.label.setAttribute('y', round(cluster.cy - cluster.ry - 9));
+      entry.group.classList.toggle('named', Boolean(cluster.faction));
+      entry.group.style.setProperty('--zc', cluster.color || 'var(--mute)');
+    }
+    this.applyClusterFilter();
+
     for (const node of this.data.nodes) {
       const sim = this.sim.get(node.id);
       const element = this.nodeEls.get(node.id);
@@ -300,8 +573,8 @@ export class GraphView {
     }
 
     for (const entry of this.linkEls.values()) {
-      const source = this.sim.get(entry.link.source);
-      const target = this.sim.get(entry.link.target);
+      const source = this.endpointPos(entry.link.source);
+      const target = this.endpointPos(entry.link.target);
       if (!source || !target) continue;
       let dx = target.x - source.x;
       let dy = target.y - source.y;
@@ -313,28 +586,28 @@ export class GraphView {
       }
       const ux = dx / distance;
       const uy = dy / distance;
-      const startGap = source.r + 2;
-      const endGap = entry.link.directed ? target.r + 6 : target.r + 2;
-      const x1 = source.x + ux * startGap;
-      const y1 = source.y + uy * startGap;
-      const x2 = target.x - ux * endGap;
-      const y2 = target.y - uy * endGap;
-      entry.line.setAttribute('x1', round(x1));
-      entry.line.setAttribute('y1', round(y1));
-      entry.line.setAttribute('x2', round(x2));
-      entry.line.setAttribute('y2', round(y2));
-      entry.hit.setAttribute('x1', round(x1));
-      entry.hit.setAttribute('y1', round(y1));
-      entry.hit.setAttribute('x2', round(x2));
-      entry.hit.setAttribute('y2', round(y2));
-      entry.label.setAttribute('x', round((x1 + x2) / 2));
-      entry.label.setAttribute('y', round((y1 + y2) / 2) - 5);
+      const x1 = source.x + ux * (source.r + 2);
+      const y1 = source.y + uy * (source.r + 2);
+      const x2 = target.x - ux * (entry.link.directed ? target.r + 10 : target.r + 2);
+      const y2 = target.y - uy * (entry.link.directed ? target.r + 10 : target.r + 2);
+      // Нормаль к направлению связи; по ней смещается управляющая точка дуги.
+      const nx = -uy;
+      const ny = ux;
+      const bend = Math.max(-distance * 0.5, Math.min(distance * 0.5, entry.bend));
+      const cx = (x1 + x2) / 2 + nx * bend;
+      const cy = (y1 + y2) / 2 + ny * bend;
+      const path = `M${round(x1)},${round(y1)} Q${round(cx)},${round(cy)} ${round(x2)},${round(y2)}`;
+      entry.line.setAttribute('d', path);
+      entry.hit.setAttribute('d', path);
+      // Точка кривой при t = 0.5: (P0 + 2·C + P2) / 4.
+      entry.label.setAttribute('x', round((x1 + x2) / 2 + nx * bend / 2));
+      entry.label.setAttribute('y', round((y1 + y2) / 2 + ny * bend / 2) - 5);
     }
 
     if (this.showMentions) {
       for (const line of this.mentionLayer.children) {
-        const source = this.sim.get(line.dataset.source);
-        const target = this.sim.get(line.dataset.target);
+        const source = this.endpointPos(line.dataset.source);
+        const target = this.endpointPos(line.dataset.target);
         if (!source || !target) continue;
         line.setAttribute('x1', round(source.x));
         line.setAttribute('y1', round(source.y));
@@ -360,6 +633,7 @@ export class GraphView {
   setHidden(groups) {
     this.hidden = new Set(groups || []);
     this.applyFilter();
+    this.renderPositions();
   }
 
   setMentions(enabled) {
@@ -383,6 +657,9 @@ export class GraphView {
 
   applyFilter() {
     const hiddenGroups = this.hidden;
+    const resolve = (id) => this.data.nodes.find((node) => node.id === id);
+    const hiddenEnd = (item) => !item || hiddenGroups.has(item.group);
+
     for (const node of this.data.nodes) {
       const element = this.nodeEls.get(node.id);
       if (!element) continue;
@@ -394,21 +671,33 @@ export class GraphView {
     }
 
     for (const entry of this.linkEls.values()) {
-      const source = this.data.nodes.find((node) => node.id === entry.link.source);
-      const target = this.data.nodes.find((node) => node.id === entry.link.target);
-      const hidden = !source || !target || hiddenGroups.has(source.group) || hiddenGroups.has(target.group);
+      const source = resolve(entry.link.source);
+      const target = resolve(entry.link.target);
+      const hidden = hiddenEnd(source) || hiddenEnd(target);
       const dim = Boolean(this.query) && !(this.matches(source) || this.matches(target));
       entry.group.classList.toggle('hidden', hidden);
       entry.group.classList.toggle('dim', dim);
     }
 
     for (const line of [...this.mentionLayer.children]) {
-      const source = this.data.nodes.find((node) => node.id === line.dataset.source);
-      const target = this.data.nodes.find((node) => node.id === line.dataset.target);
-      const hidden = !source || !target || hiddenGroups.has(source.group) || hiddenGroups.has(target.group);
+      const source = resolve(line.dataset.source);
+      const target = resolve(line.dataset.target);
+      const hidden = hiddenEnd(source) || hiddenEnd(target);
       const dim = Boolean(this.query) && !(this.matches(source) || this.matches(target));
       line.classList.toggle('hidden', hidden);
       line.classList.toggle('dim', dim);
+    }
+
+    this.applyClusterFilter();
+  }
+
+  applyClusterFilter() {
+    const byId = new Map(this.data.nodes.map((node) => [node.id, node]));
+    for (const cluster of this.clusters) {
+      const entry = this.clusterEls.get(cluster.id);
+      if (!entry) continue;
+      const hit = !this.query || cluster.members.some((id) => this.matches(byId.get(id)));
+      entry.group.classList.toggle('dim', Boolean(this.query) && !hit);
     }
   }
 
@@ -441,6 +730,15 @@ export class GraphView {
     this.ensureRaf();
   }
 
+  // Перетаскивание — ручное действие: замораживаем раскладку целиком,
+  // чтобы тащимая нода не тащила за собой весь граф.
+  stopSim() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
+    this.alpha = 0;
+    this.alphaTarget = 0;
+  }
+
   ensureRaf() {
     if (this.raf) return;
     this.lastEmit = 0;
@@ -466,6 +764,8 @@ export class GraphView {
     }
   };
 
+  // Раскладка как в Obsidian: только связи плюс короткое отталкивание.
+  // Фракции и блибы чисто визуальные и на физику не влияют.
   step() {
     const alpha = this.alpha;
     const nodes = [];
@@ -476,7 +776,8 @@ export class GraphView {
     const count = nodes.length;
     if (!count) return;
 
-    const charge = 380;
+    // Отталкивание 1/d² заметно только рядом и не раздувает карту.
+    const charge = 900;
     for (let i = 0; i < count; i += 1) {
       const a = nodes[i];
       for (let j = i + 1; j < count; j += 1) {
@@ -490,7 +791,7 @@ export class GraphView {
           distance2 = dx * dx + dy * dy;
         }
         const distance = Math.sqrt(distance2);
-        const force = (charge * alpha) / distance;
+        const force = (charge * alpha) / distance2;
         const fx = (dx / distance) * force;
         const fy = (dy / distance) * force;
         if (!a.fixed) {
@@ -501,9 +802,11 @@ export class GraphView {
           b.vx += fx;
           b.vy += fy;
         }
-        const minDistance = a.r + b.r + 14;
+        // Личное пространство есть у всех нод, даже одиночек без связей —
+        // иначе центр тяжести собрал бы их в одну точку.
+        const minDistance = Math.max(a.r + b.r + 14, 90);
         if (distance < minDistance) {
-          const push = ((minDistance - distance) / distance) * 0.32 * alpha;
+          const push = ((minDistance - distance) / distance) * 0.12 * alpha;
           if (!a.fixed) {
             a.vx -= dx * push;
             a.vy -= dy * push;
@@ -620,9 +923,7 @@ export class GraphView {
     }
 
     if (this.drag) {
-      const { id, startX, startY, originX, originY } = this.drag;
-      const sim = this.sim.get(id);
-      if (!sim) return;
+      const { startX, startY, originX, originY } = this.drag;
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
       if (!this.drag.moved) {
@@ -630,9 +931,10 @@ export class GraphView {
         // иначе граф «дрожит» от каждого нажатия на узел.
         if (Math.hypot(dx, dy) <= 5) return;
         this.drag.moved = true;
-        this.alphaTarget = 0.25;
-        this.ensureRaf();
+        this.stopSim();
       }
+      const sim = this.sim.get(this.drag.id);
+      if (!sim) return;
       sim.x = originX + dx / this.view.k;
       sim.y = originY + dy / this.view.k;
       sim.vx = 0;
@@ -670,18 +972,17 @@ export class GraphView {
   handlePointerUp(event) {
     if (this.drag) {
       const drag = this.drag;
-      const sim = this.sim.get(drag.id);
-      const node = this.data.nodes.find((item) => item.id === drag.id);
       this.drag = null;
       this.alphaTarget = 0;
+      const sim = this.sim.get(drag.id);
+      const node = this.data.nodes.find((item) => item.id === drag.id);
       if (sim && node) {
         if (drag.moved) {
-          // Перетаскивание только перемещает узел: раскладка остаётся «живой»,
-          // а закрепление — отдельное явное действие в карточке персонажа.
+          // Перетаскивание только перемещает узел. Раскладку не разогреваем:
+          // она не должна переставлять остальные ноды под рукой.
           node.x = round(sim.x);
           node.y = round(sim.y);
           this.emitPositions();
-          this.reheat(0.35);
         } else {
           this.cbs.onNodeClick?.(drag.id);
         }
@@ -705,6 +1006,7 @@ export class GraphView {
     if (!sim) return;
     this.drag = {
       id,
+      kind: 'node',
       startX: event.clientX,
       startY: event.clientY,
       originX: sim.x,
@@ -726,7 +1028,7 @@ export class GraphView {
     node.x = round(sim.x);
     node.y = round(sim.y);
     this.nodeEls.get(id)?.classList.toggle('pinned', next);
-    if (!next) this.reheat(0.35);
+    if (!next) this.reheat(0.28);
     this.emitPositions();
     this.cbs.onPinChange?.(id, next);
     return next;
@@ -768,6 +1070,13 @@ export class GraphView {
       maxX = Math.max(maxX, sim.x + sim.r + 20);
       maxY = Math.max(maxY, sim.y + sim.r + 46);
     }
+    this.computeClusters();
+    for (const cluster of this.clusters) {
+      minX = Math.min(minX, cluster.cx - cluster.rx - 20);
+      minY = Math.min(minY, cluster.cy - cluster.ry - 30);
+      maxX = Math.max(maxX, cluster.cx + cluster.rx + 20);
+      maxY = Math.max(maxY, cluster.cy + cluster.ry + 20);
+    }
     if (!Number.isFinite(minX)) return;
     const padding = 64;
     const width = Math.max(1, maxX - minX);
@@ -785,6 +1094,37 @@ export class GraphView {
     if (!sim) return;
     const k = clamp(Math.max(this.view.k, 0.85), MIN_ZOOM, MAX_ZOOM);
     this.view = { x: -sim.x * k, y: -sim.y * k, k };
+    this.applyView();
+    this.saveView();
+  }
+
+  // Показать на карте сразу несколько нод (например, всю фракцию).
+  focusNodes(ids) {
+    const sims = (ids || [])
+      .map((id) => this.sim.get(id))
+      .filter((sim) => sim && Number.isFinite(sim.x));
+    if (!sims.length) return;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const sim of sims) {
+      minX = Math.min(minX, sim.x - sim.r - 30);
+      minY = Math.min(minY, sim.y - sim.r - 30);
+      maxX = Math.max(maxX, sim.x + sim.r + 30);
+      maxY = Math.max(maxY, sim.y + sim.r + 48);
+    }
+    const padding = 80;
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+    const k = clamp(
+      Math.min((this.width - padding * 2) / width, (this.height - padding * 2) / height),
+      MIN_ZOOM,
+      1.4,
+    );
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    this.view = { x: -cx * k, y: -cy * k, k };
     this.applyView();
     this.saveView();
   }

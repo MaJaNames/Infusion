@@ -30,6 +30,28 @@ export const TONES = [
 ];
 export const TONE_MAP = new Map(TONES.map((t) => [t.id, t]));
 
+// Организация — обычная нода категории org («первичный центр»).
+// Визуальные блибы строятся по полю faction и по взаимному положению нод.
+export const CENTER_GROUP = 'org';
+
+// Палитра фракций. Цвета раздаются по алфавиту, поэтому у разных фракций
+// они не совпадают, пока палитра не кончится; перерисовка цвет не меняет.
+export const FACTION_COLORS = [
+  '#e0a458', '#5aa2ee', '#5cc9a7', '#c98be0', '#e2729b', '#6fd0e0',
+  '#b7d36b', '#e88f5a', '#8ea8f0', '#d4c15a', '#7fcf9a', '#e39ad0',
+  '#a9b8f2', '#f0b27a', '#63c7b2', '#c7a4ef',
+];
+
+export function factionPalette(nodes) {
+  const names = [...new Set((nodes || [])
+    .map((node) => normFaction(node.faction))
+    .filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'ru'));
+  const palette = new Map();
+  names.forEach((name, index) => palette.set(name, FACTION_COLORS[index % FACTION_COLORS.length]));
+  return palette;
+}
+
 let counter = 0;
 export function uid(prefix = 'id') {
   counter = (counter + 1) % 1e6;
@@ -38,12 +60,20 @@ export function uid(prefix = 'id') {
 
 const text = (value) => (typeof value === 'string' ? value : value == null ? '' : String(value));
 const limit = (value, max) => text(value).trim().slice(0, max);
+
+// «Без фракции» — не фракция: такие строки не получают цвет, блиб и не
+// стягивают ноды. Пустое поле — единственный способ быть вне фракции.
+const NO_FACTION = new Set(['без фракции', 'безфракции', 'нет фракции', 'none', 'null', '-', '—']);
+export function normFaction(value) {
+  const name = limit(value, 80);
+  return NO_FACTION.has(name.toLowerCase()) ? '' : name;
+}
+
 const coord = (value) => {
   if (value === null || value === undefined || value === '') return null;
   const n = Number(value);
   return Number.isFinite(n) ? Math.round(n * 10) / 10 : null;
 };
-
 export function blankGraph() {
   return { v: 1, nodes: [], links: [], updatedAt: Date.now() };
 }
@@ -69,11 +99,12 @@ export function starterGraph() {
   };
 }
 
-export function newNode({ label = 'Новый персонаж', group = 'acquaintance', x = 0, y = 0 } = {}) {
+export function newNode({ label = 'Новый персонаж', group = 'acquaintance', faction = '', x = 0, y = 0 } = {}) {
   return {
     id: uid('n'),
     label: limit(label, 120) || 'Новый персонаж',
     group: GROUP_MAP.has(group) ? group : 'other',
+    faction: normFaction(faction),
     tags: [],
     dead: false,
     x: coord(x) ?? 0,
@@ -103,9 +134,24 @@ export function normalizeGraph(raw) {
   }
   if (!Array.isArray(raw.nodes)) throw new Error('В файле нет списка персонажей (nodes)');
 
+  // Старые карты с массивом zones мигрируют в ноды-центры: ID сохраняются,
+  // поэтому связи, которые раньше вели в зону, продолжают работать. Заодно
+  // зона становится фракцией, а её участники получают эту фракцию.
+  const rawZones = Array.isArray(raw.zones) ? raw.zones : [];
+  const zoneFaction = new Map();
+  for (const zone of rawZones) {
+    if (!zone || typeof zone !== 'object') continue;
+    const id = limit(zone.id, 80);
+    if (id) zoneFaction.set(id, limit(zone.label ?? zone.name, 120));
+  }
+  const rawNodes = [
+    ...rawZones.map((zone) => ({ ...zone, group: CENTER_GROUP, faction: normFaction(zone.label ?? zone.name) })),
+    ...raw.nodes,
+  ];
+
   const used = new Set();
   const nodes = [];
-  raw.nodes.forEach((item, index) => {
+  rawNodes.forEach((item, index) => {
     if (!item || typeof item !== 'object') return;
     let id = limit(item.id, 80);
     if (!id) id = `n${index + 1}`;
@@ -119,6 +165,7 @@ export function normalizeGraph(raw) {
       id,
       label: limit(item.label ?? item.name, 120) || `Персонаж ${index + 1}`,
       group,
+      faction: normFaction(item.faction) || normFaction(zoneFaction.get(item.zone)),
       tags: [...new Set(tags.map((tag) => limit(tag, 50)).filter(Boolean))],
       dead: Boolean(item.dead),
       x: coord(item.x),
@@ -130,7 +177,6 @@ export function normalizeGraph(raw) {
 
   const ids = new Set(nodes.map((node) => node.id));
   const linkIds = new Set();
-  const pairs = new Set();
   const links = [];
   const rawLinks = Array.isArray(raw.links) ? raw.links : [];
   rawLinks.forEach((item, index) => {
@@ -138,9 +184,8 @@ export function normalizeGraph(raw) {
     const source = limit(item.source?.id ?? item.source, 80);
     const target = limit(item.target?.id ?? item.target, 80);
     if (!ids.has(source) || !ids.has(target) || source === target) return;
-    const pair = `${source}\u0000${target}`;
-    if (pairs.has(pair)) return;
-    pairs.add(pair);
+    // Между одной парой может быть несколько связей (в том числе встречных):
+    // это разные отношения, поэтому пара больше не является ключом дедупликации.
 
     let id = limit(item.id, 80);
     if (!id) id = `l${index + 1}`;
@@ -175,6 +220,7 @@ export function exportGraph(graph) {
       id: node.id,
       label: node.label,
       group: node.group,
+      faction: normFaction(node.faction),
       tags: node.tags,
       dead: Boolean(node.dead),
       x: coord(node.x),
@@ -211,7 +257,16 @@ export function parseGraph(source) {
 export function loadGraph(storage = globalThis.localStorage) {
   try {
     const saved = storage?.getItem?.(LS_KEY);
-    if (saved) return normalizeGraph(JSON.parse(saved));
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const graph = normalizeGraph(parsed);
+      // Псевдо-фракции и старые зоны сохраняем уже в нормализованном виде.
+      const dirty = (Array.isArray(parsed.nodes) && parsed.nodes.some(
+        (node) => node && normFaction(node.faction) !== (node.faction || ''),
+      )) || (Array.isArray(parsed.zones) && parsed.zones.length > 0);
+      if (dirty) saveGraph(graph, storage);
+      return graph;
+    }
   } catch {
     /* повреждённое хранилище — начинаем с чистого листа */
   }
@@ -245,9 +300,9 @@ export function extractMentions(notes) {
 // обычные связи пропускаем, чтобы граф не дублировал линии.
 export function mentionPairs(graph) {
   const byLabel = new Map();
-  for (const node of graph.nodes) {
-    const key = node.label.trim().toLowerCase();
-    if (key && !byLabel.has(key)) byLabel.set(key, node);
+  for (const item of graph.nodes || []) {
+    const key = item.label.trim().toLowerCase();
+    if (key && !byLabel.has(key)) byLabel.set(key, item);
   }
   const linked = new Set();
   for (const link of graph.links) {
@@ -270,62 +325,89 @@ export function mentionPairs(graph) {
   return pairs;
 }
 
+// Все связи между двумя персонажами, независимо от направления.
+// Используется и графом (чтобы развести параллельные рёбра по дугам), и UI.
+export function linksBetween(graph, a, b) {
+  return (graph.links || []).filter((link) => (
+    (link.source === a && link.target === b) || (link.source === b && link.target === a)
+  ));
+}
+
 export function graphStats(graph) {
   const groups = Object.fromEntries(GROUPS.map((group) => [group.id, 0]));
   for (const node of graph.nodes) groups[node.group] = (groups[node.group] || 0) + 1;
   return {
     nodes: graph.nodes.length,
+    centers: graph.nodes.filter((node) => node.group === CENTER_GROUP).length,
     links: graph.links.length,
     dead: graph.nodes.filter((node) => node.dead).length,
     groups,
   };
 }
 
-// Небольшая демонстрационная карта: показывает категории, направленные
-// связи, «недоступного» персонажа и упоминание [[…]] в заметке.
+// Демонстрационная карта без личных имён: роли, явные фракции с нодами-центрами,
+// направленные и встречные связи, отношение к организации и к человеку в ней.
 export function sampleGraph() {
+  const center = (id, label, x, y, notes) => ({
+    id, label, group: CENTER_GROUP, faction: label, tags: ['организация'], dead: false,
+    x, y, fixed: false, notes,
+  });
   const graph = {
     v: 1,
     nodes: [
+      center('org_chr', 'ЧР', -360, 60, 'Подпольная организация, которая есть везде, главное знать, где искать.'),
+      center('org_gra', 'ГРА', 250, 120, 'ФБР.'),
+      center('org_atsu', 'Ацуши', -140, 310, 'Корпорация что славится своими гейтбрейкерами.'),
+      center('org_ix', 'Икс-Экшен', 330, -140, 'Военная корпорация.'),
+      center('org_hounds', 'Гончие', 110, -350, 'Байкеры и Отморозки.'),
+      center('org_hills', 'Хиллз', 320, -300, 'Шлюхи.'),
       {
-        id: 'me', label: 'Аки', group: 'self', tags: ['игрок'], dead: false, x: 0, y: 0, fixed: true,
-        notes: 'Мой персонаж. Работает на [[Клиенты]] и старается не злить [[Синдикат «Омега»]].',
+        id: 'me', label: 'Мой персонаж', group: 'self', faction: '', tags: [], dead: false, x: 0, y: 0, fixed: false,
+        notes: 'Работает на [[Заказчик]] и старается не злить [[ЧР]].',
       },
       {
-        id: 'clients', label: 'Клиенты', group: 'client', tags: ['категория'], dead: false, x: 300, y: -150, fixed: false,
-        notes: 'Люди, которые платят за работу. Среди них есть и корпорации.',
+        id: 'partner', label: 'Напарник', group: 'ally', faction: 'ГРА', tags: [], dead: false, x: 170, y: 160,
+        notes: 'Надёжный напарник. Ищет след [[Потерянный]].',
       },
       {
-        id: 'enemies', label: 'Противники', group: 'enemy', tags: ['категория'], dead: false, x: -300, y: -130, fixed: false,
-        notes: 'Те, кто хочет проблем. Список пополняется.',
+        id: 'client', label: 'Заказчик', group: 'client', faction: 'Икс-Экшен', tags: [], dead: false, x: 400, y: -80,
+        notes: 'Платит за работу. Связан с [[ГРА]].',
       },
       {
-        id: 'mira', label: 'Мира', group: 'ally', tags: ['напарница'], dead: false, x: 160, y: 180, fixed: false,
-        notes: 'Надёжная напарница. Сестра [[Рэй]]. Ищет след [[Кай]].',
+        id: 'medic', label: 'Медик', group: 'acquaintance', faction: 'ЧР', tags: [], dead: false, x: -270, y: 130,
+        notes: 'Лечит без лишних вопросов. Должен [[Наставник]].',
       },
       {
-        id: 'ray', label: 'Рэй', group: 'friend', tags: ['детство'], dead: false, x: -100, y: 260, fixed: false,
-        notes: 'Друг детства, теперь работает в доках.',
+        id: 'contact', label: 'Связной', group: 'colleague', faction: 'ЧР', tags: [], dead: false, x: -410, y: -30,
+        notes: 'Передаёт сообщения внутри фракции.',
       },
       {
-        id: 'vail', label: 'Доктор Вейл', group: 'acquaintance', tags: ['медик'], dead: false, x: -320, y: 190, fixed: false,
-        notes: 'Врач, который не задаёт лишних вопросов. Должен [[Синдикат «Омега»]].',
+        id: 'dealer', label: 'Сбытчик', group: 'other', faction: 'ЧР', tags: [], dead: false, x: -440, y: 130,
+        notes: 'Работает на организацию, а не на конкретного человека.',
       },
       {
-        id: 'omega', label: 'Синдикат «Омега»', group: 'org', tags: ['корпорация'], dead: false, x: -430, y: 80, fixed: false,
-        notes: 'Крупная организация с длинными руками.',
+        id: 'mentor', label: 'Наставник', group: 'friend', faction: 'Ацуши', tags: [], dead: false, x: -50, y: 350,
+        notes: 'Учит обращаться с техникой.',
       },
       {
-        id: 'kai', label: 'Кай', group: 'enemy', tags: [], dead: true, x: -170, y: -300, fixed: false,
-        notes: 'Погиб на задании. Официально — несчастный случай.',
+        id: 'guard', label: 'Охрана', group: 'acquaintance', faction: 'Хиллз', tags: [], dead: false, x: 240, y: -230,
+        notes: 'Следит за порядком на своей территории.',
       },
       {
-        id: 'info', label: 'Информатор', group: 'colleague', tags: ['связной'], dead: false, x: 170, y: -330, fixed: false,
-        notes: 'Продаёт слухи. Иногда полезные.',
+        id: 'informant', label: 'Информатор', group: 'colleague', faction: 'Хиллз', tags: [], dead: false, x: 380, y: -320,
+        notes: 'Продаёт слухи, в том числе конкурентам.',
       },
       {
-        id: 'hanna', label: 'Ханна', group: 'love', tags: [], dead: false, x: 60, y: 360, fixed: false,
-        notes: 'Встречаются уже полгода. Не знает о работе Аки.',
+        id: 'rival', label: 'Конкурент', group: 'enemy', faction: 'Гончие', tags: [], dead: false, x: 40, y: -300,
+        notes: 'Мешает работе, но не враг по принципу.',
+      },
+      {
+        id: 'fixer', label: 'Посредник', group: 'colleague', faction: 'ГРА', tags: [], dead: false, x: 320, y: 70,
+        notes: 'Сводит людей разных фракций.',
+      },
+      {
+        id: 'lost', label: 'Потерянный', group: 'other', faction: '', tags: [], dead: true, x: -200, y: -300,
+        notes: 'Пропал после задания. Официально — несчастный случай.',
       },
     ],
     links: [],
@@ -334,17 +416,29 @@ export function sampleGraph() {
   const add = (source, target, label, tone, directed = true) => {
     graph.links.push(newLink({ source, target, label, tone, directed }));
   };
-  add('me', 'clients', 'берёт заказы', 'work');
-  add('me', 'enemies', 'конфликт', 'negative');
-  add('me', 'mira', 'напарники', 'positive', false);
-  add('me', 'ray', 'друзья', 'positive', false);
-  add('me', 'vail', 'лечится', 'neutral');
-  add('me', 'info', 'связной', 'work');
-  add('me', 'hanna', 'встречаются', 'positive', false);
-  add('clients', 'mira', 'клиент', 'work');
-  add('enemies', 'omega', 'финансирует', 'negative');
-  add('omega', 'vail', 'долг', 'negative');
-  add('enemies', 'kai', 'нанял', 'negative');
-  add('mira', 'ray', 'сёстры', 'family', false);
+  add('me', 'partner', 'напарники', 'positive', false);
+  // Две стрелки между одной парой: разные отношения не сливаются в одну линию.
+  add('partner', 'me', 'прикрывает', 'positive');
+  add('me', 'client', 'берёт заказы', 'work');
+  add('me', 'medic', 'лечится', 'neutral');
+  add('me', 'org_chr', 'избегает', 'negative');
+  add('me', 'contact', 'связной', 'work');
+  add('me', 'mentor', 'учит', 'positive');
+  // Связи с центром показывают принадлежность к фракции.
+  add('medic', 'org_chr', 'работает на', 'work');
+  add('contact', 'org_chr', 'передаёт', 'work');
+  add('dealer', 'org_chr', 'подчинён', 'work');
+  add('partner', 'org_gra', 'нанимает', 'work');
+  add('fixer', 'org_gra', 'связан с', 'work');
+  add('client', 'org_ix', 'работает на', 'work');
+  add('guard', 'org_hills', 'подчинён', 'work');
+  add('informant', 'org_hills', 'подчинён', 'work');
+  add('rival', 'org_hounds', 'нанят', 'work');
+  add('mentor', 'org_atsu', 'сотрудничает', 'work');
+  add('org_gra', 'org_hills', 'соперничество', 'negative');
+  add('org_atsu', 'org_ix', 'контракт', 'work');
+  add('partner', 'rival', 'конфликт', 'negative');
+  add('rival', 'lost', 'нанял', 'negative');
+  add('fixer', 'guard', 'переговоры', 'neutral');
   return normalizeGraph(graph);
 }

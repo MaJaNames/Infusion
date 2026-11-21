@@ -353,6 +353,29 @@ code {
 .grid-rect { opacity: .8; }
 .grid-dot { fill: var(--dot); }
 
+.cluster { pointer-events: none; }
+.cluster.dim { opacity: .25; }
+.cluster-hull {
+  fill: var(--zc, var(--c));
+  fill-opacity: .07;
+  stroke: var(--zc, var(--c));
+  stroke-opacity: .5;
+  stroke-width: 1.8;
+  stroke-dasharray: 7 6;
+}
+.cluster.named .cluster-hull { fill-opacity: .1; stroke-opacity: .65; }
+.cluster-label {
+  fill: var(--zc, var(--c));
+  font-size: 12px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--graph-bg);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+  user-select: none;
+}
+
 .node { cursor: grab; }
 .node:active { cursor: grabbing; }
 .node-dot {
@@ -386,19 +409,20 @@ code {
 .node.dead .node-label { fill: var(--mute); }
 .node-strike { stroke: var(--bad); stroke-width: 2.6; stroke-linecap: round; pointer-events: none; opacity: .95; }
 
-.link-line { fill: none; stroke: var(--tc, var(--c)); stroke-width: 1.7; transition: stroke-width .12s; }
-.link-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
-.link:hover .link-line { stroke-width: 2.6; }
-.link.sel .link-line { stroke-width: 3; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--tc, var(--c)) 55%, transparent)); }
+.link-line { fill: none; stroke: var(--tc, var(--c)); stroke-width: 2.6; transition: stroke-width .12s; }
+.link-hit { fill: none; stroke: transparent; stroke-width: 18; pointer-events: stroke; cursor: pointer; }
+.link:hover .link-line { stroke-width: 3.6; }
+.link.sel .link-line { stroke-width: 4.4; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tc, var(--c)) 70%, transparent)); }
 .link.dim { opacity: .14; }
 .link.hidden { display: none; }
 .link-label {
   display: none;
   fill: var(--tc, var(--c));
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 600;
   paint-order: stroke;
   stroke: var(--graph-bg);
-  stroke-width: 3px;
+  stroke-width: 4px;
   stroke-linejoin: round;
   pointer-events: none;
   user-select: none;
@@ -417,6 +441,7 @@ code {
 .t-work { --tc: var(--r); }
 .t-family { --tc: var(--l); }
 .t-other { --tc: var(--e); }
+.marker { stroke: var(--node-stroke); stroke-width: 1.3; stroke-linejoin: round; }
 .marker-positive { fill: var(--u); }
 .marker-neutral { fill: var(--c); }
 .marker-negative { fill: var(--k); }
@@ -445,6 +470,33 @@ code {
   flex: 0 0 auto;
 }
 .group-dot.lg { width: 14px; height: 14px; margin-top: .3rem; }
+.faction-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--zc, var(--mute));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--zc, var(--mute)) 20%, transparent);
+  flex: 0 0 auto;
+}
+.faction-new { display: flex; align-items: center; gap: .4rem; }
+.faction-new[hidden] { display: none; }
+.faction-new input {
+  flex: 1;
+  min-width: 0;
+  padding: .44rem .55rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: .9rem;
+}
+.faction-new input:focus {
+  outline: none;
+  border-color: var(--acc);
+  background: var(--panel);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 17%, transparent);
+}
 .tone-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tc, var(--c)); flex: 0 0 auto; }
 .tone-dot.lg { width: 13px; height: 13px; margin-top: .3rem; }
 
