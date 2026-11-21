@@ -535,7 +535,7 @@ function renderOverview() {
       <input type="checkbox" id="toggle-edge-labels" ${ui.edgeLabels ? 'checked' : ''}>
       <span>Подписи всех связей</span>
     </label>
-    <p class="hint hint-tight">Раскладка работает как в Obsidian: пружины по связям и короткое отталкивание. Блибы фракций — только оформление, на позиции они не влияют. Перетаскивание замораживает раскладку: двигается только взятая нода.</p>
+    <p class="hint hint-tight">«Раскладка» — как в Obsidian: пружины по связям, дистанция между нодами и мнимый центр, вокруг которого все вращаются, а не сходятся в точку. Блибы разных фракций при раскладке не пересекаются, но иначе на физику не влияют. Остальные действия ноды не двигают; перетаскивание тоже замораживает раскладку.</p>
     <details class="help-box">
       <summary>Как пользоваться</summary>
       <ul>
@@ -992,7 +992,6 @@ function addNode() {
   graphData.nodes.push(node);
   markDirty();
   graph.refresh();
-  graph.reheat(0.5);
   selectNode(node.id);
   requestAnimationFrame(() => {
     const input = $('#n-label');
@@ -1010,7 +1009,6 @@ function createLink(sourceId, targetId) {
   cancelLinkMode();
   markDirty();
   graph.refresh();
-  graph.reheat(0.4);
   selectLink(link.id);
   if (already) toast(`Между этой парой уже ${already + 1} связи — задайте каждой свою подпись`);
   requestAnimationFrame(() => $('#l-label')?.focus());
@@ -1035,7 +1033,6 @@ async function deleteNode(id) {
   persistNow();
   graph.refresh();
   graph.setSelection(selected.kind, selected.id);
-  graph.reheat(0.25);
   renderSidebar();
   updateEmptyState();
   toast('Удалено с карты');
@@ -1072,7 +1069,7 @@ function applyGraph(next, { fit = false } = {}) {
   const hasAllCoords = graphData.nodes.length > 0
     && graphData.nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y));
 
-  graph.setData(graphData, { layout: true });
+  graph.setData(graphData, { layout: false });
   graph.setHidden(ui.hidden);
   graph.setQuery(ui.query);
   graph.setMentions(ui.mentions);
@@ -1143,7 +1140,7 @@ function init() {
   const hasAllCoords = graphData.nodes.length > 0
     && graphData.nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y));
 
-  graph.setData(graphData, { layout: true });
+  graph.setData(graphData, { layout: false });
   graph.setHidden(ui.hidden);
   graph.setQuery(ui.query);
   graph.setMentions(ui.mentions);

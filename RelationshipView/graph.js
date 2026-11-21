@@ -142,7 +142,7 @@ export class GraphView {
     this.alpha = 0;
     this.alphaTarget = 0;
     this.alphaMin = 0.001;
-    this.alphaDecay = 0.045;
+    this.alphaDecay = 0.03;
     this.raf = null;
     this.lastEmit = 0;
     this.pointers = new Map();
@@ -211,12 +211,17 @@ export class GraphView {
 
   /* ---------- данные ---------- */
 
-  setData(data, { layout = true } = {}) {
+  setData(data, { layout = false } = {}) {
     this.data = data;
     const assigned = this.buildSim();
     this.refresh();
     if (layout && assigned) this.startSim(1);
-    else this.renderPositions();
+    else {
+      // Позиции, которые раскладка назначила новым нодам без координат,
+      // сразу фиксируем в данных — без этого они «прыгали» при перезагрузке.
+      if (assigned) this.emitPositions();
+      this.renderPositions();
+    }
   }
 
   buildSim() {
@@ -719,14 +724,12 @@ export class GraphView {
 
   startSim(alpha = 1) {
     if (!this.data.nodes.length) return;
+    // На всякий случай сбрасываем старый кадр: иначе ensureRaf может
+    // решить, что анимация уже идёт, и не запустить её.
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
     this.alpha = Math.max(this.alpha, alpha);
     this.alphaTarget = 0;
-    this.ensureRaf();
-  }
-
-  reheat(alpha = 0.6) {
-    if (!this.data.nodes.length) return;
-    this.alpha = Math.max(this.alpha, alpha);
     this.ensureRaf();
   }
 
@@ -764,7 +767,7 @@ export class GraphView {
     }
   };
 
-  // Раскладка как в Obsidian: только связи плюс короткое отталкивание.
+  // Раскладка как в Obsidian: связи, личное расстояние и мнимый центр.
   // Фракции и блибы чисто визуальные и на физику не влияют.
   step() {
     const alpha = this.alpha;
@@ -775,6 +778,18 @@ export class GraphView {
     }
     const count = nodes.length;
     if (!count) return;
+
+    // Мнимый центр — просто средняя точка нод, а не нода на карте. Ноды
+    // обитают вокруг него по орбите, а не стягиваются в саму точку.
+    let centerX = 0;
+    let centerY = 0;
+    for (const sim of nodes) {
+      centerX += sim.x;
+      centerY += sim.y;
+    }
+    centerX /= count;
+    centerY /= count;
+    const orbit = Math.max(180, (count * 120) / (2 * Math.PI));
 
     // Отталкивание 1/d² заметно только рядом и не раздувает карту.
     const charge = 900;
@@ -791,7 +806,9 @@ export class GraphView {
           distance2 = dx * dx + dy * dy;
         }
         const distance = Math.sqrt(distance2);
-        const force = (charge * alpha) / distance2;
+        // Ограничиваем знаменатель: совпадающие ноды иначе дают бесконечную
+        // силу и разлетаются (или залипают в нуле).
+        const force = (charge * alpha) / Math.max(distance2, 100);
         const fx = (dx / distance) * force;
         const fy = (dy / distance) * force;
         if (!a.fixed) {
@@ -804,9 +821,9 @@ export class GraphView {
         }
         // Личное пространство есть у всех нод, даже одиночек без связей —
         // иначе центр тяжести собрал бы их в одну точку.
-        const minDistance = Math.max(a.r + b.r + 14, 90);
+        const minDistance = Math.max(a.r + b.r + 14, 120);
         if (distance < minDistance) {
-          const push = ((minDistance - distance) / distance) * 0.12 * alpha;
+          const push = ((minDistance - distance) / distance) * 0.22 * alpha;
           if (!a.fixed) {
             a.vx -= dx * push;
             a.vy -= dy * push;
@@ -839,16 +856,86 @@ export class GraphView {
       }
     }
 
+    // Мягкая орбита вокруг мнимого центра: ближе к нему — выталкиваем,
+    // дальше — возвращаем. Центр не притягивает ноды в точку.
+    const ORBIT_PULL = 0.02;
+    for (const sim of nodes) {
+      if (sim.fixed) continue;
+      const dx = centerX - sim.x;
+      const dy = centerY - sim.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 0.001) continue;
+      const force = clamp((distance - orbit) * ORBIT_PULL, -12, 12) * alpha;
+      sim.vx += (dx / distance) * force;
+      sim.vy += (dy / distance) * force;
+    }
+
+    // Блибы разных фракций не должны пересекаться: это не притяжение, а
+    // только расталкивание целых групп по их воображаемым оболочкам.
+    const byFaction = new Map();
+    for (const node of this.data.nodes) {
+      const faction = normFaction(node.faction);
+      if (!faction) continue;
+      const sim = this.sim.get(node.id);
+      if (!sim || !Number.isFinite(sim.x)) continue;
+      if (!byFaction.has(faction)) byFaction.set(faction, []);
+      byFaction.get(faction).push(sim);
+    }
+    const blobs = [];
+    for (const sims of byFaction.values()) {
+      let cx = 0;
+      let cy = 0;
+      for (const sim of sims) {
+        cx += sim.x;
+        cy += sim.y;
+      }
+      cx /= sims.length;
+      cy /= sims.length;
+      let radius = 0;
+      for (const sim of sims) {
+        radius = Math.max(radius, Math.hypot(sim.x - cx, sim.y - cy) + sim.r + 34);
+      }
+      blobs.push({ cx, cy, radius, sims });
+    }
+    const BLOB_GAP = 30;
+    for (let i = 0; i < blobs.length; i += 1) {
+      for (let j = i + 1; j < blobs.length; j += 1) {
+        const a = blobs[i];
+        const b = blobs[j];
+        let dx = b.cx - a.cx;
+        let dy = b.cy - a.cy;
+        let distance = Math.hypot(dx, dy);
+        if (distance < 0.001) {
+          dx = 1;
+          dy = 0;
+          distance = 1;
+        }
+        const need = a.radius + b.radius + BLOB_GAP;
+        if (distance >= need) continue;
+        const push = (need - distance) * 0.06 * alpha;
+        const ux = dx / distance;
+        const uy = dy / distance;
+        for (const sim of a.sims) {
+          if (sim.fixed) continue;
+          sim.vx -= ux * push;
+          sim.vy -= uy * push;
+        }
+        for (const sim of b.sims) {
+          if (sim.fixed) continue;
+          sim.vx += ux * push;
+          sim.vy += uy * push;
+        }
+      }
+    }
+
     for (const node of nodes) {
       if (node.fixed) {
         node.vx = 0;
         node.vy = 0;
         continue;
       }
-      node.vx -= node.x * 0.008 * alpha;
-      node.vy -= node.y * 0.008 * alpha;
-      node.vx *= 0.42;
-      node.vy *= 0.42;
+      node.vx = clamp(node.vx * 0.42, -40, 40);
+      node.vy = clamp(node.vy * 0.42, -40, 40);
       node.x += node.vx;
       node.y += node.vy;
       if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) {
@@ -1028,7 +1115,6 @@ export class GraphView {
     node.x = round(sim.x);
     node.y = round(sim.y);
     this.nodeEls.get(id)?.classList.toggle('pinned', next);
-    if (!next) this.reheat(0.28);
     this.emitPositions();
     this.cbs.onPinChange?.(id, next);
     return next;
