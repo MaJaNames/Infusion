@@ -1007,22 +1007,21 @@ try {
     && databases.render(invCtx).includes('data-inv-mode'));
   invRoot.onclick({ target: { closest: (s) => (s === '[data-inv-mode]' ? {} : null) } });
   check('режим добавления: кнопка показывает счётчики', databases.render(invCtx).includes('data-inv="0x0001"'));
-  invRoot.onclick({
-    target: { closest: (s) => (s === '.row summary' ? {} : s === '.row' ? { dataset: { row: 'items:0x0002' } } : null) },
-    preventDefault() {}, stopPropagation() {},
-  });
-  check('режим добавления: клик по строке добавляет 1 шт.', invCtx.char.pockets.some((e) => e.id === '0x0002' && e.qty === 1) && saves === 1);
+  invRoot.onchange({ target: { dataset: { invQty: '0x0002', name: 'Тест 2' }, value: '7' } });
+  check('режим добавления: поле количества задаёт число', invCtx.char.pockets.some((e) => e.id === '0x0002' && e.qty === 7) && saves === 1);
+  invRoot.onchange({ target: { dataset: { invQty: '0x0002', name: 'Тест 2' }, value: '0' } });
+  check('режим добавления: ноль удаляет запись', !invCtx.char.pockets.some((e) => e.id === '0x0002') && saves === 2);
   const clickInv = (delta) => invRoot.onclick({
     target: { closest: (s) => (s === '[data-inv]' ? { dataset: { inv: '0x0001', name: 'Тест', delta } } : null) },
     preventDefault() {}, stopPropagation() {},
   });
   const pocket = () => invCtx.char.pockets.find((e) => e.id === '0x0001')?.qty || 0;
   clickInv('1'); clickInv('1');
-  check('инвентарь: кнопка добавляет по 1 шт. и сохраняет', pocket() === 2 && saves === 3);
-  check('инвентарь: кнопка видна в строке с количеством', databases.render(invCtx).includes('data-inv="0x0001"')
-    && databases.render(invCtx).includes('class="inv-qty">2<'));
+  check('инвентарь: кнопка добавляет по 1 шт. и сохраняет', pocket() === 2 && saves === 4);
+  check('инвентарь: поле количества видно в строке', databases.render(invCtx).includes('data-inv="0x0001"')
+    && databases.render(invCtx).includes('data-inv-qty="0x0001"') && databases.render(invCtx).includes('value="2"'));
   clickInv('-1');
-  check('инвентарь: кнопка уменьшает количество', pocket() === 1 && saves === 4);
+  check('инвентарь: кнопка уменьшает количество', pocket() === 1 && saves === 5);
   clickInv('-1'); clickInv('-1');
   check('инвентарь: на нуле запись удаляется и не уходит в минус', pocket() === 0
     && !invCtx.char.pockets.some((e) => e.id === '0x0001'));

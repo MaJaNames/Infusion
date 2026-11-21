@@ -41,7 +41,7 @@ const RULE_GROUP_RANK = new Map(RULE_GROUPS.map((g, i) => [g, i]));
 const RULE_SUB_RANK = new Map([['Ранги', 0], ['Сущности', 1], ['Способности', 2], ['Мутации', 3], ['Черты', 4]]);
 
 const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v && v.length).map(([k, v]) => `<dt>${k}</dt><dd>${esc(Array.isArray(v) ? v.join(', ') : v)}</dd>`).join('')}</dl>`;
-const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}${o.permalink ? ' is-permalink' : ''}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' data-deep-open="1" open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div><span class="row-side">${o.badge || ''}${o.fav ? `<button type="button" class="row-fav${isFavorite(o.fav.kind, o.fav.id) ? ' on' : ''}" data-fav="${esc(favoriteKey(o.fav.kind, o.fav.id))}" title="В избранное" aria-label="В избранное">★</button>` : ''}${o.inv ? `<span class="row-inv" title="Инвентарь персонажа"><button type="button" class="inv-btn" data-inv="${esc(o.inv.id)}" data-name="${esc(o.inv.name)}" data-delta="-1"${o.inv.qty ? '' : ' disabled'} title="Убрать 1 шт." aria-label="Убрать 1 шт. из инвентаря">−</button><span class="inv-qty">${num(o.inv.qty)}</span><button type="button" class="inv-btn" data-inv="${esc(o.inv.id)}" data-name="${esc(o.inv.name)}" data-delta="1" title="Добавить 1 шт." aria-label="Добавить 1 шт. в инвентарь">+</button></span>` : ''}<span class="price">${price}</span>${o.share ? `<button type="button" class="row-share" data-share="${esc(o.share)}" title="${esc(o.shareTitle || 'Скопировать ссылку')}" aria-label="${esc(o.shareTitle || 'Скопировать ссылку')}">🔗</button>` : ''}</span></summary><div class="body">${body}</div></details>`;
+const row = (cls, title, meta, price, body, o = {}) => `<details class="row ${cls}${o.permalink ? ' is-permalink' : ''}"${o.openKey ? ` data-row="${esc(o.openKey)}"` : ''}${o.open ? ' data-deep-open="1" open' : ''}><summary><div>${o.ord ? `<span class="row-no" title="Порядковый номер в data.json">#${num(o.ord)}</span>` : ''}${title}<div class="meta">${meta}${o.id ? ` <span class="row-id" title="ID в БД">ID ${esc(o.id)}</span>` : ''}</div></div><span class="row-side">${o.badge || ''}${o.fav ? `<button type="button" class="row-fav${isFavorite(o.fav.kind, o.fav.id) ? ' on' : ''}" data-fav="${esc(favoriteKey(o.fav.kind, o.fav.id))}" title="В избранное" aria-label="В избранное">★</button>` : ''}${o.inv ? `<span class="row-inv" title="Инвентарь персонажа"><button type="button" class="inv-btn" data-inv="${esc(o.inv.id)}" data-name="${esc(o.inv.name)}" data-delta="-1"${o.inv.qty ? '' : ' disabled'} title="Убрать 1 шт." aria-label="Убрать 1 шт. из инвентаря">−</button><input class="inv-qty" type="number" min="0" max="9999" step="1" inputmode="numeric" data-inv-qty="${esc(o.inv.id)}" data-name="${esc(o.inv.name)}" value="${o.inv.qty}" aria-label="Количество в инвентаре"><button type="button" class="inv-btn" data-inv="${esc(o.inv.id)}" data-name="${esc(o.inv.name)}" data-delta="1" title="Добавить 1 шт." aria-label="Добавить 1 шт. в инвентарь">+</button></span>` : ''}<span class="price">${price}</span>${o.share ? `<button type="button" class="row-share" data-share="${esc(o.share)}" title="${esc(o.shareTitle || 'Скопировать ссылку')}" aria-label="${esc(o.shareTitle || 'Скопировать ссылку')}">🔗</button>` : ''}</span></summary><div class="body">${body}</div></details>`;
 const qtyLine = (qty) => (qty ? `<small>Кол-во: ${num(qty)}</small>` : '');
 const credits = (n) => money(n, 'credits');
 const tali = (n) => money(n, 'tali');
@@ -436,6 +436,10 @@ export function bind(root, ctx) {
     S.q = e.target.value; resetShown(S.tab); res(); syncRoute();
   };
   root.onchange = (e) => {
+    if (e.target.dataset?.invQty !== undefined) {
+      setQty(e.target.dataset.invQty, e.target.dataset.name, e.target.value);
+      return;
+    }
     if (e.target.dataset.showIds !== undefined) {
       S.showIds = !!e.target.checked;
       res(); syncRoute();
@@ -472,14 +476,13 @@ export function bind(root, ctx) {
     }
     if (e.target.dataset.tabSelect !== undefined) setTab(e.target.value);
   };
-  // Общий обработчик: кнопки −/+ и клик по строке, когда включён режим добавления.
-  const changeQty = (id, name, delta) => {
+  // Абсолютная установка количества: Enter/blur в поле, 0 удаляет запись из кармана.
+  const setQty = (id, name, value) => {
     const c = ctx.char;
-    if (!c || !delta) return;
+    if (!c || !id) return;
     if (!Array.isArray(c.pockets)) c.pockets = [];
+    const next = Math.max(0, Math.min(9999, Math.floor(Number(value) || 0)));
     const i = c.pockets.findIndex((x) => x.id === id);
-    const was = i >= 0 ? Number(c.pockets[i].qty) || 0 : 0;
-    const next = Math.max(0, was + delta);
     if (i >= 0) {
       if (next === 0) c.pockets.splice(i, 1);
       else c.pockets[i].qty = next;
@@ -487,6 +490,12 @@ export function bind(root, ctx) {
     ctx.save?.();
     res();
     showToast(`Инвентарь: ${name || id} — ${num(next)} шт.`);
+  };
+  const changeQty = (id, name, delta) => {
+    if (!delta) return;
+    const i = (ctx.char?.pockets || []).findIndex((x) => x.id === id);
+    const was = i >= 0 ? Number(ctx.char.pockets[i].qty) || 0 : 0;
+    setQty(id, name, was + delta);
   };
 
   root.onclick = (e) => {
@@ -545,20 +554,8 @@ export function bind(root, ctx) {
       dir.setAttribute('aria-label', `Направление сортировки: ${next > 0 ? 'по возрастанию' : 'по убыванию'}`);
       res(); syncRoute(); return;
     }
-    if (S.invMode && e.target.closest('.row summary')) {
-      const rowEl = e.target.closest('.row');
-      const key = String(rowEl?.dataset.row || '');
-      const id = /^(items|parts):/.test(key) ? key.slice(key.indexOf(':') + 1) : '';
-      if (id) {
-        e.preventDefault();
-        e.stopPropagation();
-        const item = S.tab === 'parts'
-          ? partsOf(ctx.data).find((p) => p.item.id === id)?.item
-          : ctx.data.items.find((x) => x.id === id);
-        changeQty(id, item?.name || id, 1);
-        return;
-      }
-    }
+    // Клик по полю количества не должен раскрывать описание строки.
+    if (e.target.closest('[data-inv-qty]')) e.preventDefault();
     if (e.target.closest('[data-more]')) loadMore();
   };
   observeMore();
