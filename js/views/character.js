@@ -571,9 +571,9 @@ export function inventoryText(c, d) {
     if (out.length) lines.push('', title, ...out);
   };
   group('ХРАНИЛИЩЕ', (c.pockets || []).map((e) => e.id), d.itemMap);
-  group('ЭКИПИРОВКА', c.equipment, d.itemMap);
-  group('ИМПЛАНТЫ', c.implants, d.itemMap);
-  group('РЕПОЗИТОРИЙ', (c.repository || []).map((e) => e.id), d.cardMap);
+  //group('ЭКИПИРОВКА', c.equipment, d.itemMap);
+  //group('ИМПЛАНТЫ', c.implants, d.itemMap);
+  //group('РЕПОЗИТОРИЙ', (c.repository || []).map((e) => e.id), d.cardMap);
   return lines.length > 1 ? lines.join('\n') : `${lines[0]}\n\nПусто.`;
 }
 
