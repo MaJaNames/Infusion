@@ -41,7 +41,10 @@ const COST_OD = /(трат|потрат|потрач|стоит|за\s+очк|в
 const BONUS_RE = /(доп(?:олнительн\w*)?|бесплатн\w*|бонус|получа\w*|прибав\w*|\+)/i;
 const DISTANCE_RE = /(радиус|пределах|дистанц|расстояни|на линии|вокруг|диаметр|до\s+\d|на\s+\d|в\s+\d|за\s+кажд\w*\s+пройденн)/i;
 const CONDITION_RE = /(если|при(?:\s|$)|только|находясь|пока |до тех пор|в бою|ближн|дальн|против|цел(?:ь|и|ям|ью|ей)|союзник|враг|за кажд|радиус|пределах|дистанц|расстояни|на линии|в темноте|без оружи|с оружи|зависит|провал|успешн|использовани|применени|после |перед |в течение|в течении|в момент|выше своей цели|ниже вас|в стелсе|ярост|состояни|форма|до конца|каждый ход|каждое|каждую|каждого|раз в (?:бой|раунд|ход))/i;
-const SOURCE_CONDITION_RE = /(бонус[^.;|]{0,40}только|только в (?:ближнем|дальнем) бою)/i;
+const SOURCE_CONDITION_RE = /(бонус[^.;|]{0,40}только|только в (?:ближнем|дальнем) бою|работает только)/i;
+// Явная пометка «активный» отличается от косвенных признаков (КД, раз в бой),
+// которые у пассивного бонуса с условием не делают его активным.
+const EXPLICIT_ACTIVE_RE = /(?:эффект[а-яё]*\s*:\s*активн|(?<![А-Яа-яЁё])активн(?:ый|ая|ое|ые|ого|ому|ым|ой|ую|ых)(?![А-Яа-яЁё])|активир|мгновенн)/i;
 
 // Звёздочки умножения не трогаем: они встречаются в формулах («n*2»).
 // Разметку вида **жирный** вычислитель формул просто игнорирует.
@@ -194,9 +197,8 @@ function activityOf(text) {
     .replace(/вне\s+активного\s+боя/gi, ' ')
     .replace(/не\s+активн\w*/gi, ' ');
   if (/пассивн/i.test(t)) return false;
-  if (/эффект[а-яё]*\s*:\s*активн/i.test(t)) return true;
-  if (/(?<![А-Яа-яЁё])активн(?:ый|ая|ое|ые|ого|ому|ым|ой|ую|ых)(?![А-Яа-яЁё])/i.test(t)) return true;
-  if (/(?:(?<![А-Яа-яЁё])кд\s*[-:]?\s*\d|раз в (?:бой|раунд|ход)|до конца боя|активир|мгновенн)/i.test(t)) return true;
+  if (EXPLICIT_ACTIVE_RE.test(t)) return true;
+  if (/(?:(?<![А-Яа-яЁё])кд\s*[-:]?\s*\d|раз в (?:бой|раунд|ход)|до конца боя)/i.test(t)) return true;
   return null;
 }
 
@@ -289,7 +291,9 @@ export function parseStatEffects(raw, opts = {}) {
     for (const clause of splitClauses(section.text)) {
       const masked = maskCostOd(clause);
       if (!masked.trim()) continue;
-      const conditional = sourceConditional || clauseHasCondition(clause);
+      const conditional = sourceConditional || clauseHasCondition(masked);
+      // Условие не делает бонус активным: пассивный бонус с «если…» остаётся пассивным.
+      const clauseActive = conditional && !EXPLICIT_ACTIVE_RE.test(masked) ? false : active;
       for (const effect of pairEffects(masked, n)) {
         if (ignoreEffect(effect, clause)) continue;
         out.push({
@@ -300,7 +304,7 @@ export function parseStatEffects(raw, opts = {}) {
           text: clause,
           section: section.kind,
           conditional,
-          active,
+          active: clauseActive,
         });
       }
     }
@@ -357,55 +361,53 @@ function normalizeToggles(t) {
 }
 
 function addEffects(result, source, effects, toggles) {
+  if (!effects.length) return;
+  // Условие — свойство всего источника: один тоггл действует на все его бонусы.
+  const hasConditional = effects.some((e) => e.conditional);
+  const condKey = `cond:${source.key}`;
+  const condOn = toggles.effects[condKey] === true;
+  const sourceOn = toggles.sources[source.key] === true;
   const prepared = effects.map((e, i) => {
-    const effectKey = `${source.key}:${i}`;
-    const conditional = !!e.conditional;
     const active = !!e.active;
-    const sourceOn = toggles.sources[source.key] === true;
-    const effectOn = toggles.effects[effectKey] === true;
-    // Условный эффект проверяется одной галочкой условия: требовать ещё и
-    // «Активацию» источника — двойной тоггл для одного и того же бонуса.
-    const enabled = conditional ? effectOn : (!active || sourceOn);
     return {
       ...e,
-      key: effectKey,
-      conditional,
+      key: `${source.key}:${i}`,
+      conditional: hasConditional,
       active,
       sourceOn,
-      toggled: effectOn,
-      enabled,
+      condOn,
+      condKey,
+      enabled: (!active || sourceOn) && (!hasConditional || condOn),
     };
   });
-  if (!prepared.length) return;
   const hasActive = prepared.some((e) => e.active);
-  const sourceCard = { ...source, effects: prepared, hasActive, sourceOn: toggles.sources[source.key] === true };
+  const condText = effects.filter((e) => e.conditional).map((e) => e.text).filter(Boolean).slice(0, 3).join(' ');
+  const sourceCard = { ...source, effects: prepared, hasActive, hasConditional, condOn, condKey, condText, sourceOn };
   result.sources.push(sourceCard);
   for (const e of prepared) {
-    if (e.enabled) {
-      result.totals[e.stat] = num(result.totals[e.stat]) + e.value;
-      result.byStat[e.stat].push({
-        name: sourceCard.label,
-        value: e.value,
-        conditional: e.conditional,
-        active: e.active,
-        sourceKey: source.key,
-        effectKey: e.key,
-      });
-    }
-    if (e.conditional) {
-      result.conditional.push({
-        sourceKey: source.key,
-        sourceName: sourceCard.label,
-        effectKey: e.key,
-        stat: e.stat,
-        value: e.value,
-        text: e.text,
-        active: e.active,
-        sourceOn: e.sourceOn,
-        toggled: e.toggled,
-        enabled: e.enabled,
-      });
-    }
+    if (!e.enabled) continue;
+    result.totals[e.stat] = num(result.totals[e.stat]) + e.value;
+    result.byStat[e.stat].push({
+      name: sourceCard.label,
+      value: e.value,
+      conditional: hasConditional,
+      active: e.active,
+      sourceKey: source.key,
+      effectKey: e.key,
+    });
+  }
+  if (hasConditional) {
+    result.conditional.push({
+      sourceKey: source.key,
+      sourceName: sourceCard.label,
+      effectKey: condKey,
+      condKey,
+      text: condText,
+      effects: prepared.map((e) => ({ stat: e.stat, value: e.value, active: e.active, enabled: e.enabled })),
+      toggled: condOn,
+      enabled: condOn,
+      sourceOn,
+    });
   }
 }
 

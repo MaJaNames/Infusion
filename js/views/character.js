@@ -574,10 +574,11 @@ function statsEffectChip(e) {
   return `<span class="chip stat-effect${e.enabled ? ' on' : ''}${e.conditional ? ' cond' : ''}">${esc(statSigned(e.value))} ${esc(CHAR_STAT_LABELS[e.stat] || e.stat)}${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>`;
 }
 
-const statsConditionalRow = (e) => `<label class="cond-row${e.toggled ? ' on' : ''}${e.enabled ? ' counted' : ''}" title="Отметить условие">
-    <input type="checkbox" data-stats-effect="${esc(e.effectKey || e.key)}"${e.toggled ? ' checked' : ''}>
-    <span class="cond-val">${esc(statSigned(e.value))} ${esc(CHAR_STAT_LABELS[e.stat] || e.stat)}</span>
-    <span class="cond-text meta">${esc(e.text || '')}${e.active ? ' · нужен активный источник' : ''}</span>
+// Условие действует на все бонусы источника — одна строка, один тоггл.
+const statsConditionalRow = (src) => `<label class="cond-row${src.condOn ? ' on' : ''}${src.condOn ? ' counted' : ''}" title="Условие действует на все бонусы источника">
+    <input type="checkbox" data-stats-effect="${esc(src.condKey)}"${src.condOn ? ' checked' : ''}>
+    <span class="cond-val">Условие · ${num(src.effects.filter((e) => e.conditional).length)} бон.</span>
+    <span class="cond-text meta">${esc(src.condText || '')}</span>
   </label>`;
 
 // Одна галочка на все условия: в игре условие обычно общее для всех бонусов.
@@ -586,13 +587,9 @@ function statsCondAllToggle(rows) {
   return `<label class="chip stats-cond-toggle${on ? ' on' : ''}" title="Отметить все условные бонусы сразу; лишние можно снять отдельно"><input type="checkbox" data-stats-cond-all${on === rows.length ? ' checked' : ''}> Условия: ${num(on)} / ${num(rows.length)}</label>`;
 }
 
-const statsCondToggle = (src) => {
-  const conds = src.effects.filter((e) => e.conditional);
-  if (!conds.length) return '';
-  const on = conds.filter((e) => e.toggled).length;
-  const all = on === conds.length;
-  return `<label class="mod-flag cond${all ? ' on' : ''}" title="Условие источника: включает все его условные бонусы"><input type="checkbox" data-stats-cond-group="${esc(src.key)}"${all ? ' checked' : ''}> Условие${conds.length > 1 ? ` ${num(on)}/${num(conds.length)}` : ''}</label>`;
-};
+const statsCondToggle = (src) => (src.hasConditional
+  ? `<label class="mod-flag cond${src.condOn ? ' on' : ''}" title="Условие источника: действует на все его бонусы"><input type="checkbox" data-stats-cond-group="${esc(src.key)}"${src.condOn ? ' checked' : ''}> Условие</label>`
+  : '');
 
 function statsPanel(c, d) {
   const s = collectCharacterStats(c, d);
@@ -610,8 +607,7 @@ function statsPanel(c, d) {
   </div>` : '';
 
   const sourceCards = s.sources.map((src) => {
-    const conds = src.effects.filter((e) => e.conditional);
-    return `<details class="part-card stats-source${src.hasActive && !src.sourceOn ? ' off' : ''}" data-stats-row="${esc(src.key)}"${OPEN_STATS.has(src.key) ? ' open' : ''}>
+    return `<details class="part-card stats-source${(src.hasActive && !src.sourceOn) || (src.hasConditional && !src.condOn) ? ' off' : ''}" data-stats-row="${esc(src.key)}"${OPEN_STATS.has(src.key) ? ' open' : ''}>
       <summary>
         <div class="part-main">
           <div class="part-slot">${esc(STAT_SOURCE_TYPE_LABEL[src.type] || src.type)}</div>
@@ -622,7 +618,7 @@ function statsPanel(c, d) {
       </summary>
       <div class="part-desc">
         <p class="desc">${esc(src.description || 'Описание не заполнено.')}</p>
-        ${conds.length ? `<div class="cond-list"><h4>Условие источника</h4>${conds.map(statsConditionalRow).join('')}</div>` : ''}
+        ${src.hasConditional ? `<div class="cond-list"><h4>Условие источника</h4>${statsConditionalRow(src)}</div>` : ''}
       </div>
     </details>`;
   }).join('');
@@ -637,7 +633,7 @@ function statsPanel(c, d) {
     ${srcBlock}
   </section>
   <section class="panel"><h2>Источники</h2>
-    <p class="meta">Пассивные бонусы учитываются сразу. Активные источники включаются галочкой. Условие («если…», «только в ближнем бою») — общая галочка источника; раскройте карточку, чтобы снять отдельные бонусы.</p>
+    <p class="meta">Пассивные бонусы учитываются сразу. Активные эффекты включаются галочкой «Активация». Условие («если…», «только в ближнем бою») — одна галочка на весь источник и действует на все его бонусы; пассивный бонус с условием остаётся пассивным.</p>
     ${sourceCards ? `<div class="part-list">${sourceCards}</div>` : '<p class="empty">Нет источников с бонусами. Наденьте экипировку или импланты.</p>'}
   </section>`;
 }

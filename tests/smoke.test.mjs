@@ -843,7 +843,8 @@ check('статы: профиль строится по выбранному о�
 check('статы: второе оружие не суммируется', charStats.ignoredWeapons.length === 1
   && charStats.totals.atk === 53 && charStats.totals.tchn === 15);
 check('статы: условные бонусы по умолчанию выключены', charStats.totals.atk === 53
-  && charStats.conditional.some((x) => x.sourceName.includes('Суставный') && x.value === 15 && !x.enabled));
+  && charStats.conditional.some((x) => x.sourceName.includes('Суставный')
+    && x.effects.some((e) => e.value === 15) && !x.enabled));
 const condEffectKey = charStats.conditional.find((x) => x.sourceName.includes('Суставный'))?.effectKey;
 const condSourceKey = charStats.conditional.find((x) => x.sourceName.includes('Суставный'))?.sourceKey;
 const activeSourceKey = charStats.sources.find((x) => String(x.label).includes('Адреналиновые ячейки'))?.key;
@@ -902,16 +903,23 @@ const neuroChar = { ...blankChar(), implants: ['0x0127'] };
 const neuroStats = collectCharacterStats(neuroChar, d);
 check('статы: нейробустер не создаёт лишнее условие', neuroStats.conditional.length === 0
   && neuroStats.totals.kc === 1);
-const ballistic = 'eq:0x01e6:0:0';
+const ballisticCond = 'cond:eq:0x01e6:0';
 const ballisticOff = collectCharacterStats({ ...blankChar(), equipment: ['0x01e6'] }, d);
 const ballisticOneToggle = collectCharacterStats({
-  ...blankChar(), equipment: ['0x01e6'], statsToggles: { sources: {}, effects: { [ballistic]: true } },
+  ...blankChar(), equipment: ['0x01e6'], statsToggles: { sources: {}, effects: { [ballisticCond]: true } },
 }, d);
-check('статы: баллистическая система — одна галочка условия', ballisticOff.totals.atk === 0
-  && ballisticOneToggle.totals.atk === 20);
-const linkStats = collectCharacterStats({ ...blankChar(), implants: ['0x0120'] }, d);
-check('статы: смарт линк даёт 3 пассивных бонуса без условий', linkStats.conditional.length === 0
-  && linkStats.totals.atk === 20 && linkStats.totals.tchn === 50 && linkStats.totals.ksh === 20);
+const ballisticSourceOnly = collectCharacterStats({
+  ...blankChar(), equipment: ['0x01e6'], statsToggles: { sources: { 'eq:0x01e6:0': true }, effects: {} },
+}, d);
+check('статы: баллистическая система — пассивная, одна галочка условия', ballisticOff.totals.atk === 0
+  && ballisticSourceOnly.totals.atk === 0 && ballisticOneToggle.totals.atk === 20);
+const linkOff = collectCharacterStats({ ...blankChar(), implants: ['0x0120'] }, d);
+const linkOn = collectCharacterStats({
+  ...blankChar(), implants: ['0x0120'], statsToggles: { sources: {}, effects: { 'cond:imp:0x0120:0': true } },
+}, d);
+check('статы: смарт линк — 3 бонуса под одним условием', linkOff.conditional.length === 1
+  && linkOff.conditional[0].effectKey === 'cond:imp:0x0120:0' && linkOff.totals.atk === 0
+  && linkOn.totals.atk === 20 && linkOn.totals.tchn === 50 && linkOn.totals.ksh === 20);
 character.setRoute('pockets');
 check('статы: возврат на карточку', character.currentRoute() === 'pockets');
 let pageRoute = '';
