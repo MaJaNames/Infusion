@@ -429,11 +429,19 @@ body.drawer-open{overflow:hidden}
 .save-state.dirty{border-color:var(--l);color:var(--l)}
 
 /* Ссылка на запись в базе. */
-.row-side{display:flex;align-items:center;gap:.55rem;flex:0 0 auto}
+.row-side{display:grid;grid-auto-flow:column;grid-auto-columns:max-content;align-items:center;gap:.5rem;flex:0 0 auto}
 .row-share{padding:.1rem .35rem;border:0;background:none;color:var(--mute);font-size:1rem;line-height:1}
 .row-share:hover{color:var(--acc)}
 .row-fav{padding:.1rem .3rem;border:0;background:none;color:var(--line);font-size:1rem;line-height:1}
 .row-fav:hover,.row-fav.on{color:var(--l)}
+/* Фиксированные ячейки правой стороны: цена, счётчик и кнопки не «гуляют» между строками. */
+.row-side>.row-fav,.row-side>.row-share{width:1.6rem;text-align:center}
+.row-side>.price{width:7rem;font-variant-numeric:tabular-nums}
+.row-inv{display:inline-flex;align-items:center;justify-content:space-between;gap:.1rem;width:4.6rem;border:1px solid var(--line);border-radius:99px;padding:0 .25rem;background:var(--bg);font-variant-numeric:tabular-nums}
+.inv-btn{width:1.2rem;padding:0;border:0;background:none;color:var(--acc);font-size:1rem;line-height:1.2;cursor:pointer}
+.inv-btn:hover{color:var(--l)}
+.inv-btn:disabled{opacity:.3;cursor:default}
+.inv-qty{min-width:1.2rem;text-align:center;font-size:.8rem;color:var(--mute)}
 
 /* Запись, открытая по прямой ссылке: акцент, чтобы её было видно в ленте. */
 details.row.is-permalink{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 7%,var(--panel));box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 28%,transparent),0 10px 26px color-mix(in srgb,var(--acc) 14%,transparent)}
@@ -459,7 +467,7 @@ details.row.is-permalink>summary b{color:var(--acc)}
 @media print{
   @page{margin:12mm}
   body{background:#fff;color:#000}
-  header,#help,.toasts,.tabs,.subtabs,.page-tabs,.toolbar,.db-toolbar,.filters-backdrop,.db-filters,.char-code,.btns,.x,.row-share{display:none!important}
+  header,#help,.toasts,.tabs,.subtabs,.page-tabs,.toolbar,.db-toolbar,.filters-backdrop,.db-filters,.char-code,.btns,.x,.row-share,.row-inv{display:none!important}
   main{max-width:none;padding:0}
   body.print-char #app>*:not(.print-sheet){display:none!important}
   body.print-char .print-sheet{display:block!important;color:#000}
