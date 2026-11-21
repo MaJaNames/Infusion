@@ -402,9 +402,15 @@ function clientPanel(ctx, shared) {
       <div class="broker-actions">${shared ? '<button type="button" data-broker-exit-share>Вернуться к своему</button>' : '<button type="button" data-broker-buyer>Вернуться к витрине продавца</button>'}</div>
     </div>
     ${offer.note ? `<p class="broker-note-text">${esc(offer.note)}</p>` : ''}
-    <div class="broker-modes" role="tablist" aria-label="Режим клиента">
-      <button type="button" role="tab" data-broker-tab="showcase" class="${tab === 'showcase' ? 'on' : ''}" aria-selected="${tab === 'showcase'}">Витрина · ${num(showcaseRows(offer, ctx.data.itemMap).length)}</button>
-      <button type="button" role="tab" data-broker-tab="order" class="${tab === 'order' ? 'on' : ''}" aria-selected="${tab === 'order'}">Заказ из базы</button>
+    ${tab === 'showcase' ? `<div class="broker-order-hint">
+      <span><b>Нет нужного предмета в ассортименте?</b> Закажите любой не-культовый предмет из базы по скидкам продавца.</span>
+      <button type="button" data-broker-tab="order">Заказать из базы →</button>
+    </div>` : ''}
+    <div class="broker-modes broker-client-modes" role="tablist" aria-label="Режим клиента">
+      <button type="button" role="tab" data-broker-tab="showcase" class="broker-mode-showcase${tab === 'showcase' ? ' on' : ''}" aria-selected="${tab === 'showcase'}">Витрина · ${num(showcaseRows(offer, ctx.data.itemMap).length)}</button>
+      <button type="button" role="tab" data-broker-tab="order" class="broker-mode-order${tab === 'order' ? ' on' : ''}" aria-selected="${tab === 'order'}">
+        <b>🛒 Заказ из базы</b><small>Любой предмет · скидка ${num(discountFor(offer, '', 'order'))}%</small>
+      </button>
     </div>
     ${listPanel(ctx, tab, tab === 'showcase' ? 'Ассортимент продавца' : 'Заказ из базы', hint)}
     <div class="chips broker-summary" data-broker-buy-summary>${clientSummaryChips(ctx)}</div>

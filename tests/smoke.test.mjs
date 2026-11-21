@@ -393,9 +393,10 @@ const clientCode = encodeOffer(brokerStore.offer);
 utilities.setRoute(`broker/offer/${encodeURIComponent(clientCode)}`);
 check('посредник: ссылка ведёт в режим клиента', utilities.currentRoute().startsWith('broker/offer/'));
 const clientHtml = utilities.render(ctx);
-check('посредник: у клиента витрина и заказ из базы', clientHtml.includes('data-broker-tab="showcase"')
+check('посредник: у клиента витрина и заметная кнопка заказа из базы', clientHtml.includes('data-broker-tab="showcase"')
   && clientHtml.includes('data-broker-tab="order"') && clientHtml.includes('Витрина')
-  && clientHtml.includes('Заказ из базы') && clientHtml.includes('data-broker-check'));
+  && clientHtml.includes('broker-mode-order') && clientHtml.includes('broker-order-hint')
+  && clientHtml.includes('Заказать из базы') && clientHtml.includes('data-broker-check'));
 check('посредник: витрина показывает только ассортимент', clientHtml.includes(brokerFood.name)
   && !clientHtml.includes(`data-broker-check="${cultItem.id}"`));
 clickBroker('[data-broker-tab]', { brokerTab: 'order' });

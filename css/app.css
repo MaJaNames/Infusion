@@ -219,6 +219,15 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .broker-sellers button.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
 .broker-save{font-size:.78rem;color:var(--mute);white-space:nowrap;align-self:center}
 .broker-check{width:13px;height:13px;min-height:0;flex:0 0 auto}
+.broker-client-modes{align-items:stretch;gap:.6rem;margin:.6rem 0 .8rem}
+.broker-client-modes .broker-mode-showcase{padding:.55rem .9rem}
+.broker-client-modes .broker-mode-order{display:grid;gap:.1rem;text-align:left;padding:.5rem .9rem;border-color:var(--acc);color:var(--accfg);background:var(--acc);font-weight:600}
+.broker-client-modes .broker-mode-order b{font-size:1rem}
+.broker-client-modes .broker-mode-order small{font-size:.75rem;color:var(--accfg);opacity:.85;font-weight:400}
+.broker-client-modes .broker-mode-order:hover{filter:brightness(1.08)}
+.broker-client-modes .broker-mode-order.on{box-shadow:0 0 0 2px var(--acc),0 0 0 4px var(--bg)}
+.broker-order-hint{display:flex;gap:.7rem;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:.6rem 0 .2rem;padding:.55rem .7rem;border:1px solid var(--acc);border-radius:8px;background:var(--bg);font-size:.88rem}
+.broker-order-hint button{flex:0 0 auto;background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
 .broker-picker-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin:.2rem 0 .5rem}
 .broker-picker-bar input[type=search]{flex:1 1 18rem;max-width:30rem}
 .broker-picker-bar select{min-width:10rem}
