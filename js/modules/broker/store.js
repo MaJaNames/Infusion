@@ -5,10 +5,12 @@ import { canonId } from '../../core/ids.js';
 
 export const BROKER_KEY = 'infusion.broker';
 export const BROKER_ORDER_KEY = 'infusion.broker.order';
+export const BROKER_SELLERS_KEY = 'infusion.broker.sellers';
 export const SHARE_PREFIX = 'BRK2.';
 export const ORDER_PREFIX = 'ORD2.';
 export const MAX_QTY = 9999;
 export const MAX_PRICE = 1000000000;
+export const SELLER_DEFAULT = 'Продавец';
 
 export const clampPct = (v) => Math.min(100, Math.max(0, Math.round(Number(v) || 0)));
 export const clampQty = (v) => Math.min(MAX_QTY, Math.max(0, Math.floor(Number(v) || 0)));
@@ -28,12 +30,12 @@ export const isCultItem = (it) => !!it && (it.rarity === 'Культовый' ||
 
 export const blankPricing = () => ({ general: 0, byCategory: {} });
 export const blankOffer = () => ({
-  title: '', note: '',
+  seller: '', title: '', note: '',
   pricing: { showcase: blankPricing(), order: blankPricing() },
   showcase: [],
 });
 export const blankPicks = () => ({ showcase: {}, order: {} });
-const blankBroker = () => ({ v: 2, offer: blankOffer(), client: false, tab: 'showcase', picks: blankPicks(), note: '' });
+const blankBroker = () => ({ v: 2, offer: blankOffer(), client: false, tab: 'showcase', picks: blankPicks(), note: '', savedAt: 0 });
 
 // Ассортимент: по ID одна позиция; цена null означает «считать по скидке».
 const normShowcase = (rows) => {
@@ -67,6 +69,7 @@ export const normOffer = (raw) => {
   const legacy = { general: o.general, byCategory: o.byCategory };
   const p = o.pricing && typeof o.pricing === 'object' ? o.pricing : null;
   return {
+    seller: String(o.seller ?? o.w ?? '').slice(0, 80),
     title: String(o.title ?? '').slice(0, 80),
     note: String(o.note ?? '').slice(0, 1000),
     pricing: {
@@ -101,6 +104,7 @@ export const normBroker = (raw) => {
     tab: raw.tab === 'order' ? 'order' : 'showcase',
     picks: normPicks(raw.picks),
     note: String(raw.note ?? '').slice(0, 1000),
+    savedAt: Number(raw.savedAt) || 0,
   };
 };
 
@@ -108,7 +112,49 @@ const read = (key) => { try { return JSON.parse(localStorage.getItem(key)); } ca
 
 export const B = normBroker(read(BROKER_KEY));
 export const saveBroker = (state = B) => {
+  state.savedAt = Date.now();
   try { localStorage.setItem(BROKER_KEY, JSON.stringify(state)); } catch { /* память браузера недоступна */ }
+};
+
+// Клиентская книжка продавцов: имя персонажа — ключ, новая ссылка перезаписывает его запись.
+export const sellerNameOf = (offer) => String(offer?.seller || offer?.title || '').trim().slice(0, 80) || SELLER_DEFAULT;
+
+export const normSellerEntry = (raw) => {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const name = String(src.name || '').trim().slice(0, 80) || SELLER_DEFAULT;
+  return {
+    name,
+    code: String(src.code || ''),
+    offer: normOffer({ ...(src.offer && typeof src.offer === 'object' ? src.offer : {}), seller: name }),
+    picks: normPicks(src.picks),
+    note: String(src.note ?? '').slice(0, 1000),
+    tab: src.tab === 'order' ? 'order' : 'showcase',
+    at: Number(src.at) || 0,
+  };
+};
+
+export const readSellers = () => {
+  const raw = read(BROKER_SELLERS_KEY);
+  const out = {};
+  if (raw && typeof raw === 'object') {
+    for (const [name, entry] of Object.entries(raw)) {
+      const norm = normSellerEntry({ ...(entry && typeof entry === 'object' ? entry : {}), name });
+      out[norm.name] = norm;
+    }
+  }
+  return out;
+};
+
+export const saveSellers = (map) => {
+  try { localStorage.setItem(BROKER_SELLERS_KEY, JSON.stringify(map)); } catch { /* память браузера недоступна */ }
+};
+
+export const upsertSeller = (entry) => {
+  const norm = normSellerEntry(entry);
+  const map = readSellers();
+  map[norm.name] = norm;
+  saveSellers(map);
+  return map;
 };
 
 // Скидка вида в нужном режиме: 'showcase' (ассортимент) или 'order' (заказ).
@@ -209,6 +255,7 @@ const packPricing = (group) => ({
 export function encodeOffer(offer) {
   const payload = {
     v: 2,
+    w: offer?.seller || '',
     t: offer?.title || '',
     n: offer?.note || '',
     p: { s: packPricing(offer?.pricing?.showcase), o: packPricing(offer?.pricing?.order) },
@@ -228,7 +275,7 @@ export function decodeOffer(code) {
   try { data = JSON.parse(fromBase64Url(raw)); } catch { throw new Error('ссылка повреждена'); }
   if (!data || data.v !== 2 || !Array.isArray(data.s)) throw new Error('это не ссылка посредника');
   const decoded = {
-    title: data.t, note: data.n,
+    seller: data.w, title: data.t, note: data.n,
     general: data.g,
     byCategory: Object.fromEntries(Array.isArray(data.c) ? data.c : []),
     showcase: (data.s || []).map(([id, qty, price]) => ({ id, qty, price })),

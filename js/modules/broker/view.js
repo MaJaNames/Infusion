@@ -1,22 +1,30 @@
-// Посредник v2: продавец собирает ассортимент из инвентаря и назначает скидки,
-// клиент по одной ссылке либо берёт вещи из витрины, либо заказывает из базы.
+// Посредник: ассортимент из инвентаря, две независимые скидки, витрина и заказ из базы.
+// Списки работают как вкладка «База данных»: поиск, фильтры, сортировка,
+// описания и постраничный вывод вместо бесконечной ленты.
 import { esc, num, money, label, copyText, RC } from '../../core/util.js';
 import { canonId } from '../../core/ids.js';
-import { fuzzyFilter } from '../../core/fuzzy.js';
+import { permalinkPath } from '../../core/links.js';
+import { isFavorite, toggleFavorite, favoriteKey } from '../../core/favorites.js';
 import { showToast } from '../../core/toast.js';
 import {
-  B, blankOffer, blankPicks, blankPricing, saveBroker, isCultItem, categoryLabel, categoryRank,
+  B, blankOffer, blankPicks, blankPricing, saveBroker, sellerNameOf,
+  readSellers, upsertSeller, isCultItem, categoryLabel, categoryRank,
   clampPct, clampQty, clampPrice, MAX_QTY, MAX_PRICE, discountFor, autoPrice, showcaseRows,
   catalogRows, totals, encodeOffer, decodeOffer, encodeOrder, decodeOrder,
   readIncomingOrder, saveIncomingOrder,
 } from './store.js';
+import { blankListState, collectRows, pageRows, pager, toolbarMarkup, normFilter } from './list.js';
 
-// Входящая ссылка живёт отдельно от черновика продавца.
+// Входящая ссылка и книжка продавцов хранятся отдельно от черновика продавца.
 let incoming = null;
 let incomingPicks = blankPicks();
 let incomingNote = '';
 let incomingTab = 'showcase';
-const UI = { sellerQ: '', sellerCat: '', sellerShown: 40, buyQ: '', buyCat: '', buyShown: 40 };
+let sellers = readSellers();
+const L = {
+  seller: blankListState(), assort: blankListState(),
+  showcase: blankListState(), order: blankListState(),
+};
 
 const activeOffer = () => (incoming ? incoming.offer : B.offer);
 const activePicks = () => (incoming ? incomingPicks : B.picks);
@@ -40,17 +48,25 @@ export function setRoute(sub) {
   const raw = String(sub || '');
   const match = raw.match(/^offer(?:[/=])(.+)$/);
   if (!match) { incoming = null; return; }
+  let rest = match[1];
+  const cut = rest.indexOf('?');
+  if (cut >= 0) rest = rest.slice(0, cut);
   let code;
-  try { code = decodeURIComponent(match[1]); } catch { code = match[1]; }
+  try { code = decodeURIComponent(rest); } catch { code = rest; }
   if (incoming?.code === code) return;
   try {
     const offer = decodeOffer(code);
-    incoming = { code, offer };
+    const name = sellerNameOf(offer);
+    const prev = sellers[name];
     const saved = readIncomingOrder(code);
-    incomingPicks = saved ? saved.picks : blankPicks();
-    incomingNote = saved ? saved.note : '';
+    incomingPicks = saved ? saved.picks : (prev && prev.code === code ? prev.picks : blankPicks());
+    incomingNote = saved ? saved.note : (prev && prev.code === code ? prev.note : '');
+    incoming = { code, offer };
     incomingTab = 'showcase';
-    UI.buyQ = ''; UI.buyCat = ''; UI.buyShown = 40;
+    // Новая ссылка от того же продавца перезаписывает его запись в книжке клиента.
+    sellers = upsertSeller({ name, code, offer, picks: incomingPicks, note: incomingNote, tab: incomingTab, at: Date.now() });
+    L.showcase.page = 1;
+    L.order.page = 1;
   } catch (err) {
     incoming = null;
     showToast(`Не удалось открыть ссылку: ${err.message}`);
@@ -61,9 +77,25 @@ export function currentRoute() {
   return incoming ? `broker/offer/${encodeURIComponent(incoming.code)}` : 'broker';
 }
 
+const savedLabel = () => (B.savedAt
+  ? `Сохранено автоматически · ${new Date(B.savedAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}`
+  : 'Сохранено автоматически');
+
+function autosave(ctx, root = null) {
+  saveBroker();
+  ctx.markSaved?.();
+  const el = root?.querySelector?.('[data-broker-save]');
+  if (el) el.textContent = savedLabel();
+}
+
 function commit(ctx, rerender = true) {
-  if (incoming) saveIncomingOrder(incoming.code, incomingPicks, incomingNote);
-  else saveBroker();
+  if (incoming) {
+    saveIncomingOrder(incoming.code, incomingPicks, incomingNote);
+    sellers = upsertSeller({
+      name: sellerNameOf(incoming.offer), code: incoming.code, offer: incoming.offer,
+      picks: incomingPicks, note: incomingNote, tab: incomingTab, at: Date.now(),
+    });
+  } else autosave(ctx);
   ctx.markSaved?.();
   if (rerender) ctx.rerender();
 }
@@ -81,7 +113,7 @@ function offerText(ctx) {
   const offer = activeOffer();
   const rows = showcaseRows(offer, ctx.data.itemMap);
   const sum = totals(rows, (row) => row.limit);
-  const lines = [`АССОРТИМЕНТ · ${offer.title || 'Посредник'}`, offer.note || ''];
+  const lines = [`АССОРТИМЕНТ · ${offer.seller || SELLER_FALLBACK}${offer.title ? ` · ${offer.title}` : ''}`, offer.note || ''];
   lines.push(`Скидка для всех: витрина ${num(discountFor(offer, '', 'showcase'))}% · заказ ${num(discountFor(offer, '', 'order'))}%`);
   const cats = categoriesOf(rows);
   if (cats.length) lines.push(`Скидки по видам: ${cats.map((c) => `${categoryLabel(c)} — витрина ${num(discountFor(offer, c, 'showcase'))}%, заказ ${num(discountFor(offer, c, 'order'))}%`).join(', ')}`);
@@ -99,16 +131,14 @@ const selectedRows = (ctx) => [
   ...catalogRows(activeOffer(), nonCult(ctx), activePicks().order).filter((row) => row.qty > 0),
 ];
 
-function orderCode(ctx) {
-  return encodeOrder(activePicks(), activeNote());
-}
+const orderCode = () => encodeOrder(activePicks(), activeNote());
 
 function orderText(ctx) {
   const offer = activeOffer();
   const shop = showcaseRows(offer, ctx.data.itemMap, activePicks().showcase).filter((row) => row.qty > 0);
   const base = catalogRows(offer, nonCult(ctx), activePicks().order).filter((row) => row.qty > 0);
   const sum = totals([...shop, ...base]);
-  const lines = [`ЗАКАЗ · ${offer.title || 'Посредник'}`, activeNote() || ''];
+  const lines = [`ЗАКАЗ · ${offer.seller || SELLER_FALLBACK}${offer.title ? ` · ${offer.title}` : ''}`, activeNote() || ''];
   if (shop.length) {
     lines.push('', 'Из ассортимента:');
     for (const row of shop) lines.push(`- [${row.item.tag || '—'}] ${row.item.name} ×${num(row.qty)} — ${num(row.total)} кр.`);
@@ -117,9 +147,11 @@ function orderText(ctx) {
     lines.push('', 'Из базы:');
     for (const row of base) lines.push(`- [${row.item.tag || '—'}] ${row.item.name} ×${num(row.qty)} — ${num(row.total)} кр. (скидка ${num(row.discount)}%)`);
   }
-  lines.push('', `Итого: ${num(sum.total)} кр.${sum.saved ? ` · скидка ${num(sum.saved)} кр.` : ''}`, '', orderCode(ctx));
+  lines.push('', `Итого: ${num(sum.total)} кр.${sum.saved ? ` · скидка ${num(sum.saved)} кр.` : ''}`, '', orderCode());
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
+
+const SELLER_FALLBACK = 'Продавец';
 
 // ── Общая разметка ─────────────────────────────────────────────────────────
 
@@ -140,12 +172,128 @@ function discountChips(offer, rows) {
   if (!cats.length) return general;
   return general + cats.map((c) => {
     const shop = discountFor(offer, c, 'showcase');
-    const order = discountFor(offer, c, 'order');
-    return `<span class="chip${shop || order ? ' total' : ''}">${esc(categoryLabel(c))}: витрина ${num(shop)}% · заказ ${num(order)}%</span>`;
+    const ord = discountFor(offer, c, 'order');
+    return `<span class="chip${shop || ord ? ' total' : ''}">${esc(categoryLabel(c))}: витрина ${num(shop)}% · заказ ${num(ord)}%</span>`;
   }).join('');
 }
 
-// ── Продавец ───────────────────────────────────────────────────────────────
+// ── Списки ─────────────────────────────────────────────────────────────────
+
+function listSource(ctx, id) {
+  if (id === 'seller') {
+    const stock = stockMap(ctx);
+    const out = [];
+    for (const [itemId, have] of stock) {
+      const item = ctx.data.itemMap.get(itemId);
+      if (!item || isCultItem(item)) continue;
+      out.push({
+        id: itemId, item, category: item.category, base: Number(item.cost) || 0, have,
+        price: autoPrice(item, B.offer, 'showcase'), discount: discountFor(B.offer, item.category, 'showcase'),
+      });
+    }
+    return out;
+  }
+  if (id === 'assort') return showcaseRows(B.offer, ctx.data.itemMap);
+  if (id === 'showcase') return showcaseRows(activeOffer(), ctx.data.itemMap, activePicks().showcase);
+  return catalogRows(activeOffer(), nonCult(ctx), activePicks().order);
+}
+
+const favButton = (row) => `<button type="button" class="row-fav${isFavorite('items', row.id) ? ' on' : ''}" data-fav="${esc(favoriteKey('items', row.id))}" title="В избранное" aria-label="В избранное">★</button>`;
+const shareButton = (row) => `<button type="button" class="row-share" data-share="${esc(permalinkPath('items', row.id))}" title="Ссылка на запись" aria-label="Ссылка на запись">🔗</button>`;
+
+function nameBlock(row, st, extra = '') {
+  const it = row.item;
+  return `<span class="tag">${esc(it.tag || '—')}</span><b>${esc(it.name)}</b>
+    <div class="meta">${esc(it.rarity)} · ${esc(categoryLabel(row.category))}${it.iconic && it.rarity !== 'Культовый' ? ' · культовый' : ''}${it.organization && it.organization !== 'Общедоступно' ? ` · ${esc(it.organization)}` : ''}${extra}${st.showIds ? ` <span class="row-id" title="ID в БД">ID ${esc(row.id)}</span>` : ''}</div>`;
+}
+
+const priceBlock = (row) => `${unitHtml(row)}${row.qty > 1 ? `<small>${num(row.qty)} × ${money(row.price)} = ${money(row.total)}</small>` : ''}`;
+
+function drawSellerPick(ctx, row) {
+  const st = L.seller;
+  const entry = B.offer.showcase.find((e) => e.id === row.id);
+  return `<details class="row ${RC[row.item.rarity] || 'c'}" data-row="seller:${esc(row.id)}">
+    <summary><div>${nameBlock(row, st)}</div><span class="row-side">
+      ${favButton(row)}${shareButton(row)}
+      <span class="price">${money(row.price)}<small class="sell">в наличии ${num(row.have)}</small></span>
+      <button type="button" class="broker-add${entry ? ' on' : ''}" data-broker-add="${esc(row.id)}">${entry ? `✓ ×${num(entry.qty)}` : '+'}</button>
+    </span></summary>
+    <div class="body"><p class="desc">${esc(row.item.description || 'Описание не заполнено.')}</p></div>
+  </details>`;
+}
+
+function drawAssort(ctx, row) {
+  const st = L.assort;
+  const have = stockMap(ctx).get(row.id) || 0;
+  const max = Math.max(row.limit, have, 1);
+  return `<details class="row ${RC[row.item.rarity] || 'c'}" data-row="assort:${esc(row.id)}">
+    <summary><div>${nameBlock(row, st, row.custom ? ' · своя цена' : ` · скидка ${num(row.discount)}%`)}</div><span class="row-side">
+      ${favButton(row)}${shareButton(row)}
+      <span class="broker-qty row-inv">
+        <button type="button" class="inv-btn" data-broker-show-delta="-1" data-id="${esc(row.id)}"${row.limit <= 1 ? ' disabled' : ''} aria-label="Уменьшить количество">−</button>
+        <input class="inv-qty" type="number" min="1" max="${max}" step="1" inputmode="numeric" data-broker-show-qty="${esc(row.id)}" value="${row.limit}" aria-label="Количество на витрине">
+        <button type="button" class="inv-btn" data-broker-show-delta="1" data-id="${esc(row.id)}"${row.limit >= max ? ' disabled' : ''} aria-label="Увеличить количество">+</button>
+      </span>
+      <span class="price" data-broker-price-view="${esc(row.id)}">${unitHtml(row)}</span>
+      <button type="button" class="x" data-broker-remove="${esc(row.id)}" title="Убрать из ассортимента" aria-label="Убрать из ассортимента">✕</button>
+    </span></summary>
+    <div class="body">
+      <span class="broker-price-edit">Своя цена, кр. <input type="number" min="0" max="${MAX_PRICE}" step="1" inputmode="numeric" data-broker-price="${esc(row.id)}" value="${row.custom ? row.price : ''}" placeholder="авто" aria-label="Своя цена"></span>
+      <p class="desc">${esc(row.item.description || 'Описание не заполнено.')}</p>
+    </div>
+  </details>`;
+}
+
+function drawClient(ctx, row, from) {
+  const st = L[from];
+  const max = from === 'showcase' ? row.limit : MAX_QTY;
+  const extra = from === 'showcase' ? ` · доступно ${num(row.limit)}` : ` · скидка ${num(row.discount)}%`;
+  return `<details class="row ${RC[row.item.rarity] || 'c'}" data-row="${from}:${esc(row.id)}">
+    <summary><div>${nameBlock(row, st, extra)}</div><span class="row-side">
+      <input type="checkbox" class="broker-check" data-broker-check="${esc(row.id)}" data-broker-from="${from}"${row.qty > 0 ? ' checked' : ''} aria-label="Выбрать ${esc(row.item.name)}">
+      <span class="broker-qty row-inv">
+        <button type="button" class="inv-btn" data-broker-order-delta="-1" data-id="${esc(row.id)}" data-broker-from="${from}"${row.qty <= 0 ? ' disabled' : ''} aria-label="Убрать 1 шт.">−</button>
+        <input class="inv-qty" type="number" min="0" max="${max}" step="1" inputmode="numeric" data-broker-order-qty="${esc(row.id)}" data-broker-from="${from}" value="${row.qty}" aria-label="Количество">
+        <button type="button" class="inv-btn" data-broker-order-delta="1" data-id="${esc(row.id)}" data-broker-from="${from}" aria-label="Добавить 1 шт.">+</button>
+      </span>
+      <span class="price" data-price-row="${esc(row.id)}">${priceBlock(row)}</span>
+    </span></summary>
+    <div class="body"><p class="desc">${esc(row.item.description || 'Описание не заполнено.')}</p></div>
+  </details>`;
+}
+
+function listDraw(ctx, id) {
+  if (id === 'seller') return (row) => drawSellerPick(ctx, row);
+  if (id === 'assort') return (row) => drawAssort(ctx, row);
+  return (row) => drawClient(ctx, row, id);
+}
+
+function listContent(ctx, id) {
+  const st = L[id];
+  const { rows, total } = collectRows(st, listSource(ctx, id));
+  const pg = pageRows(rows, st);
+  const draw = listDraw(ctx, id);
+  const list = pg.slice.length
+    ? `<div class="list">${pg.slice.map(draw).join('')}</div>`
+    : '<div class="empty">Ничего не найдено. Сбросьте часть фильтров.</div>';
+  return `<p class="meta">Найдено: ${num(total)}</p>${list}${pager(st, total, pg.pages, pg.from, pg.to, id)}`;
+}
+
+function listPanel(ctx, id, title, hint, extra = '') {
+  return `<section class="panel broker-list">
+    <h2>${esc(title)}</h2><p class="meta">${esc(hint)}</p>
+    ${toolbarMarkup(id, L[id], listSource(ctx, id).map((r) => r.item))}
+    ${extra}
+    <div data-list-body="${id}">${listContent(ctx, id)}</div>
+  </section>`;
+}
+
+function refreshList(root, ctx, id) {
+  const body = root.querySelector?.(`[data-list-body="${id}"]`);
+  if (body) body.innerHTML = listContent(ctx, id);
+}
+
+// ── Панели продавца ────────────────────────────────────────────────────────
 
 function sellerHead(ctx) {
   const offer = activeOffer();
@@ -153,13 +301,15 @@ function sellerHead(ctx) {
     <div class="broker-head">
       <div>
         <h2>Посредник</h2>
-        <p class="meta">Соберите ассортимент из своего инвентаря, назначьте скидки по видам или свою цену на отдельный предмет. По одной ссылке клиент сможет взять товар из витрины или заказать любой не-культовый предмет из базы.</p>
+        <p class="meta">Соберите ассортимент из своего инвентаря, назначьте разные скидки для витрины и заказа и поделитесь ссылкой. Всё сохраняется автоматически.</p>
       </div>
       <div class="broker-actions">
+        <span class="broker-save" data-broker-save>${esc(savedLabel())}</span>
         <button type="button" data-broker-buyer>Глазами покупателя</button>
         <button type="button" data-broker-reset>Очистить</button>
       </div>
     </div>
+    <label class="broker-field">Продавец (из карточки персонажа)<input type="text" maxlength="80" data-broker-seller value="${esc(offer.seller)}" placeholder="Имя персонажа"></label>
     <label class="broker-field">Название предложения<input type="text" maxlength="80" data-broker-title value="${esc(offer.title)}" placeholder="Например, «Лавка Линча»"></label>
     <label class="broker-field">Описание<textarea rows="2" maxlength="1000" data-broker-note placeholder="Условия, место, способ связи…">${esc(offer.note)}</textarea></label>
   </section>`;
@@ -168,14 +318,13 @@ function sellerHead(ctx) {
 function discountGrid(ctx) {
   const offer = activeOffer();
   const categories = categoriesOf(nonCult(ctx).map((it) => ({ category: it.category })));
-  // У каждого режима свой процент: витрина и заказ не влияют друг на друга.
   const fields = (category) => [['showcase', 'Витрина'], ['order', 'Заказ']].map(([mode, title]) => {
     const group = offer.pricing[mode];
     const value = category === null ? group.general
       : (Object.prototype.hasOwnProperty.call(group.byCategory, category) ? group.byCategory[category] : group.general);
     const attr = category === null ? 'data-broker-general' : `data-broker-cat="${esc(category)}"`;
-    const label = category === null ? `${title} — для всех` : `${title} — ${categoryLabel(category)}`;
-    return `<input type="number" min="0" max="100" step="1" inputmode="numeric" data-broker-mode="${mode}" ${attr} value="${value}" aria-label="${esc(label)}">`;
+    const aria = category === null ? `${title} — для всех` : `${title} — ${categoryLabel(category)}`;
+    return `<input type="number" min="0" max="100" step="1" inputmode="numeric" data-broker-mode="${mode}" ${attr} value="${value}" aria-label="${esc(aria)}">`;
   }).join('');
   return `<div class="broker-discount-grid">
     <div class="broker-discount-row head"><span>Вид предметов</span><span>Витрина, %</span><span>Заказ, %</span></div>
@@ -192,102 +341,22 @@ function discountGrid(ctx) {
 function discountPanel(ctx) {
   return `<section class="panel broker-discount">
     <h2>Цены и скидки</h2>
-    <p class="meta">Процент задаётся по видам предметов; для вида без своего процента берётся «Для всех». Культовые предметы не участвуют ни в витрине, ни в заказе. Цена за штуку округляется.</p>
+    <p class="meta">У витрины и заказа свои проценты: «Для всех» и по видам предметов. Своя цена на товаре ассортимента заменяет скидку витрины. Культовые предметы не участвуют.</p>
     <div data-broker-discount-grid>${discountGrid(ctx)}</div>
   </section>`;
 }
 
-function pickerRows(ctx) {
-  const stock = stockMap(ctx);
-  const rows = [...stock].map(([id, have]) => ({ item: ctx.data.itemMap.get(id), have }))
-    .filter((row) => row.item && !isCultItem(row.item));
-  const base = UI.sellerCat ? rows.filter((row) => row.item.category === UI.sellerCat) : rows;
-  const found = fuzzyFilter(base, UI.sellerQ, (row) => [
-    { text: label(row.item), weight: 1 },
-    { text: row.item.description || '', weight: 0.7 },
-    { text: row.item.category || '', weight: 0.5 },
-    { text: row.item.organization || '', weight: 0.3 },
-    { text: row.item.tag || '', weight: 0.3 },
-  ]).rows;
-  if (!UI.sellerQ) {
-    found.sort((a, b) => categoryRank(a.item.category) - categoryRank(b.item.category)
-      || label(a.item).localeCompare(label(b.item), 'ru'));
-  }
-  return found;
-}
-
-function pickerResults(ctx) {
-  const rows = pickerRows(ctx);
-  const shown = Math.min(UI.sellerShown, rows.length);
-  const inShow = new Map(activeOffer().showcase.map((entry) => [entry.id, entry]));
-  const list = rows.slice(0, shown).map(({ item, have }) => {
-    const entry = inShow.get(item.id);
-    const price = autoPrice(item, activeOffer());
-    return `<div class="broker-pick ${RC[item.rarity] || 'c'}" data-broker-pick-row="${esc(item.id)}">
-      <span class="grow"><span class="tag">${esc(item.tag || '—')}</span><b>${esc(item.name)}</b>
-        <span class="meta">${esc(item.rarity)} · ${esc(categoryLabel(item.category))} · в наличии ${num(have)}</span></span>
-      <span class="price">${money(price)}</span>
-      <button type="button" class="broker-add${entry ? ' on' : ''}" data-broker-add="${esc(item.id)}" title="${entry ? 'Добавить ещё одну' : 'Выставить в ассортимент'}">${entry ? `✓ ×${num(entry.qty)}` : '+'}</button>
-    </div>`;
-  }).join('');
-  return `<p class="meta">Предметов в инвентаре: ${num(rows.length)}${rows.length > shown ? ` · показано ${num(shown)}` : ''}</p>
-    <div class="broker-pick-list">${list || '<div class="empty">В инвентаре нет подходящих предметов.</div>'}</div>
-    ${rows.length > shown ? `<button type="button" class="more" data-broker-more>Показать ещё ${num(Math.min(40, rows.length - shown))}</button>` : ''}`;
-}
-
-function pickerPanel(ctx) {
-  const stock = stockMap(ctx);
-  const cats = categoriesOf([...stock].map(([id]) => ctx.data.itemMap.get(id)).filter(Boolean).map((it) => ({ category: it.category })));
-  if (UI.sellerCat && !cats.includes(UI.sellerCat)) UI.sellerCat = '';
-  return `<section class="panel broker-picker">
-    <h2>Из инвентаря</h2>
-    <p class="meta">Только предметы из хранилища персонажа. Количество на витрине можно уменьшить; кастомную цену задайте в списке ассортимента.</p>
-    <div class="broker-picker-bar">
-      <input type="search" data-broker-pick-q value="${esc(UI.sellerQ)}" placeholder="Найти в инвентаре…" autocomplete="off">
-      <select data-broker-pick-cat aria-label="Вид предметов"><option value="">Все виды</option>${cats.map((c) => `<option value="${esc(c)}"${UI.sellerCat === c ? ' selected' : ''}>${esc(categoryLabel(c))}</option>`).join('')}</select>
-    </div>
-    <div data-broker-pick-results>${pickerResults(ctx)}</div>
-  </section>`;
-}
-
-function showcaseList(ctx) {
-  const rows = showcaseRows(activeOffer(), ctx.data.itemMap);
-  const stock = stockMap(ctx);
-  if (!rows.length) return '<div class="empty">Ассортимент пуст. Добавьте предметы из инвентаря выше.</div>';
-  return rows.map((row) => {
-    const have = stock.get(row.id) || 0;
-    const max = Math.max(row.limit, have);
-    return `<div class="line broker-line ${RC[row.item.rarity] || 'c'}">
-      <span class="grow"><span class="tag">${esc(row.item.tag || '—')}</span><b>${esc(row.item.name)}</b>
-        <span class="meta">${esc(row.item.rarity)} · ${esc(categoryLabel(row.category))}${row.custom ? ' · своя цена' : ` · скидка ${num(row.discount)}%`}${have ? '' : ' · нет в инвентаре'}</span>
-        <span class="broker-price-edit">Своя цена, кр. <input type="number" min="0" max="${MAX_PRICE}" step="1" inputmode="numeric" data-broker-price="${esc(row.id)}" value="${row.custom ? row.price : ''}" placeholder="авто" aria-label="Своя цена для ${esc(row.item.name)}"></span>
-      </span>
-      <span class="price" data-broker-price-view="${esc(row.id)}">${unitHtml(row)}</span>
-      <span class="broker-qty row-inv">
-        <button type="button" class="inv-btn" data-broker-show-delta="-1" data-id="${esc(row.id)}"${row.limit <= 1 ? ' disabled' : ''} title="Уменьшить количество" aria-label="Уменьшить количество">−</button>
-        <input class="inv-qty" type="number" min="1" max="${max}" step="1" inputmode="numeric" data-broker-show-qty="${esc(row.id)}" value="${row.limit}" aria-label="Количество на витрине">
-        <button type="button" class="inv-btn" data-broker-show-delta="1" data-id="${esc(row.id)}"${row.limit >= max ? ' disabled' : ''} title="Увеличить количество" aria-label="Увеличить количество">+</button>
-      </span>
-      <button type="button" class="x" data-broker-remove="${esc(row.id)}" title="Убрать из ассортимента" aria-label="Убрать из ассортимента">✕</button>
-    </div>`;
-  }).join('');
-}
-
 function showcasePanel(ctx) {
   const rows = showcaseRows(activeOffer(), ctx.data.itemMap);
-  return `<section class="panel broker-selected">
-    <div class="inv-head">
-      <div><h2>Ассортимент</h2><p class="meta">Количество — сколько выставляете на витрину. Пустая «Своя цена» означает цену со скидкой.</p></div>
-      <div class="chips broker-summary" data-broker-show-summary>${summaryChips(totals(rows, (row) => row.limit), rows.length)}</div>
-    </div>
-    <div data-broker-showcase>${showcaseList(ctx)}</div>
-  </section>`;
+  return listPanel(ctx, 'assort', 'Ассортимент',
+    'Количество — сколько выставляете на витрину. Пустая «Своя цена» означает цену со скидкой витрины.',
+    `<div class="chips broker-summary" data-broker-show-summary>${summaryChips(totals(rows, (row) => row.limit), rows.length)}</div>`);
 }
 
 function sharePanel(ctx) {
   return `<section class="panel broker-share">
     <h2>Поделиться</h2>
-    <p class="meta">Одна ссылка открывает клиенту витрину с вашими ценами и заказ из базы по вашим скидкам. Клиент сам отмечает количество и присылает заказ текстом или кодом.</p>
+    <p class="meta">Одна ссылка открывает клиенту витрину с вашими ценами и заказ из базы по скидкам заказа. По имени продавца ссылки от одного персонажа перезаписывают друг друга в книжке клиента.</p>
     <div class="broker-share-row">
       <input type="text" readonly value="${esc(shareUrl(ctx))}" data-broker-share-url aria-label="Ссылка на предложение">
       <button type="button" data-broker-share>Скопировать ссылку</button>
@@ -304,66 +373,31 @@ function sharePanel(ctx) {
 
 // ── Клиент ─────────────────────────────────────────────────────────────────
 
-function buyerLine(row, from) {
-  const max = from === 'showcase' ? row.limit : MAX_QTY;
-  const checked = row.qty > 0;
-  return `<div class="line broker-line broker-buy ${RC[row.item.rarity] || 'c'}">
-    <input type="checkbox" class="broker-check" data-broker-check="${esc(row.id)}" data-broker-from="${from}"${checked ? ' checked' : ''} aria-label="Выбрать ${esc(row.item.name)}">
-    <span class="grow"><span class="tag">${esc(row.item.tag || '—')}</span><b>${esc(row.item.name)}</b>
-      <span class="meta">${esc(row.item.rarity)} · ${esc(categoryLabel(row.category))}${from === 'showcase' ? ` · доступно ${num(row.limit)}` : ` · скидка ${num(row.discount)}%`}${row.custom ? ' · своя цена' : ''}</span>
-    </span>
-    <span class="price">${unitHtml(row)}${row.qty > 1 ? `<small>${num(row.qty)} × ${money(row.price)} = ${money(row.total)}</small>` : ''}</span>
-    <span class="broker-qty row-inv">
-      <button type="button" class="inv-btn" data-broker-order-delta="-1" data-id="${esc(row.id)}" data-broker-from="${from}"${row.qty <= 0 ? ' disabled' : ''} title="Убрать 1 шт." aria-label="Убрать 1 шт.">−</button>
-      <input class="inv-qty" type="number" min="0" max="${max}" step="1" inputmode="numeric" data-broker-order-qty="${esc(row.id)}" data-broker-from="${from}" value="${row.qty}" aria-label="Количество">
-      <button type="button" class="inv-btn" data-broker-order-delta="1" data-id="${esc(row.id)}" data-broker-from="${from}" title="Добавить 1 шт." aria-label="Добавить 1 шт.">+</button>
-    </span>
-  </div>`;
+function sellerTabBar() {
+  const names = Object.keys(sellers).sort((a, b) => a.localeCompare(b, 'ru'));
+  if (names.length < 2) return '';
+  const active = incoming ? sellerNameOf(incoming.offer) : '';
+  return `<div class="broker-sellers" role="tablist" aria-label="Продавцы">${names.map((name) =>
+    `<button type="button" role="tab" data-seller-tab="${esc(name)}" class="${name === active ? 'on' : ''}" aria-selected="${name === active}">${esc(name)}</button>`).join('')}</div>`;
 }
 
-function clientShowcase(ctx) {
-  const rows = showcaseRows(activeOffer(), ctx.data.itemMap, activePicks().showcase);
-  if (!rows.length) return '<div class="empty">В ассортименте пока нет предметов. Воспользуйтесь заказом из базы.</div>';
-  return `<div class="broker-lines">${rows.map((row) => buyerLine(row, 'showcase')).join('')}</div>`;
-}
-
-function clientOrder(ctx) {
-  const rows = catalogRows(activeOffer(), nonCult(ctx), activePicks().order);
-  const base = UI.buyCat ? rows.filter((row) => row.category === UI.buyCat) : rows;
-  const found = fuzzyFilter(base, UI.buyQ, (row) => [
-    { text: label(row.item), weight: 1 },
-    { text: row.item.description || '', weight: 0.7 },
-    { text: row.category || '', weight: 0.5 },
-    { text: row.item.tag || '', weight: 0.3 },
-  ]).rows;
-  if (!UI.buyQ) {
-    found.sort((a, b) => categoryRank(a.category) - categoryRank(b.category)
-      || label(a.item).localeCompare(label(b.item), 'ru'));
-  }
-  const shown = Math.min(UI.buyShown, found.length);
-  return `<div class="broker-picker-bar">
-      <input type="search" data-broker-buy-q value="${esc(UI.buyQ)}" placeholder="Поиск по базе…" autocomplete="off">
-      <select data-broker-buy-cat aria-label="Вид предметов"><option value="">Все виды</option>${categoriesOf(rows).map((c) => `<option value="${esc(c)}"${UI.buyCat === c ? ' selected' : ''}>${esc(categoryLabel(c))}</option>`).join('')}</select>
-    </div>
-    <p class="meta">Доступно ${num(found.length)} предметов${found.length > shown ? ` · показано ${num(shown)}` : ''}</p>
-    <div class="broker-lines">${found.slice(0, shown).map((row) => buyerLine(row, 'order')).join('') || '<div class="empty">Ничего не найдено.</div>'}</div>
-    ${found.length > shown ? `<button type="button" class="more" data-broker-buy-more>Показать ещё ${num(Math.min(40, found.length - shown))}</button>` : ''}`;
-}
-
-function clientSummary(ctx) {
+function clientSummaryChips(ctx) {
   const rows = selectedRows(ctx);
-  return `<div class="chips broker-summary" data-broker-buy-summary>${summaryChips(totals(rows), rows.length, 'Выбрано')}</div>`;
+  return summaryChips(totals(rows), rows.length, 'Выбрано');
 }
 
 function clientPanel(ctx, shared) {
   const offer = activeOffer();
   const tab = activeTab();
   const hasAny = selectedRows(ctx).length > 0;
-  return `<section class="panel broker-buyer">
+  const hint = tab === 'showcase'
+    ? 'Только ассортимент продавца; количество ограничено выставленным.'
+    : 'Любой не-культовый предмет из базы по скидкам режима «Заказ».';
+  return `${sellerTabBar()}<section class="panel broker-buyer">
     <div class="broker-head">
       <div>
-        <h2>${esc(offer.title || 'Предложение посредника')}</h2>
-        <p class="meta">${shared ? 'Вам поделились ассортиментом. Возьмите вещи из витрины или закажите любой не-культовый предмет из базы по скидкам продавца.' : 'Так предложение видит клиент: выберите товары из витрины или закажите из базы, затем скопируйте заказ.'}</p>
+        <h2>${esc(offer.seller || SELLER_FALLBACK)}${offer.title ? ` · ${esc(offer.title)}` : ''}</h2>
+        <p class="meta">${shared ? 'Вам поделились ассортиментом. Возьмите вещи из витрины или закажите любой не-культовый предмет из базы.' : 'Так предложение видит клиент: выберите товары из витрины или закажите из базы, затем скопируйте заказ.'}</p>
       </div>
       <div class="broker-actions">${shared ? '<button type="button" data-broker-exit-share>Вернуться к своему</button>' : '<button type="button" data-broker-buyer>Вернуться к витрине продавца</button>'}</div>
     </div>
@@ -372,37 +406,45 @@ function clientPanel(ctx, shared) {
       <button type="button" role="tab" data-broker-tab="showcase" class="${tab === 'showcase' ? 'on' : ''}" aria-selected="${tab === 'showcase'}">Витрина · ${num(showcaseRows(offer, ctx.data.itemMap).length)}</button>
       <button type="button" role="tab" data-broker-tab="order" class="${tab === 'order' ? 'on' : ''}" aria-selected="${tab === 'order'}">Заказ из базы</button>
     </div>
-    <div data-broker-client-body>${tab === 'showcase' ? clientShowcase(ctx) : clientOrder(ctx)}${clientSummary(ctx)}</div>
+    ${listPanel(ctx, tab, tab === 'showcase' ? 'Ассортимент продавца' : 'Заказ из базы', hint)}
+    <div class="chips broker-summary" data-broker-buy-summary>${clientSummaryChips(ctx)}</div>
     <label class="broker-field">Комментарий к заказу<textarea rows="2" data-broker-order-note placeholder="Имя, способ связи, пожелания…">${esc(activeNote())}</textarea></label>
     <div class="btns broker-order-actions">
       <button type="button" data-broker-order-text${hasAny ? '' : ' disabled'}>Скопировать заказ</button>
       <button type="button" data-broker-order-code${hasAny ? '' : ' disabled'}>Код заказа</button>
       <button type="button" data-broker-clear-order${hasAny ? '' : ' disabled'}>Сбросить выбор</button>
     </div>
-    <p class="meta">Заказ не отправляется автоматически: скопируйте текст или код и отправьте продавцу.</p>
   </section>`;
 }
 
 export function render(ctx) {
   if (!ctx?.data) return '';
+  if (!incoming && !B.offer.seller && ctx.char?.name) {
+    B.offer.seller = String(ctx.char.name).slice(0, 80);
+    saveBroker();
+  }
   return isClient() ? clientPanel(ctx, !!incoming)
-    : `${sellerHead(ctx)}${discountPanel(ctx)}${pickerPanel(ctx)}${showcasePanel(ctx)}${sharePanel(ctx)}`;
+    : `${sellerHead(ctx)}${discountPanel(ctx)}${listPanel(ctx, 'seller', 'Из инвентаря', 'Только предметы из хранилища персонажа. Фильтры, поиск, сортировка и описания — как в базе данных.')}${showcasePanel(ctx)}${sharePanel(ctx)}`;
 }
 
 // ── Обновление частей без полной перерисовки ───────────────────────────────
 
-function refreshSeller(root, ctx, keepDiscounts = false) {
-  const pick = root.querySelector?.('[data-broker-pick-results]');
-  if (pick) pick.innerHTML = pickerResults(ctx);
-  const show = root.querySelector?.('[data-broker-showcase]');
-  if (show) show.innerHTML = showcaseList(ctx);
+function updateCommon(root, ctx) {
+  const rows = showcaseRows(activeOffer(), ctx.data.itemMap);
   const sum = root.querySelector?.('[data-broker-show-summary]');
-  if (sum) sum.innerHTML = summaryChips(totals(showcaseRows(activeOffer(), ctx.data.itemMap), (row) => row.limit),
-    showcaseRows(activeOffer(), ctx.data.itemMap).length);
+  if (sum) sum.innerHTML = summaryChips(totals(rows, (row) => row.limit), rows.length);
   const chips = root.querySelector?.('[data-broker-discount-chips]');
-  if (chips) chips.innerHTML = discountChips(activeOffer(), showcaseRows(activeOffer(), ctx.data.itemMap));
+  if (chips) chips.innerHTML = discountChips(activeOffer(), rows);
   const url = root.querySelector?.('[data-broker-share-url]');
   if (url) url.value = shareUrl(ctx);
+  const save = root.querySelector?.('[data-broker-save]');
+  if (save) save.textContent = savedLabel();
+}
+
+function refreshSeller(root, ctx, keepDiscounts = false) {
+  refreshList(root, ctx, 'seller');
+  refreshList(root, ctx, 'assort');
+  updateCommon(root, ctx);
   if (!keepDiscounts) {
     const grid = root.querySelector?.('[data-broker-discount-grid]');
     if (grid) grid.innerHTML = discountGrid(ctx);
@@ -417,17 +459,13 @@ function updatePriceViews(root, ctx) {
     const row = map.get(el.dataset.brokerPriceView);
     if (row) el.innerHTML = unitHtml(row);
   });
-  const sum = root.querySelector?.('[data-broker-show-summary]');
-  if (sum) sum.innerHTML = summaryChips(totals(rows, (row) => row.limit), rows.length);
-  const chips = root.querySelector?.('[data-broker-discount-chips]');
-  if (chips) chips.innerHTML = discountChips(activeOffer(), rows);
-  const url = root.querySelector?.('[data-broker-share-url]');
-  if (url) url.value = shareUrl(ctx);
+  updateCommon(root, ctx);
 }
 
 function updateClient(root, ctx) {
-  const body = root.querySelector?.('[data-broker-client-body]');
-  if (body) body.innerHTML = (activeTab() === 'showcase' ? clientShowcase(ctx) : clientOrder(ctx)) + clientSummary(ctx);
+  refreshList(root, ctx, activeTab());
+  const sum = root.querySelector?.('[data-broker-buy-summary]');
+  if (sum) sum.innerHTML = clientSummaryChips(ctx);
   const hasAny = selectedRows(ctx).length > 0;
   root.querySelectorAll?.('[data-broker-order-text], [data-broker-order-code], [data-broker-clear-order]')
     .forEach?.((btn) => { btn.disabled = !hasAny; });
@@ -439,10 +477,7 @@ function addShowcase(id, ctx) {
   if (incoming) return;
   const have = stockMap(ctx).get(id) || 0;
   const item = ctx.data.itemMap.get(id);
-  if (!item || isCultItem(item) || !have) {
-    showToast('Предмета нет в инвентаре или он культовый');
-    return;
-  }
+  if (!item || isCultItem(item) || !have) { showToast('Предмета нет в инвентаре или он культовый'); return; }
   const entry = B.offer.showcase.find((row) => row.id === id);
   if (entry) entry.qty = Math.min(have, entry.qty + 1);
   else B.offer.showcase.push({ id, qty: Math.min(have, MAX_QTY), price: null });
@@ -507,11 +542,8 @@ function loadOrder(root, ctx) {
       throw new Error('в заказе нет предметов из этого предложения');
     }
     const tab = Object.keys(picks.showcase).length ? 'showcase' : 'order';
-    if (incoming) {
-      incomingPicks = picks; incomingNote = parsed.note; incomingTab = tab;
-    } else {
-      B.picks = picks; B.note = parsed.note; B.client = true; B.tab = tab;
-    }
+    if (incoming) { incomingPicks = picks; incomingNote = parsed.note; incomingTab = tab; }
+    else { B.picks = picks; B.note = parsed.note; B.client = true; B.tab = tab; }
     commit(ctx);
     showToast(`Заказ загружен${skipped ? `, пропущено позиций: ${skipped}` : ''}`);
   } catch (err) {
@@ -524,35 +556,34 @@ function loadOrder(root, ctx) {
 export function bind(root, ctx) {
   root.oninput = (e) => {
     const t = e.target;
-    if (t.dataset.brokerPickQ !== undefined) {
-      UI.sellerQ = t.value; UI.sellerShown = 40;
-      const box = root.querySelector?.('[data-broker-pick-results]');
-      if (box) box.innerHTML = pickerResults(ctx);
+    if (t.dataset.listQ !== undefined) {
+      const st = L[t.dataset.listQ];
+      if (!st) return;
+      st.q = t.value; st.page = 1;
+      refreshList(root, ctx, t.dataset.listQ);
       return;
     }
-    if (t.dataset.brokerBuyQ !== undefined) {
-      UI.buyQ = t.value; UI.buyShown = 40;
-      updateClient(root, ctx);
-      return;
-    }
-    if (t.dataset.brokerOrderNote !== undefined) {
-      if (incoming) incomingNote = String(t.value).slice(0, 1000);
-      else B.note = String(t.value).slice(0, 1000);
-      commit(ctx, false);
+    if (t.dataset.brokerSeller !== undefined) {
+      if (!incoming) B.offer.seller = String(t.value).slice(0, 80);
+      autosave(ctx, root);
       return;
     }
     if (t.dataset.brokerTitle !== undefined) {
       if (!incoming) B.offer.title = String(t.value).slice(0, 80);
       const url = root.querySelector?.('[data-broker-share-url]');
       if (url) url.value = shareUrl(ctx);
-      saveBroker();
+      autosave(ctx, root);
       return;
     }
     if (t.dataset.brokerNote !== undefined) {
       if (!incoming) B.offer.note = String(t.value).slice(0, 1000);
-      const url = root.querySelector?.('[data-broker-share-url]');
-      if (url) url.value = shareUrl(ctx);
-      saveBroker();
+      autosave(ctx, root);
+      return;
+    }
+    if (t.dataset.brokerOrderNote !== undefined) {
+      if (incoming) incomingNote = String(t.value).slice(0, 1000);
+      else B.note = String(t.value).slice(0, 1000);
+      commit(ctx, false);
       return;
     }
     if (t.dataset.brokerPrice !== undefined) {
@@ -563,28 +594,48 @@ export function bind(root, ctx) {
     if (t.dataset.brokerGeneral !== undefined) {
       const mode = t.dataset.brokerMode === 'order' ? 'order' : 'showcase';
       B.offer.pricing[mode].general = clampPct(t.value);
-      saveBroker();
+      autosave(ctx, root);
       refreshSeller(root, ctx, true);
       return;
     }
     if (t.dataset.brokerCat !== undefined) {
       const mode = t.dataset.brokerMode === 'order' ? 'order' : 'showcase';
       B.offer.pricing[mode].byCategory[t.dataset.brokerCat] = clampPct(t.value);
-      saveBroker();
+      autosave(ctx, root);
       refreshSeller(root, ctx, true);
     }
   };
 
   root.onchange = (e) => {
     const t = e.target;
-    if (t.dataset.brokerPickCat !== undefined) {
-      UI.sellerCat = t.value; UI.sellerShown = 40;
+    if (t.dataset.listAddK !== undefined) {
+      const id = t.dataset.listAddK, st = L[id];
+      if (!st || !t.value) return;
+      const key = t.dataset.k;
+      const values = normFilter(st.filters[key]);
+      if (!values.includes(t.value)) values.push(t.value);
+      st.filters[key] = values;
+      st.page = 1;
       ctx.rerender();
       return;
     }
-    if (t.dataset.brokerBuyCat !== undefined) {
-      UI.buyCat = t.value; UI.buyShown = 40;
-      updateClient(root, ctx);
+    if (t.dataset.listSort !== undefined) {
+      const st = L[t.dataset.listSort];
+      if (!st) return;
+      st.sort = [t.value, st.sort?.[1] === -1 ? -1 : 1];
+      st.page = 1;
+      ctx.rerender();
+      return;
+    }
+    if (t.dataset.listIds !== undefined) {
+      L[t.dataset.listIds].showIds = !!t.checked;
+      ctx.rerender();
+      return;
+    }
+    if (t.dataset.listFav !== undefined) {
+      const st = L[t.dataset.listFav];
+      st.favOnly = !!t.checked; st.page = 1;
+      ctx.rerender();
       return;
     }
     if (t.dataset.brokerShowQty !== undefined) {
@@ -608,8 +659,7 @@ export function bind(root, ctx) {
         ? showcaseRows(activeOffer(), ctx.data.itemMap, activePicks().showcase)
         : catalogRows(activeOffer(), nonCult(ctx), activePicks().order);
       const row = rows.find((item) => item.id === t.dataset.brokerCheck);
-      const current = row?.qty || 0;
-      setPick(from, t.dataset.brokerCheck, t.checked ? (current || 1) : 0, ctx, row?.limit);
+      setPick(from, t.dataset.brokerCheck, t.checked ? (row?.qty || 1) : 0, ctx, row?.limit);
       updateClient(root, ctx);
       return;
     }
@@ -618,8 +668,7 @@ export function bind(root, ctx) {
       refreshSeller(root, ctx);
       return;
     }
-    if (t.dataset.brokerTitle !== undefined || t.dataset.brokerNote !== undefined) {
-      root.oninput?.(e);
+    if (t.dataset.brokerSeller !== undefined || t.dataset.brokerTitle !== undefined || t.dataset.brokerNote !== undefined) {
       ctx.rerender();
       return;
     }
@@ -634,9 +683,80 @@ export function bind(root, ctx) {
   root.onclick = (e) => {
     const closest = (selector) => e.target.closest?.(selector);
 
+    const listDel = closest('[data-list-filter-del]');
+    if (listDel) {
+      const st = L[listDel.dataset.listFilterDel];
+      const key = listDel.dataset.k;
+      if (st) {
+        st.filters[key] = normFilter(st.filters[key]).filter((v) => v !== listDel.dataset.value);
+        st.page = 1;
+      }
+      ctx.rerender();
+      return;
+    }
+    const listDir = closest('[data-list-dir]');
+    if (listDir) {
+      const st = L[listDir.dataset.listDir];
+      if (st) {
+        st.sort = [st.sort?.[0] || 'id', st.sort?.[1] === -1 ? 1 : -1];
+        st.page = 1;
+      }
+      ctx.rerender();
+      return;
+    }
+    const listPage = closest('[data-list-page]');
+    if (listPage) {
+      const st = L[listPage.dataset.listPage];
+      if (st && !listPage.disabled) { st.page = Number(listPage.dataset.page) || 1; ctx.rerender(); }
+      return;
+    }
+    const filtersOpen = closest('[data-list-filters-open]');
+    if (filtersOpen) {
+      const id = filtersOpen.dataset.listFiltersOpen;
+      for (const key of Object.keys(L)) L[key].filtersOpen = false;
+      L[id].filtersOpen = true;
+      root.querySelector?.(`[data-list-filters-panel="${id}"]`)?.classList.add('open');
+      const back = root.querySelector?.(`.filters-backdrop[data-list-filters-close="${id}"]`);
+      if (back) back.hidden = false;
+      if (typeof document !== 'undefined') document.body.classList.add('drawer-open');
+      return;
+    }
+    if (closest('[data-list-filters-close]')) {
+      for (const key of Object.keys(L)) L[key].filtersOpen = false;
+      root.querySelectorAll?.('[data-list-filters-panel]').forEach?.((el) => el.classList.remove('open'));
+      root.querySelectorAll?.('.filters-backdrop').forEach?.((el) => { el.hidden = true; });
+      if (typeof document !== 'undefined') document.body.classList.remove('drawer-open');
+      return;
+    }
+    const fav = closest('[data-fav]');
+    if (fav) {
+      e.preventDefault?.(); e.stopPropagation?.();
+      const i = fav.dataset.fav.indexOf(':');
+      toggleFavorite(fav.dataset.fav.slice(0, i), fav.dataset.fav.slice(i + 1));
+      ctx.rerender();
+      return;
+    }
+    const share = closest('[data-share]');
+    if (share) {
+      e.preventDefault?.(); e.stopPropagation?.();
+      let url = share.dataset.share;
+      if (typeof document !== 'undefined') { try { url = new URL(url, document.baseURI).href; } catch { /* оставляем как есть */ } }
+      copyText(url).then((ok) => showToast(ok ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку'));
+      return;
+    }
+    const sellerTab = closest('[data-seller-tab]');
+    if (sellerTab) {
+      const entry = sellers[sellerTab.dataset.sellerTab];
+      if (!entry) return;
+      incoming = { code: entry.code, offer: entry.offer };
+      incomingPicks = entry.picks; incomingNote = entry.note; incomingTab = entry.tab;
+      ctx.route?.(`broker/offer/${encodeURIComponent(entry.code)}`);
+      ctx.rerender();
+      return;
+    }
+
     const add = closest('[data-broker-add]');
     if (add) { addShowcase(add.dataset.brokerAdd, ctx); refreshSeller(root, ctx); return; }
-
     const showDelta = closest('[data-broker-show-delta]');
     if (showDelta) {
       const row = showcaseRows(B.offer, ctx.data.itemMap).find((item) => item.id === showDelta.dataset.id);
@@ -644,10 +764,8 @@ export function bind(root, ctx) {
       refreshSeller(root, ctx);
       return;
     }
-
     const remove = closest('[data-broker-remove]');
     if (remove) { removeShowcase(remove.dataset.brokerRemove, ctx); refreshSeller(root, ctx); return; }
-
     const orderDelta = closest('[data-broker-order-delta]');
     if (orderDelta) {
       const from = orderDelta.dataset.brokerFrom || 'order';
@@ -659,7 +777,6 @@ export function bind(root, ctx) {
       updateClient(root, ctx);
       return;
     }
-
     const tab = closest('[data-broker-tab]');
     if (tab) {
       const value = tab.dataset.brokerTab === 'order' ? 'order' : 'showcase';
@@ -668,24 +785,23 @@ export function bind(root, ctx) {
       ctx.rerender();
       return;
     }
-
     if (closest('[data-broker-fill-general]')) {
       const rows = showcaseRows(activeOffer(), ctx.data.itemMap);
       for (const mode of ['showcase', 'order']) {
         const group = B.offer.pricing[mode];
         for (const row of rows) group.byCategory[row.category] = group.general;
       }
-      saveBroker();
+      autosave(ctx, root);
       ctx.rerender();
       return;
     }
     if (closest('[data-broker-discount-reset]')) {
       B.offer.pricing = { showcase: blankPricing(), order: blankPricing() };
-      saveBroker();
+      autosave(ctx, root);
       ctx.rerender();
       return;
     }
-    if (closest('[data-broker-buyer]')) { B.client = !B.client; saveBroker(); ctx.rerender(); return; }
+    if (closest('[data-broker-buyer]')) { B.client = !B.client; autosave(ctx, root); ctx.rerender(); return; }
     if (closest('[data-broker-exit-share]')) {
       incoming = null; incomingPicks = blankPicks(); incomingNote = ''; incomingTab = 'showcase';
       ctx.route?.('broker');
@@ -699,8 +815,8 @@ export function bind(root, ctx) {
       B.note = '';
       B.client = false;
       B.tab = 'showcase';
-      saveBroker();
-      UI.sellerQ = ''; UI.sellerCat = ''; UI.sellerShown = 40;
+      for (const key of Object.keys(L)) L[key] = blankListState();
+      autosave(ctx, root);
       ctx.rerender();
       return;
     }
@@ -719,7 +835,7 @@ export function bind(root, ctx) {
     }
     if (closest('[data-broker-order-code]')) {
       if (!selectedRows(ctx).length) { showToast('Сначала выберите предметы'); return; }
-      copyText(orderCode(ctx)).then((ok) => showToast(ok ? 'Код заказа скопирован' : 'Не удалось скопировать код'));
+      copyText(orderCode()).then((ok) => showToast(ok ? 'Код заказа скопирован' : 'Не удалось скопировать код'));
       return;
     }
     if (closest('[data-broker-clear-order]')) {
@@ -729,13 +845,6 @@ export function bind(root, ctx) {
       return;
     }
     if (closest('[data-broker-load-order]')) { loadOrder(root, ctx); return; }
-    if (closest('[data-broker-more]')) {
-      UI.sellerShown += 40;
-      const box = root.querySelector?.('[data-broker-pick-results]');
-      if (box) box.innerHTML = pickerResults(ctx);
-      return;
-    }
-    if (closest('[data-broker-buy-more]')) { UI.buyShown += 40; updateClient(root, ctx); return; }
     const url = closest('[data-broker-share-url]');
     if (url) url.select?.();
   };

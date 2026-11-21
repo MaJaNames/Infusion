@@ -328,7 +328,7 @@ let oldOrderError = '';
 try { decodeOffer('BRK1.eyJ2IjoxLCJpIjpbXX0'); } catch (err) { oldLinkError = err.message; }
 try { decodeOrder('ORD1.eyJ2IjoxLCJpIjpbXX0'); } catch (err) { oldOrderError = err.message; }
 check('посредник: старые ссылки и коды отклоняются', /стар/.test(oldLinkError) && /стар/.test(oldOrderError));
-const brokerChar = { ...c, pockets: [
+const brokerChar = { ...c, name: 'Такане Аки', pockets: [
   { id: brokerFood.id, qty: 4 }, { id: brokerWeapon.id, qty: 2 },
   { id: brokerClothes.id, qty: 1 }, { id: cultItem.id, qty: 9 },
 ] };
@@ -344,9 +344,12 @@ const brokerHtml = utilities.render(ctx);
 check('посредник: витрина продавца с инвентарём и двумя колонками скидок', brokerHtml.includes('Ассортимент')
   && brokerHtml.includes('Витрина, %') && brokerHtml.includes('Заказ, %')
   && brokerHtml.includes('data-broker-mode="showcase"') && brokerHtml.includes('data-broker-mode="order"')
-  && brokerHtml.includes('data-broker-pick-q') && brokerHtml.includes('data-broker-share')
-  && brokerHtml.includes('data-broker-showcase'));
-check('посредник: культовые не попадают в выбор из инвентаря', !brokerHtml.includes(`data-broker-pick-row="${cultItem.id}"`)
+  && brokerHtml.includes('data-list-q="seller"') && brokerHtml.includes('data-list-body="assort"')
+  && brokerHtml.includes('data-broker-share') && brokerHtml.includes('data-broker-save'));
+check('посредник: имя продавца берётся из карточки и сохраняется', brokerStore.offer.seller === brokerChar.name);
+check('посредник: списки постраничные, с описаниями', brokerHtml.includes('data-list-page="seller"')
+  && brokerHtml.includes('<p class="desc">'));
+check('посредник: культовые не попадают в выбор из инвентаря', !brokerHtml.includes(`data-row="seller:${cultItem.id}"`)
   && !brokerHtml.includes(`data-broker-add="${cultItem.id}"`));
 
 const hadBrokerLs = Object.prototype.hasOwnProperty.call(globalThis, 'localStorage');
@@ -397,11 +400,29 @@ check('посредник: витрина показывает только ас
   && !clientHtml.includes(`data-broker-check="${cultItem.id}"`));
 clickBroker('[data-broker-tab]', { brokerTab: 'order' });
 const clientOrderHtml = utilities.render(ctx);
-const otherBaseItem = normalItems.find((it) => it.category === 'Расходник'
-  && ![brokerFood.id, brokerWeapon.id, brokerClothes.id].includes(it.id));
-check('посредник: заказ из базы — любой не-культовый предмет', clientOrderHtml.includes(`data-broker-check="${otherBaseItem.id}"`)
-  && clientOrderHtml.includes(`data-broker-check="${brokerFood.id}"`)
+check('посредник: заказ из базы постранично и без культовых', (clientOrderHtml.match(/data-broker-check=/g) || []).length === 40
+  && clientOrderHtml.includes('data-list-page="order"')
+  && clientOrderHtml.includes('Страница 1 из')
   && !clientOrderHtml.includes(`data-broker-check="${cultItem.id}"`));
+// Фильтры, сортировка и страницы работают как в базе данных.
+brokerRoot.onchange({ target: { dataset: { listAddK: 'order', k: 'rar' }, value: 'Обычный' } });
+const filteredOrderHtml = utilities.render(ctx);
+check('посредник: фильтр редкости добавляет чипс', filteredOrderHtml.includes('data-list-filter-del="order"')
+  && filteredOrderHtml.includes('data-value="Обычный"'));
+brokerRoot.onchange({ target: { dataset: { listSort: 'order' }, value: 'name' } });
+check('посредник: сортировка по названию выбирается', utilities.render(ctx).includes('<option value="name" selected>'));
+clickBroker('[data-list-page]', { listPage: 'order', page: '2' });
+check('посредник: переход на вторую страницу', utilities.render(ctx).includes('Страница 2 из'));
+clickBroker('[data-list-filter-del]', { listFilterDel: 'order', k: 'rar', value: 'Обычный' });
+const sellers = JSON.parse(brokerMem.get('infusion.broker.sellers'));
+check('посредник: клиентская книжка продавцов по имени персонажа', !!sellers[brokerChar.name]
+  && sellers[brokerChar.name].code === clientCode);
+const secondCode = encodeOffer({ ...brokerStore.offer, title: 'Новая витрина' });
+utilities.setRoute(`broker/offer/${encodeURIComponent(secondCode)}`);
+const sellersAfter = JSON.parse(brokerMem.get('infusion.broker.sellers'));
+check('посредник: новая ссылка того же продавца перезаписывает запись', Object.keys(sellersAfter).length === 1
+  && sellersAfter[brokerChar.name].code === secondCode
+  && sellersAfter[brokerChar.name].offer.title === 'Новая витрина');
 brokerRoot.onchange({ target: { dataset: { brokerOrderQty: brokerWeapon.id, brokerFrom: 'order' }, value: '3' } });
 const savedClientOrder = JSON.parse(brokerMem.get('infusion.broker.order'));
 check('посредник: выбор клиента хранится отдельно от черновика', savedClientOrder.picks.order[brokerWeapon.id] === 3

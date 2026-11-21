@@ -208,6 +208,17 @@ table{border-collapse:collapse;width:100%}td,th{padding:.35rem .6rem;border-bott
 .broker-discount-chips .chip.total,.broker-summary .chip.total{border-color:var(--acc);color:var(--acc);font-weight:600}
 .broker-price-edit{display:block;margin-top:.3rem;font-size:.75rem;color:var(--mute)}
 .broker-price-edit input{width:6.5rem;margin-left:.35rem;padding:.1rem .3rem}
+.broker-pager{display:flex;gap:.3rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:.6rem 0 .2rem}
+.broker-pager button{min-width:2rem;padding:.25rem .5rem;background:var(--bg)}
+.broker-pager button.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+.broker-pager button:disabled{opacity:.4;cursor:default}
+.broker-pager .page-info{margin-left:.5rem}
+.page-ellipsis{color:var(--mute);padding:0 .2rem}
+.broker-sellers{display:flex;gap:.3rem;flex-wrap:wrap;margin:0 0 .6rem}
+.broker-sellers button{padding:.35rem .7rem;background:var(--bg)}
+.broker-sellers button.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+.broker-save{font-size:.78rem;color:var(--mute);white-space:nowrap;align-self:center}
+.broker-check{width:13px;height:13px;min-height:0;flex:0 0 auto}
 .broker-picker-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end;margin:.2rem 0 .5rem}
 .broker-picker-bar input[type=search]{flex:1 1 18rem;max-width:30rem}
 .broker-picker-bar select{min-width:10rem}
@@ -439,6 +450,7 @@ button.stat-card:hover{border-color:var(--mute)}
 :root[data-ui=mobile] .calc-check{grid-column:1/-1}
 :root[data-ui=mobile] .transport-slot>label{max-width:none;width:100%}
 :root[data-ui=mobile] .broker-discount-row{grid-template-columns:minmax(0,1fr) 5rem 5rem;gap:.3rem}
+:root[data-ui=mobile] .broker-save{flex:1 1 100%}
 :root[data-ui=mobile] .broker-head{flex-direction:column}
 :root[data-ui=mobile] .broker-actions{width:100%}
 :root[data-ui=mobile] .broker-picker-bar input[type=search],:root[data-ui=mobile] .broker-picker-bar select{flex:1 1 100%;max-width:none}
