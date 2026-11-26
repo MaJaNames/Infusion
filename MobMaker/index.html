@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конструктор Мобов</title>
+    <title>Конструктор Мобов и Персонажей</title>
     <link rel="stylesheet" href="style.css">
-    <meta property="og:title" content="Конструктор Мобов">
-    <meta property="og:description" content="Конструктор мобов для инфузии">
+    <meta property="og:title" content="Конструктор Мобов и Персонажей">
+    <meta property="og:description" content="Конструктор мобов и персонажей для инфузии">
     <link rel="icon" type="image/webp" href="../assets/icons/paw.webp">
     <link rel="apple-touch-icon" href="../assets/icons/paw.webp">
 </head>
@@ -19,14 +19,14 @@
         <button type="button" class="btn btn-small btn-outline" onclick="clearCurrentMob()" style="border-color: var(--p1-color); color: #fca5a5;" title="Сбросить все поля текущего моба">Очистить</button>
     </div>
     <header>
-        <h1>Конструктор Мобов</h1>
+        <h1>Конструктор Мобов и Персонажей</h1>
         <div class="pills-wrap">
             <div class="budget-pill">
-                <span>Очки генерации:</span>
+                <span id="budgetLabel">Очки генерации:</span>
                 <span id="budgetDisplay" class="budget-val ok">0 / 2800</span>
             </div>
             <div class="budget-pill">
-                <span>Хар-ки:</span>
+                <span id="attrLabel">Хар-ки:</span>
                 <span id="attrBudgetDisplay" class="budget-val ok">45 / 58</span>
             </div>
         </div>
@@ -37,9 +37,18 @@
         <h2>1. Профиль и Сложность</h2>
         <div class="grid-2" style="margin-bottom: 10px;">
             <div>
-                <label>Имя / Название моба</label>
+                <label>Имя / Название</label>
                 <input type="text" id="mobName" value="Элитный Страж" oninput="handleInput('mobName', this.value)">
             </div>
+            <div>
+                <label>Профиль</label>
+                <select id="unitMode" onchange="setUnitMode(this.value)">
+                    <option value="mob">Моб — бюджет очков</option>
+                    <option value="character">Персонаж — цена снаряжения</option>
+                </select>
+            </div>
+        </div>
+        <div class="grid-2 mob-only" id="mobMetaRow" style="margin-bottom: 10px;">
             <div>
                 <label>Уровень сложности квеста</label>
                 <select id="mobTier" onchange="recalcStats()">
@@ -50,8 +59,6 @@
                     <option value="Смерть">Смерть - Ожидайте смерть</option>
                 </select>
             </div>
-        </div>
-        <div class="grid-2">
             <div>
                 <label>Тип юнита</label>
                 <select id="mobType" onchange="recalcStats()">
@@ -60,9 +67,15 @@
                     <option value="Босс" selected>Босс</option>
                 </select>
             </div>
+        </div>
+        <div class="grid-2">
             <div>
                 <label>Роль в бою</label>
                 <input type="text" id="mobRole" value="" placeholder="Например: Соло, Гейт..." oninput="handleInput('mobRole', this.value)">
+            </div>
+            <div class="character-only" id="gearSummaryBox" hidden>
+                <label>Цена снаряжения</label>
+                <div class="gear-summary-value" id="gearSummaryValue">0</div>
             </div>
         </div>
     </div>
@@ -194,10 +207,32 @@
         </div>
     </div>
 
-    <!-- Блок 5: Конструктор атак -->
+    <!-- Блок 5: Снаряжение персонажа -->
+    <div class="card" id="gearCard" hidden>
+        <h2>
+            <span>5. Снаряжение и умения</span>
+            <span class="hint" id="gearCostHint">0</span>
+        </h2>
+        <p class="section-desc">
+            У персонажа нет лимита очков генерации — считается только <b>цена снаряжения</b> в кредитах.
+            Выбирайте оружие, предметы, навыки, способности и карты из базы игры.
+            Оружие автоматически добавляет атаку с его параметрами АТК, ТЧН, КШ, АВХ, дистанцией и эффектами.
+        </p>
+        <div class="gear-tabs" id="gearTabs"></div>
+        <div class="gear-controls">
+            <input type="text" id="gearSearch" placeholder="Поиск по названию и описанию — можно с опечатками" oninput="handleGearSearch()">
+            <select id="gearCategory" onchange="handleGearCategoryChange()"></select>
+        </div>
+        <div class="gear-picker" id="gearPicker"></div>
+        <div class="gear-pager" id="gearPager"></div>
+        <div class="gear-selected" id="gearSelected"></div>
+        <div class="cost-note" id="gearCostNote"></div>
+    </div>
+
+    <!-- Блок 6: Конструктор атак -->
     <div class="card">
         <h2>
-            <span>5. Конструктор атак</span>
+            <span>6. Конструктор атак</span>
             <div style="display: flex; gap: 8px;">
                 <button type="button" class="btn btn-small btn-outline" onclick="toggleAllAttacks()">Свернуть/Развернуть</button>
                 <button type="button" class="btn btn-small" onclick="addAttack()">+ Добавить атаку</button>
@@ -212,28 +247,28 @@
         <div id="attacksContainer"></div>
     </div>
 
-    <!-- Блок 6: Характеристики -->
+    <!-- Блок 7: Характеристики -->
     <div class="card">
         <h2>
-            <span>6. Характеристики (0-10)</span>
+            <span>7. Характеристики (0-10)</span>
             <span class="hint">Свободные поинты</span>
         </h2>
         <div class="grid-attrs" id="attrsContainer"></div>
     </div>
 
-    <!-- Блок 7: Пассивные эффекты -->
+    <!-- Блок 8: Пассивные эффекты -->
     <div class="card">
         <h2>
-            <span>7. Пассивные эффекты</span>
+            <span>8. Пассивные эффекты</span>
             <span class="hint">Постоянные свойства, не привязанные к атаке</span>
         </h2>
         <div id="passiveEffectsCatalog"></div>
     </div>
 
-    <!-- Блок 8: Слабости -->
-    <div class="card">
+    <!-- Блок 9: Слабости -->
+    <div class="card mob-only">
         <h2>
-            <span>8. Слабости</span>
+            <span>9. Слабости</span>
             <span class="hint">Дают дополнительные очки бюджета</span>
         </h2>
         <p class="section-desc">
@@ -244,22 +279,16 @@
         <div id="weaknessCatalog"></div>
     </div>
 
-    <!-- Блок 9: Примечания -->
+    <!-- Блок 10: Примечания -->
     <div class="card">
-        <h2>9. Особые механики / Лут / Заметки</h2>
+        <h2>10. Особые механики / Лут / Заметки</h2>
         <textarea id="mobNotes" rows="2" placeholder="Например: При активации использует щит..." oninput="handleInput('mobNotes', this.value)"></textarea>
     </div>
 
     <!-- Итоговый вывод -->
     <div class="card">
         <h2>
-            <span>Готовая карточка моба</span>
-            <span class="hint" id="outputBudgetHint"></span>
-        </h2>
-            <!-- Итоговый вывод -->
-    <div class="card">
-        <h2>
-            <span>Готовая карточка моба</span>
+            <span>Готовая карточка</span>
             <span class="hint" id="outputBudgetHint"></span>
         </h2>
 
@@ -289,14 +318,13 @@
         <!-- КОНЕЦ КАЛЬКУЛЯТОРА -->
         <!-- Бюджет вне карточки -->
         <div class="sheet-budget" id="externalBudget" style="margin-bottom: 16px; margin-top: 0; padding-top: 0; border-top: none;">
-            <span class="sheet-budget-label">Бюджет моба</span>
-            <div class="budget-bar"><span id="externalBudgetBar" style="width:0%"></span></div>
+            <span class="sheet-budget-label" id="externalBudgetLabel">Бюджет моба</span>
+            <div class="budget-bar" id="externalBudgetBarWrap"><span id="externalBudgetBar" style="width:0%"></span></div>
             <b id="externalBudgetText">0 / 0</b>
         </div>
 
         <div id="outputCard" class="output-card"></div>
 
-        <div id="outputCard" class="output-card"></div>
         <pre id="outputBox" hidden></pre>
         <div class="action-buttons">
             <button class="btn" onclick="copyResult()">Скопировать текст</button>

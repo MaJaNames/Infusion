@@ -113,6 +113,57 @@ let isApplyingState = false;
 let saveTimeout = null;
 let draggedAttackId = null;
 
+// ============================================================
+// ПЕРСОНАЖ: РЕЖИМ ПРОФИЛЯ И СНАРЯЖЕНИЕ
+// ============================================================
+// Персонаж отличается от моба тем, что не ограничен очками генерации:
+// у него считается только цена выбранного снаряжения в кредитах.
+
+const GEAR_KINDS = {
+    weapons: { label: "Оружие" },
+    items: { label: "Предметы" },
+    skills: { label: "Навыки" },
+    abilities: { label: "Способности" },
+    cards: { label: "Карты" }
+};
+const GEAR_KIND_ORDER = Object.keys(GEAR_KINDS);
+const GEAR_PAGE_SIZE = 24;
+const CREDIT_ICON = "../assets/icons/croncred.webp";
+
+function creditNumber(value) {
+    return (Number(value) || 0).toLocaleString("ru-RU");
+}
+
+function creditIcon(value, extraClass = "") {
+    return `<span class="credit-price${extraClass ? ` ${extraClass}` : ""}"><img src="${CREDIT_ICON}" alt="кредиты" title="кредиты" loading="lazy"><span class="credit-num">${creditNumber(value)}</span></span>`;
+}
+
+// Оружие с этими тегами считается дистанционным.
+const RANGED_WEAPON_TAGS = new Set(["P", "Sub", "SG", "AR", "S", "He", "Ar", "Sg"]);
+
+const STAT_LABELS = {
+    strength: "Сила", dexterity: "Ловкость", intelligence: "Интеллект",
+    will: "Воля", charisma: "Харизма", perception: "Восприятие",
+    technique: "Техника", luck: "Удача", constitution: "Телосложение"
+};
+
+// Быстрый поиск эффекта атаки по названию (для разбора описаний оружия).
+const EFFECT_BY_NAME = {};
+EFFECT_GROUPS.forEach(group => {
+    group.items.forEach(item => {
+        EFFECT_BY_NAME[item.name.toLowerCase()] = { item, level: group.level };
+    });
+});
+EFFECT_BY_NAME["электромгнитное"] = EFFECT_BY_NAME["электромагнитное"]; // опечатка в базе
+
+let unitMode = "mob";
+let gear = createEmptyGear();
+let gearTab = "weapons";
+let gearPage = 0;
+let gameData = null;
+let gameDataStatus = "idle"; // idle | loading | ready | error
+let gameDataPromise = null;
+
 // Z8: Навигация по Enter
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
@@ -190,6 +241,871 @@ function findImmunity(name) {
     }
     return null;
 }
+
+// ============================================================
+// ПЕРСОНАЖ: ДАННЫЕ, СНАРЯЖЕНИЕ И РАЗБОР ОРУЖИЯ
+// ============================================================
+
+function createEmptyGear() {
+    return { weapons: [], items: [], skills: [], abilities: [], cards: [] };
+}
+
+function normalizeGear(raw) {
+    const result = createEmptyGear();
+    if (!raw || typeof raw !== "object") return result;
+    GEAR_KIND_ORDER.forEach(kind => {
+        const list = Array.isArray(raw[kind]) ? raw[kind] : [];
+        result[kind] = list
+            .filter(entry => entry && entry.id && entry.name)
+            .map(entry => ({
+                id: String(entry.id),
+                name: String(entry.name),
+                cost: Math.max(0, Number(entry.cost) || 0),
+                qty: Math.max(1, Math.min(99, Number(entry.qty) || 1)),
+                desc: typeof entry.desc === "string" ? entry.desc : "",
+                fullDesc: typeof entry.fullDesc === "string" ? entry.fullDesc : (typeof entry.desc === "string" ? entry.desc : ""),
+                category: typeof entry.category === "string" ? entry.category : "",
+                rarity: typeof entry.rarity === "string" ? entry.rarity : "",
+                organization: typeof entry.organization === "string" ? entry.organization : "",
+                iconic: Boolean(entry.iconic),
+                attackId: entry.attackId !== undefined && entry.attackId !== null && Number.isFinite(Number(entry.attackId))
+                    ? Number(entry.attackId) : null
+            }));
+    });
+    return result;
+}
+
+function calculateGearCost() {
+    return GEAR_KIND_ORDER.reduce((total, kind) =>
+        total + gear[kind].reduce((sum, entry) =>
+            sum + (Number(entry.cost) || 0) * Math.max(1, Number(entry.qty) || 1), 0), 0);
+}
+
+function gearPositionCount() {
+    return GEAR_KIND_ORDER.reduce((sum, kind) => sum + gear[kind].length, 0);
+}
+
+function setUnitMode(mode) {
+    const next = mode === "character" ? "character" : "mob";
+    if (unitMode === next) return;
+    unitMode = next;
+    applyUnitModeUI();
+    recalcStats();
+    if (unitMode === "character") ensureGameData().catch(() => {});
+}
+
+function applyUnitModeUI() {
+    const character = unitMode === "character";
+
+    const gearCard = document.getElementById("gearCard");
+    if (gearCard) gearCard.hidden = !character;
+    const gearSummary = document.getElementById("gearSummaryBox");
+    if (gearSummary) gearSummary.hidden = !character;
+    document.querySelectorAll(".mob-only").forEach(el => { el.hidden = character; });
+    document.body.classList.toggle("character-mode", character);
+
+    const modeSelect = document.getElementById("unitMode");
+    if (modeSelect && modeSelect.value !== unitMode) modeSelect.value = unitMode;
+
+    const budgetLabel = document.getElementById("budgetLabel");
+    if (budgetLabel) budgetLabel.textContent = character ? "Цена снаряжения:" : "Очки генерации:";
+    const attrLabel = document.getElementById("attrLabel");
+    if (attrLabel) attrLabel.textContent = character ? "Хар-ки (без лимита):" : "Хар-ки:";
+
+    const externalLabel = document.getElementById("externalBudgetLabel");
+    if (externalLabel) externalLabel.textContent = character ? "Цена снаряжения" : "Бюджет моба";
+    const barWrap = document.getElementById("externalBudgetBarWrap");
+    if (barWrap) barWrap.hidden = character;
+}
+
+function readCachedGameData() {
+    try {
+        const raw = localStorage.getItem("infusion.db");
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const data = parsed && parsed.data ? parsed.data : parsed;
+        if (data && Array.isArray(data.items)) return data;
+    } catch (error) { /* кэш может быть повреждён — просто игнорируем */ }
+    return null;
+}
+
+function ensureGameData() {
+    if (gameData) return Promise.resolve(gameData);
+    if (gameDataPromise) return gameDataPromise;
+
+    const cached = readCachedGameData();
+    if (cached) {
+        gameData = cached;
+        gameDataStatus = "ready";
+        enrichGearFromData();
+        renderGear();
+        recalcStats();
+        return Promise.resolve(gameData);
+    }
+
+    gameDataStatus = "loading";
+    renderGear();
+    gameDataPromise = fetch("../data/data.json", { cache: "no-store" })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            gameData = data;
+            gameDataStatus = "ready";
+            gameDataPromise = null;
+            enrichGearFromData();
+            renderGear();
+            recalcStats();
+            return data;
+        })
+        .catch(error => {
+            gameDataStatus = "error";
+            gameDataPromise = null;
+            renderGear();
+            throw error;
+        });
+    return gameDataPromise;
+}
+
+function normalizeSearch(value) {
+    return String(value || "").toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+}
+
+function flatText(value, limit = 260) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
+}
+
+// Нечёткий поиск: точное совпадение, начало слова, подстрока, подпоследовательность,
+// опечатки/перестановки и ввод в неверной раскладке. Логика совпадает с js/core/fuzzy.js.
+const FUZZY_EN_KEYS = "`qwertyuiop[]asdfghjkl;'zxcvbnm,.";
+const FUZZY_RU_KEYS = "ейцукенгшщзхъфывапролджэячсмитьбю";
+const FUZZY_EN_TO_RU = Object.create(null);
+const FUZZY_RU_TO_EN = Object.create(null);
+for (let i = 0; i < FUZZY_EN_KEYS.length; i++) {
+    FUZZY_EN_TO_RU[FUZZY_EN_KEYS[i]] = FUZZY_RU_KEYS[i];
+    if (FUZZY_RU_KEYS[i] !== "е" || FUZZY_EN_KEYS[i] === "t") FUZZY_RU_TO_EN[FUZZY_RU_KEYS[i]] = FUZZY_EN_KEYS[i];
+}
+
+function fuzzyWords(value) {
+    return normalizeSearch(value).split(/[^a-zа-я0-9]+/).filter(Boolean);
+}
+
+function fuzzySwitchLayout(value) {
+    let hasEn = false;
+    let hasRu = false;
+    for (const char of value) {
+        if (char >= "a" && char <= "z") hasEn = true;
+        else if (char >= "а" && char <= "я") hasRu = true;
+    }
+    if (hasEn === hasRu) return value;
+    const map = hasEn ? FUZZY_EN_TO_RU : FUZZY_RU_TO_EN;
+    let result = "";
+    for (const char of value) result += map[char] ?? char;
+    return result;
+}
+
+// Расстояние Дамерау — Левенштейна (OSA): соседняя перестановка = 1 правка.
+function fuzzyDistance(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    let prev2 = null;
+    let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+        const row = [i];
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            let distance = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + cost);
+            if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                distance = Math.min(distance, prev2[j - 2] + 1);
+            }
+            row[j] = distance;
+        }
+        prev2 = prev;
+        prev = row;
+    }
+    return prev[b.length];
+}
+
+// Самое плотное вхождение запроса как подпоследовательности в слово.
+function fuzzySubsequenceDensity(query, word) {
+    let best = 0;
+    for (let start = 0; start < word.length; start++) {
+        if (word[start] !== query[0]) continue;
+        let queryIndex = 1;
+        let end = start;
+        for (let i = start + 1; i < word.length && queryIndex < query.length; i++) {
+            if (word[i] === query[queryIndex]) {
+                end = i;
+                queryIndex++;
+            }
+        }
+        if (queryIndex === query.length) {
+            const density = query.length / (end - start + 1);
+            if (density > best) best = density;
+            if (best === 1) break;
+        }
+    }
+    return best;
+}
+
+function fuzzyWordScore(query, word) {
+    if (!query || !word) return 0;
+    if (word === query) return 1;
+    if (word.startsWith(query)) return 0.94 - Math.min(0.12, (word.length - query.length) * 0.008);
+    const at = word.indexOf(query);
+    if (at >= 0) return 0.84 - Math.min(0.18, at * 0.015 + (word.length - query.length) * 0.004);
+
+    if (query.length >= 3) {
+        const density = fuzzySubsequenceDensity(query, word);
+        const minDensity = query.length === 3 ? 0.6 : 0.72;
+        if (density >= minDensity) return 0.5 + density * 0.18;
+    }
+
+    if (query.length >= 4) {
+        const max = query.length >= 8 ? 2 : 1;
+        if (Math.abs(word.length - query.length) <= max) {
+            const distance = fuzzyDistance(query, word);
+            if (distance <= max) return Math.max(0.45, 0.78 - distance * 0.14);
+        }
+    }
+    return 0;
+}
+
+function fuzzyScoreTokens(tokens, words, normalizedText, normalizedQuery) {
+    if (!tokens.length || !words.length) return 0;
+
+    let total = 0;
+    const matchedIndexes = [];
+    for (const token of tokens) {
+        let best = 0;
+        let bestIndex = -1;
+        for (let i = 0; i < words.length; i++) {
+            const score = fuzzyWordScore(token, words[i]);
+            if (score > best) {
+                best = score;
+                bestIndex = i;
+            }
+            if (best === 1) break;
+        }
+
+        // Склеенное слово в запросе: «ремперчатка» → «рем перчатка», «мк3» → «мк 3».
+        if (best < 0.85 && (token.length >= 5 || /\d/.test(token))) {
+            for (let i = 0; i < words.length - 1; i++) {
+                const score = fuzzyWordScore(token, words[i] + words[i + 1]) * 0.92;
+                if (score > best) {
+                    best = score;
+                    bestIndex = i;
+                }
+            }
+        }
+
+        if (!best) {
+            // Случайный пробел в запросе: «пер чатка» → «перчатка».
+            if (tokens.length >= 2) {
+                const merged = tokens.join("");
+                if (merged.length >= 4) {
+                    let mergedBest = 0;
+                    for (const word of words) mergedBest = Math.max(mergedBest, fuzzyWordScore(merged, word) * 0.9);
+                    return mergedBest;
+                }
+            }
+            return 0;
+        }
+
+        total += best;
+        matchedIndexes.push(bestIndex);
+    }
+
+    const average = total / tokens.length;
+    if (tokens.length === 1) return average;
+    if (normalizedText && normalizedQuery && normalizedText.includes(normalizedQuery)) {
+        return Math.min(1, average * 0.95 + 0.05);
+    }
+
+    let inOrder = 0;
+    let close = 0;
+    for (let i = 1; i < matchedIndexes.length; i++) {
+        const gap = matchedIndexes[i] - matchedIndexes[i - 1];
+        if (gap > 0) inOrder++;
+        if (gap > 0 && gap <= 2) close++;
+    }
+    const pairs = tokens.length - 1;
+    const orderFactor = (inOrder / pairs) * 0.6 + (close / pairs) * 0.4;
+    return average * (0.92 + 0.08 * orderFactor);
+}
+
+function fuzzyTextScore(query, text) {
+    const normalizedQuery = normalizeSearch(query);
+    if (!normalizedQuery) return 1;
+    const normalizedText = normalizeSearch(text);
+    const words = fuzzyWords(normalizedText);
+    if (!words.length) return 0;
+
+    const tokens = fuzzyWords(normalizedQuery);
+    let score = fuzzyScoreTokens(tokens, words, normalizedText, normalizedQuery);
+    const switched = fuzzySwitchLayout(normalizedQuery);
+    if (switched !== normalizedQuery) {
+        const altScore = fuzzyScoreTokens(fuzzyWords(switched), words, normalizedText, switched) * 0.96;
+        if (altScore > score) score = altScore;
+    }
+    return score;
+}
+
+function parseNum(value) {
+    const number = Number(String(value).replace(",", "."));
+    return Number.isFinite(number) ? number : 0;
+}
+
+function itemSource(item) {
+    const fullDesc = String(item.description || "");
+    const iconic = Boolean(item.iconic) || item.rarity === "Культовый";
+    return {
+        id: String(item.id),
+        name: item.name,
+        cost: Number(item.cost) || 0,
+        desc: flatText(fullDesc),
+        fullDesc,
+        rarity: item.rarity || "",
+        organization: item.organization || "",
+        iconic,
+        meta: [item.category, item.rarity].filter(Boolean).join(" · "),
+        raw: item
+    };
+}
+
+function skillSource(skill) {
+    const fullDesc = String(skill.description || "");
+    return {
+        id: String(skill.id),
+        name: skill.name,
+        cost: 0,
+        desc: flatText(fullDesc),
+        fullDesc,
+        rarity: skill.rarity || "",
+        organization: "",
+        iconic: skill.rarity === "Культовый",
+        meta: [STAT_LABELS[skill.stat] || skill.stat, skill.rarity, skill.tier !== undefined ? `тир ${skill.tier}` : ""].filter(Boolean).join(" · "),
+        raw: skill
+    };
+}
+
+function abilitySource(ability) {
+    const fullDesc = String(ability.description || "");
+    return {
+        id: String(ability.id),
+        name: ability.name,
+        cost: 0,
+        desc: flatText(fullDesc),
+        fullDesc,
+        rarity: "",
+        organization: "",
+        iconic: false,
+        meta: ability.class_requirement ? `Класс: ${ability.class_requirement}` : "Способность",
+        raw: ability
+    };
+}
+
+function cardSource(card) {
+    const fullDesc = String(card.mechanics || card.effect || "");
+    return {
+        id: String(card.id),
+        name: card.name,
+        cost: 0,
+        desc: flatText(fullDesc),
+        fullDesc,
+        rarity: card.rarity || "",
+        organization: "",
+        iconic: Boolean(card.iconic) || card.rarity === "Культовый",
+        meta: [card.rarity, card.school, (card.classes || []).join(", ")].filter(Boolean).join(" · "),
+        raw: card
+    };
+}
+
+function findGearSource(kind, id) {
+    if (!gameData) return null;
+    const wanted = String(id);
+    if (kind === "weapons" || kind === "items") {
+        const item = (gameData.items || []).find(entry => String(entry.id) === wanted);
+        return item ? itemSource(item) : null;
+    }
+    if (kind === "skills") {
+        const skill = (gameData.skills || []).find(entry => String(entry.id) === wanted);
+        return skill ? skillSource(skill) : null;
+    }
+    if (kind === "abilities") {
+        const ability = (gameData.abilities || []).find(entry => String(entry.id) === wanted);
+        return ability ? abilitySource(ability) : null;
+    }
+    if (kind === "cards") {
+        const card = (gameData.cards || []).find(entry => String(entry.id) === wanted);
+        return card ? cardSource(card) : null;
+    }
+    return null;
+}
+
+function enrichGearFromData() {
+    if (!gameData) return;
+    GEAR_KIND_ORDER.forEach(kind => {
+        gear[kind].forEach(entry => {
+            const source = findGearSource(kind, entry.id);
+            if (!source) return;
+            if (!entry.fullDesc) entry.fullDesc = source.fullDesc || entry.desc || "";
+            if (!entry.category) entry.category = source.meta || "";
+            if (!entry.rarity) entry.rarity = source.rarity || "";
+            if (!entry.organization) entry.organization = source.organization || "";
+            if (!entry.iconic) entry.iconic = Boolean(source.iconic);
+        });
+    });
+}
+
+function gearSourceList() {
+    if (!gameData) return [];
+    if (gearTab === "weapons") {
+        return (gameData.items || [])
+            .filter(item => item.category === "Оружие")
+            .map(itemSource);
+    }
+    if (gearTab === "items") {
+        const select = document.getElementById("gearCategory");
+        const category = select && select.value ? select.value : "all";
+        return (gameData.items || [])
+            .filter(item => item.category !== "Оружие")
+            .filter(item => category === "all" || item.category === category)
+            .map(itemSource);
+    }
+    if (gearTab === "skills") return (gameData.skills || []).map(skillSource);
+    if (gearTab === "abilities") return (gameData.abilities || []).map(abilitySource);
+    if (gearTab === "cards") return (gameData.cards || []).map(cardSource);
+    return [];
+}
+
+function filterGearSources(list) {
+    const search = document.getElementById("gearSearch");
+    const query = normalizeSearch(search ? search.value : "");
+    if (!query) return list;
+
+    const scored = [];
+    list.forEach(source => {
+        const searchText = `${source.name} ${source.fullDesc || source.desc} ${source.meta} ${source.organization || ""} ${source.iconic ? "Культовое" : ""}`;
+        const fullScore = fuzzyTextScore(query, searchText);
+        const nameScore = fuzzyTextScore(query, source.name);
+        const score = Math.max(fullScore, nameScore) + nameScore * 0.08;
+        if (score > 0) scored.push({ source, score });
+    });
+    scored.sort((a, b) => b.score - a.score || a.source.name.localeCompare(b.source.name, "ru"));
+    return scored.map(entry => entry.source);
+}
+
+function handleGearSearch() {
+    gearPage = 0;
+    renderGearPicker();
+}
+
+function handleGearCategoryChange() {
+    gearPage = 0;
+    renderGearPicker();
+}
+
+function changeGearPage(delta) {
+    gearPage = Math.max(0, gearPage + Number(delta || 0));
+    renderGearPicker();
+}
+
+function setGearTab(kind) {
+    if (!GEAR_KINDS[kind] || gearTab === kind) return;
+    gearTab = kind;
+    gearPage = 0;
+    renderGear();
+}
+
+function renderGear() {
+    renderGearTabs();
+    renderGearCategory();
+    renderGearPicker();
+    renderGearSelected();
+    updateGearCostHint();
+}
+
+function renderGearTabs() {
+    const container = document.getElementById("gearTabs");
+    if (!container) return;
+    container.innerHTML = GEAR_KIND_ORDER.map(kind => {
+        const count = gear[kind].length;
+        return `<button type="button" class="gear-tab ${gearTab === kind ? "active" : ""}"
+            onclick="setGearTab(${jsAttr(kind)})">${esc(GEAR_KINDS[kind].label)}${count ? ` <span class="gear-tab-count">${count}</span>` : ""}</button>`;
+    }).join("");
+}
+
+function renderGearCategory() {
+    const select = document.getElementById("gearCategory");
+    if (!select) return;
+    if (gearTab !== "items" || !gameData) { select.hidden = true; return; }
+
+    const categories = Array.from(new Set((gameData.items || [])
+        .filter(item => item.category !== "Оружие")
+        .map(item => item.category)
+        .filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
+
+    const current = select.value;
+    select.innerHTML = `<option value="all">Все категории</option>` +
+        categories.map(category => `<option value="${esc(category)}">${esc(category)}</option>`).join("");
+    select.hidden = false;
+    if (categories.includes(current)) select.value = current;
+}
+
+function gearTagsHtml(source) {
+    const tags = [];
+    if (source.meta) tags.push(`<span class="gear-tag">${esc(source.meta)}</span>`);
+    if (source.organization) tags.push(`<span class="gear-tag gear-tag-org" title="Организация">${esc(source.organization)}</span>`);
+    if (source.iconic) tags.push(`<span class="gear-tag gear-tag-cult" title="Культовое">★ Культовое</span>`);
+    return tags.length ? `<div class="gear-tags">${tags.join("")}</div>` : "";
+}
+
+function gearDescriptionHtml(fullDesc) {
+    const text = String(fullDesc || "").trim();
+    if (!text) return "";
+    return `<details class="gear-desc" onclick="event.stopPropagation()">
+        <summary>Описание</summary>
+        <div class="gear-desc-body">${esc(text)}</div>
+    </details>`;
+}
+
+function renderGearPicker() {
+    const container = document.getElementById("gearPicker");
+    const pager = document.getElementById("gearPager");
+    if (!container) return;
+
+    if (pager) pager.innerHTML = "";
+
+    if (!gameData) {
+        container.innerHTML = gameDataStatus === "error"
+            ? `<div class="empty-state">Не удалось загрузить справочники. Откройте страницу через HTTP-сервер (например, <code>npx serve</code>) и обновите.</div>`
+            : `<div class="empty-state">Загрузка справочников…</div>`;
+        return;
+    }
+
+    const list = filterGearSources(gearSourceList());
+    if (!list.length) {
+        container.innerHTML = `<div class="empty-state">Ничего не найдено.</div>`;
+        return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(list.length / GEAR_PAGE_SIZE));
+    gearPage = Math.min(Math.max(0, gearPage), totalPages - 1);
+    const start = gearPage * GEAR_PAGE_SIZE;
+    const shown = list.slice(start, start + GEAR_PAGE_SIZE);
+
+    container.innerHTML = shown.map(source => {
+        const selected = gear[gearTab].some(entry => entry.id === source.id);
+        return `
+            <div class="gear-pick ${selected ? "selected" : ""}" onclick="addGearEntry(${jsAttr(gearTab)}, ${jsAttr(source.id)})">
+                <div class="gear-pick-top">
+                    <span class="gear-pick-name">${esc(source.name)}</span>
+                    ${source.cost ? creditIcon(source.cost, "gear-pick-cost") : ""}
+                </div>
+                ${source.desc ? `<div class="gear-pick-desc">${esc(source.desc)}</div>` : ""}
+                ${gearTagsHtml(source)}
+                ${gearDescriptionHtml(source.fullDesc || source.desc)}
+            </div>
+        `;
+    }).join("");
+
+    if (pager) renderGearPager(pager, list.length, totalPages);
+}
+
+function renderGearPager(container, total, totalPages) {
+    if (totalPages <= 1) {
+        container.innerHTML = `<span class="gear-page-count">${total} шт.</span>`;
+        return;
+    }
+
+    const from = gearPage * GEAR_PAGE_SIZE + 1;
+    const to = Math.min(total, (gearPage + 1) * GEAR_PAGE_SIZE);
+    container.innerHTML = `
+        <button type="button" class="gear-page-btn" onclick="changeGearPage(-1)"
+            ${gearPage === 0 ? "disabled" : ""} aria-label="Предыдущая страница">←</button>
+        <span class="gear-page-info">Страница <b>${gearPage + 1}</b> из ${totalPages}
+            <span class="gear-page-count">· ${from}–${to} из ${total} шт.</span></span>
+        <button type="button" class="gear-page-btn" onclick="changeGearPage(1)"
+            ${gearPage >= totalPages - 1 ? "disabled" : ""} aria-label="Следующая страница">→</button>
+    `;
+}
+
+function renderGearSelected() {
+    const container = document.getElementById("gearSelected");
+    if (!container) return;
+
+    const list = gear[gearTab];
+    if (!list.length) {
+        container.innerHTML = `<div class="empty-effects">В этой категории пока ничего не выбрано.</div>`;
+        return;
+    }
+
+    const canMultiply = gearTab === "weapons" || gearTab === "items";
+    container.innerHTML = list.map(entry => `
+        <div class="gear-row">
+            <div class="gear-row-main">
+                <div class="gear-row-name">${esc(entry.name)}</div>
+                ${entry.desc ? `<div class="gear-row-desc">${esc(entry.desc)}</div>` : ""}
+                ${gearTagsHtml({ meta: entry.category, organization: entry.organization, iconic: entry.iconic })}
+                ${gearDescriptionHtml(entry.fullDesc || entry.desc)}
+            </div>
+            ${canMultiply ? `
+                <div class="gear-row-qty">
+                    <button type="button" class="gear-qty-btn" title="Убрать одну" onclick="changeGearQty(${jsAttr(gearTab)}, ${jsAttr(entry.id)}, -1)">−</button>
+                    <input type="number" min="1" max="99" value="${entry.qty}" aria-label="Количество"
+                        onchange="setGearQty(${jsAttr(gearTab)}, ${jsAttr(entry.id)}, this.value)">
+                    <button type="button" class="gear-qty-btn" title="Добавить одну" onclick="changeGearQty(${jsAttr(gearTab)}, ${jsAttr(entry.id)}, 1)">+</button>
+                </div>` : ""}
+            ${entry.cost
+                ? `<div class="gear-row-cost">${creditIcon(entry.cost * Math.max(1, Number(entry.qty) || 1))}</div>`
+                : `<div class="gear-row-cost muted">—</div>`}
+            <button type="button" class="btn-del" title="Убрать" onclick="removeGearEntry(${jsAttr(gearTab)}, ${jsAttr(entry.id)})">✕</button>
+        </div>
+    `).join("");
+}
+
+function updateGearCostHint() {
+    const cost = calculateGearCost();
+    const positions = gearPositionCount();
+
+    const hint = document.getElementById("gearCostHint");
+    if (hint) hint.innerHTML = creditIcon(cost);
+    const summary = document.getElementById("gearSummaryValue");
+    if (summary) summary.innerHTML = creditIcon(cost);
+    const note = document.getElementById("gearCostNote");
+    if (note) {
+        note.innerHTML = positions
+            ? `Итого: ${creditIcon(cost)} · Позиций: ${positions}`
+            : "Снаряжение не выбрано.";
+    }
+}
+
+function addGearEntry(kind, id) {
+    if (!GEAR_KINDS[kind] || !gameData) return;
+    const source = findGearSource(kind, id);
+    if (!source) return;
+
+    const list = gear[kind];
+    const existing = list.find(entry => entry.id === source.id);
+    if (existing) {
+        if (kind === "weapons" || kind === "items") {
+            existing.qty = Math.min(99, (Number(existing.qty) || 1) + 1);
+        } else {
+            return; // навыки, способности и карты не дублируются
+        }
+    } else {
+        const entry = {
+            id: source.id,
+            name: source.name,
+            cost: source.cost || 0,
+            qty: 1,
+            desc: source.desc || "",
+            fullDesc: source.fullDesc || source.desc || "",
+            category: source.meta || "",
+            rarity: source.rarity || "",
+            organization: source.organization || "",
+            iconic: Boolean(source.iconic),
+            attackId: null
+        };
+        if (kind === "weapons" && source.raw) {
+            const attack = createWeaponAttack(source.raw);
+            entry.attackId = attack.id;
+            attacks.push(attack);
+        }
+        list.push(entry);
+    }
+
+    renderGear();
+    if (kind === "weapons") renderAttacks();
+    recalcStats();
+}
+
+function removeGearEntry(kind, id) {
+    const list = gear[kind];
+    const entry = list.find(item => item.id === String(id));
+    if (!entry) return;
+
+    if (kind === "weapons" && entry.attackId !== null) {
+        const linkedId = `weapons:${entry.id}`;
+        attacks = attacks.filter(attack =>
+            !(attack.id === Number(entry.attackId) && attack.linkedGearId === linkedId));
+    }
+
+    gear[kind] = list.filter(item => item !== entry);
+    renderGear();
+    if (kind === "weapons") renderAttacks();
+    recalcStats();
+}
+
+function changeGearQty(kind, id, delta) {
+    const entry = gear[kind].find(item => item.id === String(id));
+    if (!entry) return;
+    const next = Math.max(1, Math.min(99, (Number(entry.qty) || 1) + Number(delta)));
+    if (next === entry.qty) return;
+    entry.qty = next;
+    renderGear();
+    recalcStats();
+}
+
+function setGearQty(kind, id, value) {
+    const entry = gear[kind].find(item => item.id === String(id));
+    if (!entry) return;
+    entry.qty = Math.max(1, Math.min(99, Number(value) || 1));
+    renderGear();
+    recalcStats();
+}
+
+// Разбор «Параметры: АТК 53; ТЧН 15; АВХ 2» в поля атаки.
+function parseWeaponStats(description) {
+    const text = String(description || "").replace(/\r\n?/g, "\n");
+    const result = {
+        atk: 0, ks: 0, tchn: 0, avh: 1, kc: 1,
+        distMin: 0, distMax: 0, damageType: "Кинетический"
+    };
+
+    const paramMatch = text.match(/Параметр(?:ы)?\s*:\s*([^\n]+)/i);
+    const paramText = paramMatch ? paramMatch[1] : text;
+
+    const statKeys = { "АТК": "atk", "ТЧН": "tchn", "КШ": "ks", "АВХ": "avh", "КЦ": "kc" };
+    const statRe = /(\d+(?:[.,]\d+)?)\s*(АТК|ТЧН|АВХ|КШ|КЦ)|(АТК|ТЧН|АВХ|КШ|КЦ)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/gi;
+    let match;
+    while ((match = statRe.exec(paramText))) {
+        const key = statKeys[(match[2] || match[3] || "").toUpperCase()];
+        if (key) result[key] = parseNum(match[1] !== undefined ? match[1] : match[4]);
+    }
+
+    const distance = text.match(/Дальност[ьи]?\s*[-–—:]?\s*(\d+)/i);
+    if (distance) result.distMax = Number(distance[1]);
+
+    const range = text.match(/(\d+)\s*[-–]\s*(\d+)\s*ОП/i);
+    if (range) {
+        result.distMin = Number(range[1]);
+        result.distMax = Number(range[2]);
+    } else if (!distance) {
+        const single = text.match(/(\d+)\s*ОП/i);
+        if (single) result.distMax = Number(single[1]);
+    }
+
+    const damageLine = text.match(/(?:Тип\s+урона|Урон)\s*:\s*([^\n]+)/i);
+    const inflicts = text.match(/Наносит\s+([А-Яа-яЁё+\s]+?)\s+урон/i);
+    const damageText = `${damageLine ? damageLine[1] : ""} ${inflicts ? inflicts[1] : ""}`.trim();
+    const damageTypes = [
+        [/электро|электрич|^эл/i, "Электрический"],
+        [/термо|термич/i, "Термический"],
+        [/хим|кеми/i, "Химический"],
+        [/крио/i, "Криотический"],
+        [/кроно/i, "Кронотический"],
+        [/пси/i, "Псионический"],
+        [/радио/i, "Радиоактивный"],
+        [/гидро/i, "Гидравлический"]
+    ];
+    for (const [pattern, type] of damageTypes) {
+        if (pattern.test(damageText)) { result.damageType = type; break; }
+    }
+
+    return result;
+}
+
+// Разбор строки «Эффекты: Кровотечение 30; Шок 25 ВЕР; ...».
+function parseWeaponEffects(description) {
+    const text = String(description || "").replace(/\r\n?/g, "\n");
+    const section = text.match(/(?:^|\n)\s*Эффект(?:ы)?\s*:\s*([\s\S]*?)(?=\n\s*\n|\n\s*(?:Уникальн|Тип\s+урона|Урон|Качество|Комплекс)|$)/i);
+    const inline = text.match(/(?:^|\n)\s*Эффект(?:ы)?\s*:\s*([^\n]+)/i);
+    const chunk = section ? section[1] : (inline ? inline[1] : "");
+    if (!chunk.trim()) return {};
+
+    const effects = {};
+    const tokens = chunk.split(/[;,.]/).map(token => token.trim()).filter(Boolean);
+    const effectNames = Object.keys(EFFECT_BY_NAME).sort((a, b) => b.length - a.length);
+
+    tokens.forEach(token => {
+        if (/не\s+наносит\s+урон/i.test(token)) {
+            const noDamage = EFFECT_BY_NAME["без урона"];
+            if (noDamage) effects[noDamage.item.name] = makeAttackEffectState(noDamage.item.name, noDamage.level);
+            return;
+        }
+
+        const lower = token.toLowerCase();
+        const effectName = effectNames.find(name => {
+            if (!lower.startsWith(name)) return false;
+            const next = lower.charAt(name.length);
+            return !next || !/[a-zа-яё0-9]/.test(next);
+        });
+        if (!effectName) return;
+
+        const info = EFFECT_BY_NAME[effectName];
+        const rest = token.slice(effectName.length);
+        const verMatch = rest.match(/(\d+)\s*ВЕР|ВЕР\s*(\d+)/i);
+        const aktMatch = rest.match(/(\d+)\s*АКТ|АКТ\s*(\d+)/i);
+        const withoutVer = rest
+            .replace(/\d+\s*ВЕР/ig, "").replace(/ВЕР\s*\d+/ig, "")
+            .replace(/\d+\s*АКТ/ig, "").replace(/АКТ\s*\d+/ig, "");
+        const numMatch = withoutVer.match(/(\d+(?:[.,]\d+)?)/);
+
+        const overrides = {};
+        if (verMatch) overrides.ver = Math.max(1, Math.min(100, Number(verMatch[1] || verMatch[2])));
+        if (aktMatch) overrides.akt = Math.max(0, Number(aktMatch[1] || aktMatch[2]));
+        if (numMatch) overrides.n = parseNum(numMatch[1]);
+
+        const state = makeAttackEffectState(info.item.name, info.level, overrides);
+        if (state) effects[info.item.name] = state;
+    });
+
+    return effects;
+}
+
+function weaponAttackType(item, parsed) {
+    if (item && RANGED_WEAPON_TAGS.has(item.tag)) return "Дальняя";
+    if (item && item.tag === "Me") return "Ближняя";
+    return (parsed.distMax || 0) > 2 ? "Дальняя" : "Ближняя";
+}
+
+function createWeaponAttack(item) {
+    const parsed = parseWeaponStats(item.description);
+    const attack = createAttack({
+        name: item.name,
+        type: weaponAttackType(item, parsed),
+        distMin: parsed.distMin,
+        distMax: parsed.distMax,
+        damageType: parsed.damageType,
+        atk: parsed.atk,
+        ks: parsed.ks,
+        tchn: parsed.tchn,
+        avh: Math.max(1, parsed.avh || 1),
+        kc: Math.max(1, parsed.kc || 1),
+        ignDef: 0,
+        ignUkl: 0
+    });
+    attack.effects = parseWeaponEffects(item.description);
+    attack.linkedGearId = `weapons:${item.id}`;
+    return attack;
+}
+
+// Единое создание состояния эффекта — используется и в редакторе, и при разборе оружия.
+function makeAttackEffectState(name, level, overrides = {}) {
+    const item = findAttackEffect(name);
+    if (!item) return null;
+    return {
+        n: overrides.n !== undefined ? overrides.n : item.defN,
+        ver: overrides.ver !== undefined ? overrides.ver : item.defVer,
+        akt: overrides.akt !== undefined ? overrides.akt : 1,
+        baseCost: item.baseCost,
+        step: item.step,
+        isInfinite: false,
+        isPermanent: item.isPermanent || false,
+        isItemProperty: item.isItemProperty || false,
+        hideN: item.hideN || false,
+        hideVer: item.hideVer || false,
+        hideAkt: item.hideAkt || false,
+        linearVer: item.linearVer || false,
+        priority: level
+    };
+}
+
 
 function esc(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -830,13 +1746,7 @@ function toggleAttackEffect(attackId, name, isChecked, level) {
     if (isChecked) {
         const item = findAttackEffect(name);
         if (!item) return;
-        attack.effects[name] = {
-            n: item.defN, ver: item.defVer, akt: 1, baseCost: item.baseCost, step: item.step,
-            isInfinite: false, isPermanent: item.isPermanent || false, isItemProperty: item.isItemProperty || false,
-            hideN: item.hideN || false, hideVer: item.hideVer || false, hideAkt: item.hideAkt || false,
-            linearVer: item.linearVer || false, // <--- ВОТ ЭТА СТРОЧКА
-            priority: level
-        };
+        attack.effects[name] = makeAttackEffectState(name, item.level);
     } else { delete attack.effects[name]; }
 
     renderAttacks();
@@ -1214,7 +2124,8 @@ function recalcStats() {
         }
     }
 
-    const maxBudget = baseBudgetNum + budgetBonus + calculateWeaknessBonus();
+    const isCharacter = unitMode === "character";
+    const maxBudget = isCharacter ? Infinity : baseBudgetNum + budgetBonus + calculateWeaknessBonus();
     const maxAttrs = baseAttrs + attrBonus;
 
     const hp = readNum("statHp", 0);
@@ -1249,33 +2160,52 @@ function recalcStats() {
     if (immNote) immNote.textContent = `Стоимость резистов к эффектам: ${immunityCost} оч. · Пассивные эффекты: ${passiveCostValue} оч.`;
 
     const totalSpent = baseStatsCost + attacksCost + globalAttackCost + resistanceCost + immunityCost + passiveCostValue;
-    currentBudget = { spent: totalSpent, max: maxBudget };
+    const gearCostValue = isCharacter ? calculateGearCost() : 0;
+    currentBudget = { spent: totalSpent, max: maxBudget, gear: gearCostValue };
 
     const budgetDisplay = document.getElementById("budgetDisplay");
-    budgetDisplay.textContent = `${totalSpent} / ${maxBudget}`;
-    budgetDisplay.className = totalSpent > maxBudget ? "budget-val over" : "budget-val ok";
+    if (isCharacter) {
+        budgetDisplay.innerHTML = creditIcon(gearCostValue);
+        budgetDisplay.className = "budget-val ok";
+    } else {
+        budgetDisplay.textContent = `${totalSpent} / ${maxBudget}`;
+        budgetDisplay.className = totalSpent > maxBudget ? "budget-val over" : "budget-val ok";
+    }
 
     const extBudget = document.getElementById("externalBudget");
     const extBudgetBar = document.getElementById("externalBudgetBar");
     const extBudgetText = document.getElementById("externalBudgetText");
     
     if (extBudget && extBudgetBar && extBudgetText) {
-        extBudgetText.textContent = `${totalSpent} / ${maxBudget}`;
-        extBudgetBar.style.width = `${budgetPercent()}%`;
-        
-        if (totalSpent > maxBudget) {
-            extBudget.classList.add("over");
-            extBudgetText.style.color = "var(--p1-color)";
-        } else {
+        if (isCharacter) {
+            extBudgetText.innerHTML = creditIcon(gearCostValue);
+            extBudgetBar.style.width = "0%";
             extBudget.classList.remove("over");
-            extBudgetText.style.color = "var(--ok-color)";
+            extBudgetText.style.color = "var(--p3-color)";
+        } else {
+            extBudgetText.textContent = `${totalSpent} / ${maxBudget}`;
+            extBudgetBar.style.width = `${budgetPercent()}%`;
+
+            if (totalSpent > maxBudget) {
+                extBudget.classList.add("over");
+                extBudgetText.style.color = "var(--p1-color)";
+            } else {
+                extBudget.classList.remove("over");
+                extBudgetText.style.color = "var(--ok-color)";
+            }
         }
     }
 
     const attrBudgetDisplay = document.getElementById("attrBudgetDisplay");
-    attrBudgetDisplay.textContent = `${attrSum} / ${maxAttrs}`;
-    attrBudgetDisplay.className = attrSum > maxAttrs ? "budget-val over" : "budget-val ok";
+    if (isCharacter) {
+        attrBudgetDisplay.textContent = `${attrSum}`;
+        attrBudgetDisplay.className = "budget-val ok";
+    } else {
+        attrBudgetDisplay.textContent = `${attrSum} / ${maxAttrs}`;
+        attrBudgetDisplay.className = attrSum > maxAttrs ? "budget-val over" : "budget-val ok";
+    }
 
+    updateGearCostHint();
     updateAllAttackCostDisplays();
     updateWeaknessCostNote();
     renderOutput();
@@ -1292,7 +2222,8 @@ function recalcStats() {
 function handleInput(id, val) { recalcStats(); }
 
 function renderOutput() {
-    const name = document.getElementById("mobName").value.trim() || "Безымянный моб";
+    const character = unitMode === "character";
+    const name = document.getElementById("mobName").value.trim() || (character ? "Безымянный персонаж" : "Безымянный моб");
     const tier = document.getElementById("mobTier").value;
     const type = document.getElementById("mobType").value;
     const role = document.getElementById("mobRole").value;
@@ -1317,11 +2248,20 @@ function renderOutput() {
 
     const immunityNames = Object.keys(immunities);
     const passiveNames = Object.keys(passiveEffects);
-    const weaknessNames = Object.values(weaknesses).map(weaknessLabel);
+    const weaknessNames = unitMode === "character" ? [] : Object.values(weaknesses).map(weaknessLabel);
+
+    const gearSnapshot = GEAR_KIND_ORDER.reduce((snapshot, kind) => {
+        snapshot[kind] = gear[kind].map(entry => ({ ...entry }));
+        return snapshot;
+    }, {});
 
     updateOutputBudgetHint();
 
-    const outData = { name, tier, type, role, hp, extraHp, defP, defA, ukl, od, op, resType, resActive, notes, attrs, immunityNames, passiveNames, weaknessNames };
+    const outData = {
+        name, tier, type, role, hp, extraHp, defP, defA, ukl, od, op, resType, resActive, notes,
+        attrs, immunityNames, passiveNames, weaknessNames,
+        unitMode, gear: gearSnapshot
+    };
     lastOutputText = buildPlainText(outData);
     document.getElementById("outputBox").textContent = lastOutputText;
     document.getElementById("outputCard").innerHTML = buildOutputHtml(outData);
@@ -1330,15 +2270,20 @@ function renderOutput() {
 function updateOutputBudgetHint() {
     const hint = document.getElementById("outputBudgetHint");
     if (!hint) return;
+    if (unitMode === "character") {
+        hint.innerHTML = `Цена снаряжения: ${creditIcon(calculateGearCost())}`;
+        hint.className = "hint text-ok";
+        return;
+    }
     const over = currentBudget.spent > currentBudget.max;
-    hint.textContent = `${currentBudget.spent} / ${currentBudget.max} оч.`;
+    hint.textContent = `Бюджет: ${currentBudget.spent} / ${currentBudget.max}`;
     hint.className = `hint ${over ? "text-over" : "text-ok"}`;
 }
 
 function buildPlainText(data) {
     const lines = [];
-    const displayType = TYPE_RENAME[data.type] || data.type;
-    const displayTier = TIER_RENAME[data.tier] || data.tier;
+    const isCharacter = data.unitMode === "character";
+    const displayType = isCharacter ? "Персонаж" : (TYPE_RENAME[data.type] || data.type);
     lines.push(`=== ${data.name} (${displayType}) ===`);
     if (data.role) lines.push(`Роль: ${data.role}`);
 
@@ -1351,6 +2296,11 @@ function buildPlainText(data) {
     lines.push(`- ОД: ${data.od} | ОП: ${data.op}`);
     
     if (data.resActive > 0 && data.resType !== "Нет") lines.push(`- Сопротивление: ${data.resType}`);
+
+    if (isCharacter) {
+        lines.push(`- Цена снаряжения: ${creditNumber(calculateGearCost())} кредитов`);
+        gearPlainLines(data.gear).forEach(line => lines.push(line));
+    }
 
     const globalStats = getGlobalStats();
     if (hasGlobalStats()) lines.push(`- Общие статы: АТК: ${signed(globalStats.atk)} | КШ: ${signed(globalStats.ks)} | ТЧН: ${signed(globalStats.tchn)}`);
@@ -1383,8 +2333,7 @@ function buildPlainText(data) {
                     if (!eff.hideVer) details.push(`ВЕР: ${eff.ver}%`);
                     if (!eff.hideAkt) details.push(`АКТ: ${eff.isPermanent ? "при атаке" : (eff.isInfinite ? "∞" : eff.akt)}`);
                     const detailStr = details.length ? ` (${details.join(" | ")})` : "";
-                    const cost = calculateAttackEffectCost(attack, effectName);
-                    lines.push(`  • ${effectName}${detailStr} — ${cost} оч.`);
+                    lines.push(`  • ${effectName}${detailStr}`);
                 });
             } else { lines.push("- Эффекты: Нет"); }
             lines.push("");
@@ -1399,6 +2348,25 @@ function buildPlainText(data) {
     if (data.notes) lines.push(`- Примечания: ${data.notes.replace(/\n/g, " ")}`);
 
     return lines.join("\n");
+}
+
+function gearPlainLines(snapshot) {
+    if (!snapshot) return [];
+    return GEAR_KIND_ORDER.reduce((lines, kind) => {
+        const list = snapshot[kind] || [];
+        if (!list.length) return lines;
+        const parts = list.map(entry => {
+            const qty = entry.qty > 1 ? ` ×${entry.qty}` : "";
+            const meta = [entry.organization, entry.iconic ? "Культовое" : ""].filter(Boolean).join(", ");
+            const metaText = meta ? ` [${meta}]` : "";
+            const cost = entry.cost
+                ? ` — ${creditNumber(entry.cost * Math.max(1, Number(entry.qty) || 1))} кредитов`
+                : "";
+            return `${entry.name}${qty}${metaText}${cost}`;
+        });
+        lines.push(`- ${GEAR_KINDS[kind].label}: ${parts.join(", ")}`);
+        return lines;
+    }, []);
 }
 
 function formatMarkdown(text) {
@@ -1442,16 +2410,24 @@ function buildOutputHtml(data) {
     const passivesHtml = data.passiveNames.length ? `<div class="attr-chips">${data.passiveNames.map(name => `<span class="attr-chip passive-chip">${esc(name)}</span>`).join("")}</div>` : `<div class="empty-effects">Пассивные эффекты не выбраны.</div>`;
     const weaknessesHtml = data.weaknessNames.length ? `<div class="attr-chips">${data.weaknessNames.map(name => `<span class="attr-chip weakness-chip-out">${esc(name)}</span>`).join("")}</div>` : `<div class="empty-effects">Слабости не выбраны.</div>`;
 
+    const isCharacter = data.unitMode === "character";
+    const displayType = isCharacter ? "Персонаж" : (TYPE_RENAME[data.type] || data.type);
+    const gearHtml = isCharacter ? buildGearOutputHtml(data.gear) : "";
+    const weaknessesSection = isCharacter ? "" : `<div class="sheet-section">
+                <div class="sheet-section-title">Слабости</div>
+                ${weaknessesHtml}
+            </div>`;
+
     return `
         <div class="mob-sheet">
             <div class="mob-sheet-head">
                 <div>
                     <h3 class="mob-name">${esc(data.name)}</h3>
-                    <div class="mob-sub">${esc(TYPE_RENAME[data.type] || data.type)}${data.role ? ` · ${esc(data.role)}` : ""}</div>
+                    <div class="mob-sub">${esc(displayType)}${data.role ? ` · ${esc(data.role)}` : ""}</div>
                 </div>
                 <div class="mob-tags">
                     <!-- <span class="tag tag-tier">${esc(TIER_RENAME[data.tier] || data.tier)}</span> -->
-                    <span class="tag tag-type">${esc(TYPE_RENAME[data.type] || data.type)}</span>
+                    <span class="tag tag-type">${esc(displayType)}</span>
                 </div>
             </div>
             <div class="sheet-section">
@@ -1459,6 +2435,7 @@ function buildOutputHtml(data) {
                 <div class="stat-grid">${statTiles}${resistanceTile}</div>
             </div>
             ${globalHtml}
+            ${gearHtml}
             <div class="sheet-section">
                 <div class="sheet-section-title">Атаки <span class="badge">${attacks.length}</span></div>
                 <div class="attack-output-list">${attacksHtml}</div>
@@ -1472,16 +2449,44 @@ function buildOutputHtml(data) {
                 <div class="sheet-section-title">Пассивные эффекты</div>
                 ${passivesHtml}
             </div>
-            <div class="sheet-section">
-                <div class="sheet-section-title">Слабости</div>
-                ${weaknessesHtml}
-            </div>
+            ${weaknessesSection}
             ${data.notes ? `<div class="notes-block"><div class="sheet-section-title">Особые примечания</div><div>${formatMarkdown(data.notes)}</div></div>` : ""}
         </div>
     `;
 }
 
-function budgetPercent() { return currentBudget.max ? Math.min(100, Math.round((currentBudget.spent / currentBudget.max) * 100)) : 0; }
+function buildGearOutputHtml(snapshot) {
+    const groups = snapshot
+        ? GEAR_KIND_ORDER.map(kind => {
+            const list = snapshot[kind] || [];
+            if (!list.length) return "";
+            const chips = list.map(entry => {
+                const qty = entry.qty > 1 ? ` ×${entry.qty}` : "";
+                const meta = [entry.organization, entry.iconic ? "Культовое" : ""].filter(Boolean).join(" · ");
+                const price = entry.cost
+                    ? creditIcon(entry.cost * Math.max(1, Number(entry.qty) || 1), "gear-chip-price")
+                    : "";
+                const title = [meta, entry.desc].filter(Boolean).join(" · ");
+                return `<span class="attr-chip gear-chip" title="${esc(title)}">
+                    <span class="gear-chip-name">${esc(entry.name)}${qty}</span>
+                    ${meta ? `<small class="gear-chip-meta">${esc(meta)}</small>` : ""}
+                    ${price}
+                </span>`;
+            }).join("");
+            return `<div class="gear-output-group">
+                <div class="gear-output-label">${esc(GEAR_KINDS[kind].label)}</div>
+                <div class="attr-chips">${chips}</div>
+            </div>`;
+        }).filter(Boolean).join("")
+        : "";
+
+    return `<div class="sheet-section">
+        <div class="sheet-section-title">Снаряжение и умения <span class="badge gear-total">${creditIcon(calculateGearCost())}</span></div>
+        ${groups || `<div class="empty-effects">Снаряжение не выбрано.</div>`}
+    </div>`;
+}
+
+function budgetPercent() { return currentBudget.max && isFinite(currentBudget.max) ? Math.min(100, Math.round((currentBudget.spent / currentBudget.max) * 100)) : 0; }
 
 function statTile(label, value, cssClass) {
     return `<div class="stat-tile ${cssClass || ""}"><span class="stat-label">${esc(label)}</span><span class="stat-value">${esc(value)}</span></div>`;
@@ -1609,7 +2614,8 @@ function getCurrentState() {
     });
 
     return {
-        v: 5,
+        v: 6,
+        unitMode,
         name: document.getElementById("mobName").value,
         tier: document.getElementById("mobTier").value,
         type: document.getElementById("mobType").value,
@@ -1633,6 +2639,7 @@ function getCurrentState() {
         immunities: Object.values(immunities),
         passiveEffects,
         weaknesses: Object.values(weaknesses),
+        gear: normalizeGear(gear),
         attacks
     };
 }
@@ -1671,6 +2678,10 @@ function applyState(state) {
     setInputValue("resType", state.resType || "Нет");
     setInputValue("resActive", state.resActive || "0");
     setInputValue("mobNotes", state.notes || "");
+
+    unitMode = state.unitMode === "character" ? "character" : "mob";
+    gear = normalizeGear(state.gear);
+    applyUnitModeUI();
 
     if (state.attrs) {
         document.querySelectorAll(".attr-input").forEach(inp => {
@@ -1713,22 +2724,47 @@ function applyState(state) {
     }
 
     if (Array.isArray(state.attacks)) {
-        attacks = state.attacks.map(item => createAttack({
-            name: item.name || "Атака", type: item.type || "Ближняя",
-            distMin: Number(item.distMin ?? 0), distMax: Number(item.distMax ?? item.distance ?? 1),
-            damageType: item.damageType || "Кинетический",
-            atk: Number(item.atk) || 0, ks: Number(item.ks) || 0, tchn: Number(item.tchn) || 0,
-            avh: Number(item.avh) || 1, kc: Number(item.kc) || 1, ignDef: Number(item.ignDef) || 0,
-            ignUkl: Number(item.ignUkl) || 0, effects: item.effects || {}
-        }));
+        attacks = state.attacks.map(item => {
+            const attack = createAttack({
+                name: item.name || "Атака", type: item.type || "Ближняя",
+                distMin: Number(item.distMin ?? 0), distMax: Number(item.distMax ?? item.distance ?? 1),
+                damageType: item.damageType || "Кинетический",
+                atk: Number(item.atk) || 0, ks: Number(item.ks) || 0, tchn: Number(item.tchn) || 0,
+                avh: Number(item.avh) || 1, kc: Number(item.kc) || 1, ignDef: Number(item.ignDef) || 0,
+                ignUkl: Number(item.ignUkl) || 0, effects: item.effects || {}
+            });
+            if (item.linkedGearId) attack.linkedGearId = item.linkedGearId;
+            return attack;
+        });
+
+        // Сохраняем исходные id атак, иначе ссылки снаряжения на атаки потеряются.
+        const usedIds = new Set();
+        attacks.forEach((attack, index) => {
+            const savedId = Number(state.attacks[index] && state.attacks[index].id);
+            if (Number.isFinite(savedId) && savedId > 0 && !usedIds.has(savedId)) {
+                attack.id = savedId;
+                usedIds.add(savedId);
+            }
+        });
+        nextAttackId = attacks.reduce((max, attack) => Math.max(max, attack.id + 1), 1);
     }
 
+    // Если атака, привязанная к оружию, больше не существует — просто снимаем ссылку.
+    gear.weapons.forEach(entry => {
+        if (entry.attackId !== null && !attacks.some(attack => attack.id === entry.attackId)) {
+            entry.attackId = null;
+        }
+    });
+
     renderAttacks();
+    renderGear();
     renderImmunities();
     renderPassiveEffects();
     renderWeaknesses();
     recalcStats();
     isApplyingState = false;
+
+    if (unitMode === "character") ensureGameData().catch(() => {});
 }
 
 function loadStateFromUrl() {
@@ -1804,7 +2840,7 @@ function deleteTab(id, event) {
             activeMobId = keys[0];
             applyState(savedMobs[activeMobId]);
         } else {
-            createNewMob();
+            addNewTab();
             return;
         }
     }
@@ -1846,12 +2882,16 @@ function addNewTab() {
     passiveEffects = {};
     weaknesses = {};
     immunities = {};
+    unitMode = "mob";
+    gear = createEmptyGear();
+    applyUnitModeUI();
     // Создаем чистую атаку без статов
     attacks = [createAttack({ name: "Основная атака", ...ATTACK_COSTS.newAttack })];
 
     isApplyingState = false;
     
     renderAttacks();
+    renderGear();
     renderImmunities();
     renderPassiveEffects();
     renderWeaknesses();
@@ -1870,7 +2910,7 @@ function clearCurrentMob() {
     isApplyingState = true; 
 
     // Сбрасываем профиль (пресеты не трогаем, они просто дают лимиты)
-    setInputValue("mobName", "Пустой моб");
+    setInputValue("mobName", unitMode === "character" ? "Пустой персонаж" : "Пустой моб");
     setInputValue("mobTier", "Новичок");
     setInputValue("mobType", "Моб");
     setInputValue("mobRole", "");
@@ -1906,11 +2946,14 @@ function clearCurrentMob() {
     passiveEffects = {};
     weaknesses = {};
     immunities = {};
+    gear = createEmptyGear();
+    applyUnitModeUI();
     attacks = [createAttack({ name: "Основная атака", ...ATTACK_COSTS.newAttack })];
 
     isApplyingState = false;
 
     renderAttacks();
+    renderGear();
     renderImmunities();
     renderPassiveEffects();
     renderWeaknesses();
