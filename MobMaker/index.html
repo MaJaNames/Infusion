@@ -222,7 +222,10 @@
         <div class="gear-controls">
             <input type="text" id="gearSearch" placeholder="Поиск по названию и описанию — можно с опечатками" oninput="handleGearSearch()">
             <select id="gearCategory" onchange="handleGearCategoryChange()"></select>
+            <button type="button" class="btn btn-small btn-outline" onclick="toggleGearFilters()">Фильтры <span id="gearFilterCount" class="gear-filter-count"></span></button>
         </div>
+        <div class="gear-filter-panel" id="gearFilterPanel" hidden></div>
+        <div class="gear-filter-chips" id="gearFilterChips"></div>
         <div class="gear-picker" id="gearPicker"></div>
         <div class="gear-pager" id="gearPager"></div>
         <div class="gear-selected" id="gearSelected"></div>

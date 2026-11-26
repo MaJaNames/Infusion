@@ -14,6 +14,7 @@ import { helpBlock } from '../js/core/help.js';
 import { permalinkPath, hashRoute, permalinkUrl } from '../js/core/links.js';
 import { canonId, legacyId, canonKey, legacyKey, padIds } from '../js/core/ids.js';
 import { collectEntries, describe, renderPage, renderLegacyRedirect, renderArchived } from '../tools/build-pages.mjs';
+import { rulesRows } from '../js/core/rules-rows.js';
 import * as databases from '../js/views/databases.js';
 import * as character from '../js/views/character.js';
 import * as utilities from '../js/views/utilities.js';
@@ -29,6 +30,7 @@ import { B as brokerStore, blankOffer, blankPicks, normOffer, normBroker, isCult
 import { robotRequirement, availableCount, robotStats, robotMissing, moduleChecked, moduleIsActive, moduleEnabled } from '../js/modules/robots/parts.js';
 
 const d = indexData(JSON.parse(readFileSync(new URL('../data/data.json', import.meta.url), 'utf8')));
+const rulesCount = rulesRows(d).length;
 let fail = 0;
 const check = (name, ok, info = '') => { if (!ok) fail++; console.log(`${ok ? 'ok ' : 'ОШИБКА'} ${name} ${info}`); };
 
@@ -209,7 +211,7 @@ const initialRules = (dbRes.innerHTML.match(/<details/g) || []).length;
 dbRoot.onclick({ target: { closest: (s) => (s === '[data-more]' ? { dataset: { more: 'rules' } } : null) } });
 const appendedRules = (dbList.html.match(/<details/g) || []).length;
 check('справочник: «Показать ещё» догружает порцию', initialRules === 30 && appendedRules === 30, `${initialRules} + ${appendedRules}`);
-check('справочник: счётчик показывает прогресс ленты', dbSentinel.innerHTML.includes('Показано 60 из 267'), dbSentinel.innerHTML);
+check('справочник: счётчик показывает прогресс ленты', dbSentinel.innerHTML.includes(`Показано 60 из ${rulesCount}`), dbSentinel.innerHTML);
 clickDbTab('items');
 dbRes.innerHTML = '';
 dbRoot.onchange({ target: { dataset: { addK: 'organization' }, value: 'Хиллз' } });
@@ -500,7 +502,7 @@ check('пермалинки: путь и hash', permalinkPath('items', '0x0001')
 check('пермалинки: абсолютный URL от базы', permalinkUrl('cards', '0x0001', 'https://example.test/Infusion/') === 'https://example.test/Infusion/p/db/cards/0x0001/');
 const ogEntries = collectEntries(d);
 const ogPaths = ogEntries.map((e) => e.path);
-check('OG: страницы для предметов, карт и справочника', ogEntries.length === d.items.length + d.cards.length + 267, ogEntries.length);
+check('OG: страницы для предметов, карт и справочника', ogEntries.length === d.items.length + d.cards.length + rulesCount, ogEntries.length);
 check('OG: пермалинки уникальны', new Set(ogPaths).size === ogPaths.length);
 const ogItem = ogEntries.find((e) => e.kind === 'items' && e.id === d.items[0].id);
 const ogHtml = renderPage(ogItem, { url: 'https://example.test/Infusion', basePath: '/Infusion/' });

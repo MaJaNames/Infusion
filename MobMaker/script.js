@@ -128,6 +128,8 @@ const GEAR_KINDS = {
 };
 const GEAR_KIND_ORDER = Object.keys(GEAR_KINDS);
 const GEAR_PAGE_SIZE = 24;
+const GEAR_FILTER_KEYS = ["category", "rarity", "organization", "iconic"];
+const GEAR_FILTER_LABELS = { category: "Категория", rarity: "Редкость", organization: "Организация", iconic: "Культовое" };
 const CREDIT_ICON = "../assets/icons/croncred.webp";
 
 function creditNumber(value) {
@@ -160,6 +162,8 @@ let unitMode = "mob";
 let gear = createEmptyGear();
 let gearTab = "weapons";
 let gearPage = 0;
+let gearFiltersOpen = false;
+let gearFilters = createEmptyGearFilters();
 let gameData = null;
 let gameDataStatus = "idle"; // idle | loading | ready | error
 let gameDataPromise = null;
@@ -248,6 +252,14 @@ function findImmunity(name) {
 
 function createEmptyGear() {
     return { weapons: [], items: [], skills: [], abilities: [], cards: [] };
+}
+
+function createEmptyGearFilters() {
+    return { category: [], rarity: [], organization: [], iconic: [] };
+}
+
+function gearFilterCount() {
+    return GEAR_FILTER_KEYS.reduce((sum, key) => sum + gearFilters[key].length, 0);
 }
 
 function normalizeGear(raw) {
@@ -568,6 +580,7 @@ function itemSource(item) {
         cost: Number(item.cost) || 0,
         desc: flatText(fullDesc),
         fullDesc,
+        category: item.category || "",
         rarity: item.rarity || "",
         organization: item.organization || "",
         iconic,
@@ -584,6 +597,7 @@ function skillSource(skill) {
         cost: 0,
         desc: flatText(fullDesc),
         fullDesc,
+        category: STAT_LABELS[skill.stat] || skill.stat || "",
         rarity: skill.rarity || "",
         organization: "",
         iconic: skill.rarity === "Культовый",
@@ -600,6 +614,7 @@ function abilitySource(ability) {
         cost: 0,
         desc: flatText(fullDesc),
         fullDesc,
+        category: ability.kind || "Способность",
         rarity: "",
         organization: "",
         iconic: false,
@@ -616,6 +631,7 @@ function cardSource(card) {
         cost: 0,
         desc: flatText(fullDesc),
         fullDesc,
+        category: card.school || "Карта",
         rarity: card.rarity || "",
         organization: "",
         iconic: Boolean(card.iconic) || card.rarity === "Культовый",
@@ -669,11 +685,8 @@ function gearSourceList() {
             .map(itemSource);
     }
     if (gearTab === "items") {
-        const select = document.getElementById("gearCategory");
-        const category = select && select.value ? select.value : "all";
         return (gameData.items || [])
             .filter(item => item.category !== "Оружие")
-            .filter(item => category === "all" || item.category === category)
             .map(itemSource);
     }
     if (gearTab === "skills") return (gameData.skills || []).map(skillSource);
@@ -683,12 +696,24 @@ function gearSourceList() {
 }
 
 function filterGearSources(list) {
+    const filtered = list.filter(source => {
+        if (gearFilters.category.length && !gearFilters.category.includes(String(source.category || ""))) return false;
+        if (gearFilters.rarity.length && !gearFilters.rarity.includes(String(source.rarity || ""))) return false;
+        if (gearFilters.organization.length && !gearFilters.organization.includes(String(source.organization || ""))) return false;
+        if (gearFilters.iconic.length) {
+            const iconic = gearFilters.iconic.includes("1") && Boolean(source.iconic);
+            const regular = gearFilters.iconic.includes("0") && !source.iconic;
+            if (!iconic && !regular) return false;
+        }
+        return true;
+    });
+
     const search = document.getElementById("gearSearch");
     const query = normalizeSearch(search ? search.value : "");
-    if (!query) return list;
+    if (!query) return filtered;
 
     const scored = [];
-    list.forEach(source => {
+    filtered.forEach(source => {
         const searchText = `${source.name} ${source.fullDesc || source.desc} ${source.meta} ${source.organization || ""} ${source.iconic ? "Культовое" : ""}`;
         const fullScore = fuzzyTextScore(query, searchText);
         const nameScore = fuzzyTextScore(query, source.name);
@@ -705,8 +730,9 @@ function handleGearSearch() {
 }
 
 function handleGearCategoryChange() {
-    gearPage = 0;
-    renderGearPicker();
+    const select = document.getElementById("gearCategory");
+    if (select && select.value && select.value !== "all") addGearFilter("category", select.value);
+    else renderGearPicker();
 }
 
 function changeGearPage(delta) {
@@ -718,12 +744,14 @@ function setGearTab(kind) {
     if (!GEAR_KINDS[kind] || gearTab === kind) return;
     gearTab = kind;
     gearPage = 0;
+    gearFilters = createEmptyGearFilters();
     renderGear();
 }
 
 function renderGear() {
     renderGearTabs();
     renderGearCategory();
+    renderGearFilters();
     renderGearPicker();
     renderGearSelected();
     updateGearCostHint();
@@ -749,11 +777,85 @@ function renderGearCategory() {
         .map(item => item.category)
         .filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
 
-    const current = select.value;
-    select.innerHTML = `<option value="all">Все категории</option>` +
+    select.innerHTML = `<option value="all">Добавить категорию…</option>` +
         categories.map(category => `<option value="${esc(category)}">${esc(category)}</option>`).join("");
     select.hidden = false;
-    if (categories.includes(current)) select.value = current;
+    select.value = "all";
+}
+
+function gearFilterOptions(key) {
+    const values = new Set();
+    gearSourceList().forEach(source => {
+        if (key === "iconic") {
+            values.add(source.iconic ? "1" : "0");
+            return;
+        }
+        const value = source[key];
+        if (value) values.add(String(value));
+    });
+    return [...values].sort((a, b) => a.localeCompare(b, "ru"));
+}
+
+function gearFilterLabel(key, value) {
+    if (key === "iconic") return value === "1" ? "Культовое" : "Не культовое";
+    return value;
+}
+
+function gearFilterChipsHtml() {
+    return GEAR_FILTER_KEYS.flatMap(key => gearFilters[key].map(value => `
+        <span class="gear-filter-chip">${esc(gearFilterLabel(key, value))}
+            <button type="button" onclick="removeGearFilter('${key}', ${jsAttr(value)})" aria-label="Убрать фильтр">×</button>
+        </span>`)).join("");
+}
+
+function renderGearFilters() {
+    const panel = document.getElementById("gearFilterPanel");
+    const chips = document.getElementById("gearFilterChips");
+    const countEl = document.getElementById("gearFilterCount");
+    const count = gearFilterCount();
+    if (countEl) countEl.textContent = count ? String(count) : "";
+    if (chips) chips.innerHTML = gearFilterChipsHtml();
+    if (!panel) return;
+
+    panel.hidden = !gearFiltersOpen;
+    if (!gearFiltersOpen) return;
+
+    panel.innerHTML = GEAR_FILTER_KEYS.map(key => {
+        const options = gearFilterOptions(key);
+        if (!options.length) return "";
+        const label = GEAR_FILTER_LABELS[key];
+        return `<label><span>${label}</span><select data-gear-filter="${key}"
+            onchange="addGearFilter('${key}', this.value); this.value=''">
+            <option value="">Любое</option>
+            ${options.map(option => `<option value="${esc(option)}">${esc(gearFilterLabel(key, option))}</option>`).join("")}
+        </select></label>`;
+    }).join("") + (count ? `<button type="button" class="btn btn-small btn-outline" onclick="clearGearFilters()">Сбросить фильтры</button>` : "");
+}
+
+function addGearFilter(key, value) {
+    if (!GEAR_FILTER_KEYS.includes(key) || !value || value === "all") return;
+    const values = gearFilters[key];
+    if (!values.includes(String(value))) values.push(String(value));
+    gearPage = 0;
+    renderGear();
+}
+
+function removeGearFilter(key, value) {
+    if (!GEAR_FILTER_KEYS.includes(key)) return;
+    gearFilters[key] = gearFilters[key].filter(item => item !== String(value));
+    gearPage = 0;
+    renderGear();
+}
+
+function clearGearFilters() {
+    gearFilters = createEmptyGearFilters();
+    gearPage = 0;
+    renderGear();
+}
+
+function toggleGearFilters() {
+    gearFiltersOpen = !gearFiltersOpen;
+    renderGearFilters();
 }
 
 function gearTagsHtml(source) {

@@ -1014,6 +1014,61 @@ pre {
 .gear-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .gear-controls input { flex: 1 1 240px; }
 .gear-controls select { flex: 0 1 220px; }
+.gear-filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 4px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+}
+.gear-filter-count:empty { display: none; }
+
+.gear-filter-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+.gear-filter-panel label { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: var(--text-muted); }
+.gear-filter-panel select { min-width: 150px; padding: 6px 8px; }
+
+.gear-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+.gear-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 5px 2px 8px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.1);
+    font-size: 0.72rem;
+}
+.gear-filter-chip button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 2px;
+}
+.gear-filter-chip button:hover { color: var(--p1-color); }
 
 .gear-picker {
     display: grid;
